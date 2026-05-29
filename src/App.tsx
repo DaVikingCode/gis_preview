@@ -1,0 +1,84 @@
+import { MapCanvas } from '@/map/MapCanvas'
+import { LayersButton } from '@/map/LayersButton'
+import { CinematicCamera } from '@/map/CinematicCamera'
+import { SwipeCompare } from '@/map/SwipeCompare'
+import { TourController } from '@/tour/TourController'
+import { RtScriptedCursor } from '@/components/RtScriptedCursor'
+import { DebugPanel } from '@/tour/DebugPanel'
+import { ChartsPanel } from '@/charts/ChartsPanel'
+import { StartScreen } from '@/tour/StartScreen'
+import { AppSidebar } from '@/components/AppSidebar'
+import { useTourStore } from '@/store/tour-store'
+import { STEPS } from '@/tour/steps'
+import { SmoothCursor } from '@/components/ui/smooth-cursor'
+import { Button } from '@/components/ui/button'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { ArrowLeft } from 'lucide-react'
+
+// Faux curseur décoratif qui « clique » la carte pendant les tracés auto (Mesure,
+// Dessin). Réutilise le SmoothCursor du step cadastre, mais en mode non intrusif
+// (hideSystemCursor=false) : le vrai curseur de l'utilisateur reste visible.
+function TourTraceCursor() {
+  const id = useTourStore((s) => STEPS[s.currentStep]?.id)
+  const hidden = useTourStore((s) => s.traceCursorHidden)
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (reduced || (id !== 'measure' && id !== 'draw-analysis')) return null
+  // On cache le curseur en fondu dès le dernier clic posé (pas à la fin du
+  // remplissage, qui se propage ensuite).
+  // `key` par step : une instance neuve par tracé (pas de flash à l'ancienne
+  // position lors du passage Mesure → Dessin).
+  return <SmoothCursor key={id} scripted hideSystemCursor={false} hidden={hidden} zIndex={100060} />
+}
+
+function Overlays() {
+  const started = useTourStore((s) => s.started)
+  const currentStep = useTourStore((s) => s.currentStep)
+  const reset = useTourStore((s) => s.reset)
+  const isSwipe = started && STEPS[currentStep]?.id === 'swipe'
+  return (
+    <>
+      <CinematicCamera />
+      {isSwipe && <SwipeCompare />}
+      {started && <LayersButton />}
+      {started && <TourController />}
+      {started && <TourTraceCursor />}
+      {started && <RtScriptedCursor />}
+      {started && <ChartsPanel />}
+      {started && import.meta.env.DEV && <DebugPanel />}
+      {!started && <StartScreen />}
+      {started && (
+        <div className="absolute bottom-4 left-4" style={{ zIndex: 100100 }}>
+          <Button variant="outline" size="sm" onClick={reset}>
+            <ArrowLeft /> Quitter la visite
+          </Button>
+        </div>
+      )}
+    </>
+  )
+}
+
+function Shell() {
+  const started = useTourStore((s) => s.started)
+  return (
+    <>
+      {started && <AppSidebar />}
+      <SidebarInset className="relative overflow-hidden">
+        <MapCanvas>
+          <Overlays />
+        </MapCanvas>
+      </SidebarInset>
+    </>
+  )
+}
+
+function App() {
+  return (
+    <div style={{ position: 'absolute', inset: 0 }}>
+      <SidebarProvider className="h-full min-h-0">
+        <Shell />
+      </SidebarProvider>
+    </div>
+  )
+}
+
+export default App
