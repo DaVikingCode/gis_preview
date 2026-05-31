@@ -3,7 +3,6 @@ import { useTourStore } from '@/store/tour-store'
 import { STEPS } from '@/tour/steps'
 import { BuildingsHeightChart } from './BuildingsHeightChart'
 import { MeasureChart } from './MeasureChart'
-import { RasterOpacityChart } from './RasterOpacityChart'
 import { HeatmapChart } from './HeatmapChart'
 import { BasemapChart } from './BasemapChart'
 import { HighlightChart } from './HighlightChart'
@@ -14,13 +13,13 @@ import { DrawAnalysisChart } from './DrawAnalysisChart'
 import { IsochroneChart } from './IsochroneChart'
 import { SwipeChart } from './SwipeChart'
 import { RealtimeChart } from './RealtimeChart'
+import { HikingChart } from './HikingChart'
 import { EcosystemBridge } from './EcosystemBridge'
 import { TechStackDiagram } from './TechStackDiagram'
 
 const META: Record<string, { title: string; description: string }> = {
   buildings: { title: 'Hauteurs visibles', description: 'Échantillonnage des features 3D rendues' },
   measure: { title: 'Mesure courante', description: 'Calcul Turf.js, mise à jour en temps réel' },
-  raster: { title: 'Overlay raster', description: 'WMTS IGN orthophoto, opacité interactive' },
   heatmap: { title: 'Top 5 densité', description: '~1 160 points pondérés' },
   basemap: { title: 'Fonds de plan', description: '4 styles disponibles' },
   highlight: { title: 'Bâtiment surligné', description: 'feature-state + paint case' },
@@ -28,6 +27,7 @@ const META: Record<string, { title: string; description: string }> = {
   isochrone: { title: 'Accessibilité', description: 'Isochrones 5 / 10 / 15 min' },
   swipe: { title: 'Comparaison ortho', description: 'Avant / après, deux millésimes IGN' },
   realtime: { title: 'Supervision réseau', description: 'Flux SCADA simulé · mise à jour live' },
+  hiking: { title: 'Profil d’élévation', description: 'Altitude vs distance · progression live' },
 }
 
 export function ChartsPanel() {
@@ -61,7 +61,6 @@ export function ChartsPanel() {
             <BuildingsHeightChart byHeight={step.id === 'layers-apply-buildings'} />
           )}
           {step.chart === 'measure' && <MeasureChart />}
-          {step.chart === 'raster' && <RasterOpacityChart />}
           {step.chart === 'heatmap' && <HeatmapChart />}
           {step.chart === 'basemap' && <BasemapChart />}
           {step.chart === 'highlight' && <HighlightChart />}
@@ -69,6 +68,7 @@ export function ChartsPanel() {
           {step.chart === 'isochrone' && <IsochroneChart />}
           {step.chart === 'swipe' && <SwipeChart />}
           {step.chart === 'realtime' && <RealtimeChart />}
+          {step.chart === 'hiking' && <HikingChart />}
         </CardContent>
       </Card>
     </div>

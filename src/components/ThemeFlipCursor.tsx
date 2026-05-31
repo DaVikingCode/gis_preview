@@ -1,0 +1,127 @@
+import { useEffect, useRef, useState } from 'react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+import { useMap } from '@/map/MapContext'
+import { SmoothCursor } from '@/components/ui/smooth-cursor'
+import { useTourStore } from '@/store/tour-store'
+import { createTourCursor } from '@/animations/tourCursor'
+import { applyBasemap } from '@/tour/TourController'
+import { STEPS, THEME_FLIP_STEP_ID } from '@/tour/steps'
+
+// Durée du reveal View Transition de l'AnimatedThemeToggler (doit matcher son
+// prop `duration` côté sidebar). On enchaîne le swap de fond de plan juste après,
+// caché sous le voile, pour une lecture « un seul changement de thème ».
+const VT_MS = 650
+
+// Step « Thème & personnalisation » : le faux curseur glisse jusqu'au bouton de
+// thème (sidebar) et le clique → l'AnimatedThemeToggler joue le reveal radial
+// light→dark. Un voile (cf. .gp-theme-flip-scrim) couvre la carte pour que le
+// wipe balaie aussi la zone carte ; une fois le reveal fini, on bascule le fond
+// de plan vers Carto dark-matter sous le voile, puis on le retire en fondu. La
+// gate `themeFlipDone` se lève à ce moment (« Suivant » déverrouillé).
+export function ThemeFlipCursor() {
+  const map = useMap()
+  const id = useTourStore((s) => STEPS[s.currentStep]?.id)
+  const flying = useTourStore((s) => s.flying)
+  const done = useTourStore((s) => s.themeFlipDone)
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const [hidden, setHidden] = useState(false)
+  const scrimRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => setHidden(false), [id])
+
+  useGSAP(
+    () => {
+      if (id !== THEME_FLIP_STEP_ID || flying || done) return
+      const btn = document.querySelector<HTMLButtonElement>('#gp-theme-toggle')
+      if (!btn) return
+
+      let cancelled = false
+      let committed = false
+      let basemapDelay: gsap.core.Tween | null = null
+
+      // Bascule réelle : clic sur le toggle (reveal radial + .dark via le composant),
+      // puis swap du fond de plan vers dark-matter sous le voile, enfin fondu du voile.
+      const flip = () => {
+        if (committed || cancelled) return
+        committed = true
+        // Déclenche l'onClick de l'AnimatedThemeToggler (un humain cliquerait pareil).
+        btn.click()
+
+        // Une fois le fond dark prêt, on retire le voile en fondu pour le révéler.
+        const revealMap = () => {
+          if (cancelled) return
+          void applyBasemap(map, 'darkmatter').then(() => {
+            if (cancelled) return
+            useTourStore.getState().setBasemap('darkmatter')
+            const scrim = scrimRef.current
+            if (!scrim) return
+            if (reduced) scrim.style.opacity = '0'
+            else gsap.to(scrim, { opacity: 0, duration: 0.45, ease: 'power1.out' })
+          })
+        }
+
+        // On laisse le reveal radial se terminer avant de toucher au fond de plan.
+        if (reduced) revealMap()
+        else basemapDelay = gsap.delayedCall(VT_MS / 1000, revealMap)
+
+        // Déverrouille « Suivant ».
+        useTourStore.getState().setThemeFlipDone(true)
+      }
+
+      if (reduced) {
+        const auto = gsap.delayedCall(0.6, flip)
+        return () => {
+          cancelled = true
+          auto.kill()
+        }
+      }
+
+      const cursor = createTourCursor(map)
+      const r = btn.getBoundingClientRect()
+      const target = { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+      // Départ depuis le centre de l'écran : le curseur traverse vers la sidebar.
+      const from = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+      const tl = gsap.timeline({ delay: 0.7, defaults: { ease: 'power2.inOut' } })
+      cursor.glideToPoint(tl, target, { at: 0, duration: 1.1, from })
+      tl.addLabel('press', '>')
+      cursor.pressAtPoint(tl, target, { at: 'press' })
+      // Retour tactile sur le bouton (enfoncement) synchronisé avec le clic.
+      tl.to(
+        btn,
+        { scale: 0.92, duration: 0.1, ease: 'power2.in', transformOrigin: '50% 50%' },
+        'press',
+      )
+      tl.to(btn, { scale: 1, duration: 0.24, ease: 'back.out(2.4)' }, 'press+=0.1')
+      tl.call(flip, [], 'press+=0.12')
+      tl.call(() => setHidden(true), [], 'press+=0.8')
+
+      return () => {
+        cancelled = true
+        tl.kill()
+        basemapDelay?.kill()
+        if (scrimRef.current) gsap.killTweensOf(scrimRef.current)
+      }
+    },
+    // `done` n'est PAS une dépendance : le passer à true (fin du flip) ne doit pas
+    // re-jouer/réinitialiser l'effet et tuer la séquence en cours. Le garde en tête
+    // de callback suffit à ne pas rejouer le geste. `id` couvre l'aller/retour.
+    { dependencies: [id, flying], revertOnUpdate: true },
+  )
+
+  if (id !== THEME_FLIP_STEP_ID) return null
+  return (
+    <>
+      <div ref={scrimRef} className="gp-theme-flip-scrim" aria-hidden />
+      <SmoothCursor
+        key={id}
+        scripted
+        hideSystemCursor={false}
+        rotate={false}
+        restAngle={-35}
+        hidden={hidden}
+        zIndex={100120}
+      />
+    </>
+  )
+}

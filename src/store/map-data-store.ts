@@ -10,18 +10,18 @@ type State = {
   buildingHeights: number[]
   measurePoints: MeasurePoint[]
   measureLengthKm: number
-  rasterOpacity: number
   heatmapTopZones: { name: string; value: number }[]
   poiStatus: Record<string, POIStatus>
   gateNudgeAt: number
   drawStats: DrawStats
   isochroneStats: IsochroneStats[]
   realtime: RealtimeFeed | null
+  hikeProgress: number
+  activeHikePoi: number | null
 }
 type Actions = {
   setBuildingHeights: (v: number[]) => void
   setMeasure: (pts: MeasurePoint[], lengthKm: number) => void
-  setRasterOpacity: (v: number) => void
   setHeatmapTopZones: (v: { name: string; value: number }[]) => void
   advancePOIStatus: (id: string) => void
   setPOIStatus: (id: string, status: POIStatus) => void
@@ -30,6 +30,8 @@ type Actions = {
   setDrawStats: (v: DrawStats) => void
   setIsochroneStats: (v: IsochroneStats[]) => void
   setRealtime: (v: RealtimeFeed | null) => void
+  setHikeProgress: (v: number) => void
+  setActiveHikePoi: (v: number | null) => void
 }
 
 const NEXT_STATUS: Record<POIStatus, POIStatus> = {
@@ -42,16 +44,16 @@ export const useMapDataStore = create<State & Actions>((set) => ({
   buildingHeights: [],
   measurePoints: [],
   measureLengthKm: 0,
-  rasterOpacity: 0.6,
   heatmapTopZones: [],
   poiStatus: {},
   gateNudgeAt: 0,
   drawStats: emptyDrawStats(),
   isochroneStats: [],
   realtime: null,
+  hikeProgress: 0,
+  activeHikePoi: null,
   setBuildingHeights: (v) => set({ buildingHeights: v }),
   setMeasure: (pts, lengthKm) => set({ measurePoints: pts, measureLengthKm: lengthKm }),
-  setRasterOpacity: (v) => set({ rasterOpacity: v }),
   setHeatmapTopZones: (v) => set({ heatmapTopZones: v }),
   advancePOIStatus: (id) =>
     set((state) => ({
@@ -67,6 +69,8 @@ export const useMapDataStore = create<State & Actions>((set) => ({
   setDrawStats: (v) => set({ drawStats: v }),
   setIsochroneStats: (v) => set({ isochroneStats: v }),
   setRealtime: (v) => set({ realtime: v }),
+  setHikeProgress: (v) => set({ hikeProgress: v }),
+  setActiveHikePoi: (v) => set({ activeHikePoi: v }),
 }))
 
 export const hasCompletedAnyPOI = (s: State) => Object.values(s.poiStatus).some((v) => v === 'done')

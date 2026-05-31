@@ -170,7 +170,7 @@ function resolveStyleTemplates(
 // Kept in sync by hand with the layer modules they mirror. Add a tiled layer ⇒
 // add a line here so its tiles get prewarmed.
 //   cadastre  → src/map/layers/cadastre.ts
-//   ortho     → src/map/layers/wmsRaster.ts  +  src/map/SwipeCompare.tsx
+//   ortho     → src/map/SwipeCompare.tsx
 const GEOPF = 'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0'
 const wmts = (layer: string, format: string): string =>
   `${GEOPF}&LAYER=${layer}&STYLE=normal&TILEMATRIXSET=PM` +
@@ -201,8 +201,6 @@ function overlayTemplates(step: TourStep): TileTemplate[] {
   switch (step.id) {
     case 'layers-apply-cadastre':
       return [CADASTRE_TPL]
-    case 'raster-wms':
-      return [ORTHO_TPL]
     case 'swipe':
       return [ORTHO_TPL, ORTHO_HISTO_TPL]
     // buildings3d / building-highlight use the openfreemap `planet` vector

@@ -22,9 +22,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ChevronsUpDown, Map as MapIcon, LogOut, Settings, UserRound } from 'lucide-react'
+import { ChevronsUpDown, LogOut, Settings, UserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ACTIVITY, CURRENT_USER, DATASETS, LAYERS, WORKSPACE } from '@/data/sample-workspace'
+import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler'
+import dvcMark from '@/assets/dvc-mark.svg?inline'
 
 export function AppSidebar() {
   return (
@@ -34,7 +36,7 @@ export function AppSidebar() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="lg" className="data-open:bg-sidebar-accent">
               <span className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <MapIcon className="size-4" />
+                <img src={dvcMark} alt="" className="size-4" />
               </span>
               <span className="grid flex-1 text-left leading-tight">
                 <span className="truncate font-semibold">{WORKSPACE.name}</span>
@@ -141,6 +143,18 @@ export function AppSidebar() {
 
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <div className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Apparence</span>
+              <AnimatedThemeToggler
+                id="gp-theme-toggle"
+                duration={650}
+                aria-label="Basculer le thème clair / sombre"
+                title="Thème clair / sombre"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-sidebar-border bg-sidebar text-sidebar-foreground transition-colors hover:bg-sidebar-accent [&_svg]:size-4"
+              />
+            </div>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

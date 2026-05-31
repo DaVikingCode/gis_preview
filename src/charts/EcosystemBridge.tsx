@@ -17,7 +17,7 @@ import googleearthLogo from '@/assets/logos/googleearth.svg?inline'
 // Accent unique de la maquette (cf. --accent-border, src/index.css) — réservé aux
 // conduits de données animés et au halo du hub. Tout le reste reste monochrome
 // pour coller à l'esthétique de « Notre stack technique ».
-const ACCENT = '#aa3bff'
+const ACCENT = '#FFEB04'
 
 type GlyphProps = { className?: string }
 

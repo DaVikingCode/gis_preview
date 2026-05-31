@@ -9,7 +9,7 @@ import { SAMPLE_HTA_LINES } from '@/data/sample-pois'
 const SRC = 'rt-flow-src'
 const LYR_BASE = 'rt-flow-base'
 const LYR_DASH = 'rt-flow'
-const FLOW = '#aa3bff'
+const FLOW = '#FFEB04'
 
 // Séquence « fourmis qui marchent » officielle MapLibre (line-dasharray ne peut
 // pas être animé en continu → on fait défiler une liste de motifs).

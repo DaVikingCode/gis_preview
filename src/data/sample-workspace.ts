@@ -15,8 +15,8 @@ import {
 // not tied to the tour's HTA narrative, just plausible cartography metadata.
 
 export const WORKSPACE = {
-  name: 'GéoData Studio',
-  plan: 'Espace Cartographie',
+  name: 'DaVikingCode',
+  plan: 'GIS',
 } as const
 
 export type WorkspaceLayer = {
@@ -126,6 +126,6 @@ export const ACTIVITY: WorkspaceActivity[] = [
 export const CURRENT_USER = {
   name: 'Camille Rousseau',
   role: 'Analyste SIG',
-  email: 'camille.rousseau@geodata.studio',
+  email: 'camille.rousseau@davikingcode.com',
   initials: 'CR',
 } as const

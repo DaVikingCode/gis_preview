@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { driver } from 'driver.js'
 import { useMap } from '@/map/MapContext'
 import { useTourStore } from '@/store/tour-store'
-import { STEPS } from './steps'
+import { STEPS, THEME_FLIP_STEP_ID } from './steps'
 import { BASEMAPS, type BasemapId } from '@/map/basemaps'
 import { startPrewarm, cancelPrewarm } from '@/map/prewarm'
 import { useGateUnlockNudge } from '@/hooks/animations/useGateUnlockNudge'
@@ -19,6 +19,9 @@ function isStepLocked(
     measureDone: boolean
     layersPanelOpen: boolean
     incidentClicked: boolean
+    swipeDone: boolean
+    hikeDone: boolean
+    themeFlipDone: boolean
     flying: boolean
   },
 ): boolean {
@@ -26,6 +29,8 @@ function isStepLocked(
   // tant que la caméra n'a pas atterri sur l'étape.
   if (st.flying) return true
   const id = STEPS[idx]?.id
+  // Bloque tant que le faux curseur n'a pas basculé le thème (flip light → dark).
+  if (id === THEME_FLIP_STEP_ID) return !st.themeFlipDone
   if (id === 'layers-import') return !st.importDone
   // Verrouillé tant que le faux curseur n'a pas déposé le fichier (avance auto).
   if (id === 'layers-import-pick') return !st.dropDone
@@ -34,14 +39,39 @@ function isStepLocked(
   // Bloque « Suivant » tant que le faux curseur n'a pas ouvert le panneau Couches.
   if (id === 'layers-overview') return !st.layersPanelOpen
   // Bloque tant que le faux curseur n'a pas cliqué le poste en surcharge (fiche).
-  if (id === 'rt-todo') return !st.incidentClicked
+  if (id === 'rt-surcharge') return !st.incidentClicked
+  // Bloque tant que le faux curseur n'a pas fini de glisser le slider avant/après.
+  if (id === 'swipe') return !st.swipeDone
+  // Bloque tant que le randonneur n'a pas terminé la montée (pas de boucle).
+  if (id === 'terrain-hiking') return !st.hikeDone
   return false
 }
 
-function waitForStyle(map: maplibregl.Map): Promise<void> {
+// Attend que le style soit prêt avant d'ajouter des couches. On résout sur `idle`,
+// MAIS avec un délai de garde : l'événement `idle` ne se déclenche jamais quand une
+// couche anime ses sources en continu (supervision temps réel : flotte + flux
+// rafraîchis à chaque frame → isStyleLoaded() reste false, la carte n'est jamais
+// idle). Sans ce filet, les transitions au sein du bloc live restaient bloquées
+// (flying jamais remis à false → « Suivant » verrouillé). Sur ces transitions
+// same-basemap, le style (spec) est déjà chargé — seules les sources « tournent ».
+function waitForStyle(map: maplibregl.Map, timeoutMs = 700): Promise<void> {
   return new Promise((resolve) => {
     if (map.isStyleLoaded()) return resolve()
-    map.once('idle', () => resolve())
+    let done = false
+    let timer: ReturnType<typeof setTimeout>
+    const onIdle = () => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      resolve()
+    }
+    timer = setTimeout(() => {
+      if (done) return
+      done = true
+      map.off('idle', onIdle)
+      resolve()
+    }, timeoutMs)
+    map.once('idle', onIdle)
   })
 }
 
@@ -138,6 +168,8 @@ export function TourController() {
         setStep(idx)
         // Re-lock on (re-)entering a gated step so a stale "done" from a previous
         // visit can't leave Next unlocked before the demo/animation replays.
+        // (Le thème light/dark par step est piloté par TourThemeSync → ThemeProvider.)
+        if (STEPS[idx]?.id === THEME_FLIP_STEP_ID) useTourStore.getState().setThemeFlipDone(false)
         if (STEPS[idx]?.id === 'layers-import') useTourStore.getState().setImportDone(false)
         if (STEPS[idx]?.id === 'layers-import-pick') useTourStore.getState().setDropDone(false)
         if (STEPS[idx]?.id === 'draw-analysis') useTourStore.getState().setDrawDone(false)
@@ -146,7 +178,11 @@ export function TourController() {
         // faux curseur (comme le re-lock measure/draw au retour arrière).
         if (STEPS[idx]?.id === 'layers-overview') useTourStore.getState().setLayersPanelOpen(false)
         // Re-verrouille le clic du poste en surcharge pour rejouer le faux curseur.
-        if (STEPS[idx]?.id === 'rt-todo') useTourStore.getState().setIncidentClicked(false)
+        if (STEPS[idx]?.id === 'rt-surcharge') useTourStore.getState().setIncidentClicked(false)
+        // Re-verrouille le slider avant/après pour rejouer le faux curseur.
+        if (STEPS[idx]?.id === 'swipe') useTourStore.getState().setSwipeDone(false)
+        // Re-verrouille la rando : « Suivant » se déverrouille à l'arrivée au sommet.
+        if (STEPS[idx]?.id === 'terrain-hiking') useTourStore.getState().setHikeDone(false)
       },
       onHighlighted: (_el, _step, opts) => {
         // Backup: ensure Zustand step stays in sync even on same-element transitions
@@ -223,6 +259,9 @@ export function TourController() {
         measureDone: boolean
         layersPanelOpen: boolean
         incidentClicked: boolean
+        swipeDone: boolean
+        hikeDone: boolean
+        themeFlipDone: boolean
         flying: boolean
       },
       step: number,
@@ -233,7 +272,10 @@ export function TourController() {
         id === 'draw-analysis' ||
         id === 'measure' ||
         id === 'layers-overview' ||
-        id === 'rt-todo'
+        id === 'rt-surcharge' ||
+        id === 'swipe' ||
+        id === 'terrain-hiking' ||
+        id === THEME_FLIP_STEP_ID
       const locked = isStepLocked(step, st)
       const btn = document.querySelector<HTMLButtonElement>('.driver-popover-next-btn')
       if (btn) {

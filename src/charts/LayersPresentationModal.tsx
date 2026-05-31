@@ -29,6 +29,7 @@ import { useDemoCursorClick } from '@/hooks/animations/useDemoCursorClick'
 import { useDemoCursorDrop } from '@/hooks/animations/useDemoCursorDrop'
 import { useLayerSpotlight } from '@/hooks/animations/useLayerSpotlight'
 import { useImportSimulation } from '@/hooks/animations/useImportSimulation'
+import { useImportPaneReveal } from '@/hooks/animations/useImportPaneReveal'
 
 import SatelliteImg from '@/assets/layer-previews/sattelite.webp'
 import IgnImg from '@/assets/layer-previews/ign.webp'
@@ -127,11 +128,11 @@ const CATEGORIES: Category[] = [
   {
     id: 'network',
     label: 'Réseau',
-    ring: 'ring-violet-500/60',
-    bg: 'bg-violet-500/10',
-    border: 'border-violet-500/40',
-    text: 'text-violet-500',
-    dot: 'bg-violet-500',
+    ring: 'ring-[#FFEB04]/60',
+    bg: 'bg-[#FFEB04]/10',
+    border: 'border-[#FFEB04]/40',
+    text: 'text-[#FFEB04]',
+    dot: 'bg-[#FFEB04]',
     layers: [
       { id: 'hta', name: 'Réseau HTA', preview: HtaImg, active: true },
       { id: 'bt', name: 'Réseau BT', preview: BtImg, active: true },
@@ -807,6 +808,7 @@ function ImportPane() {
   const paneRef = useRef<HTMLDivElement>(null)
   const setImportDone = useTourStore((s) => s.setImportDone)
 
+  useImportPaneReveal(paneRef)
   useImportSimulation(paneRef, setImportDone, {
     sizeKo: IMPORT_SIZE_KO,
     features: IMPORT_FEATURES,
@@ -827,7 +829,7 @@ function ImportPane() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm truncate">zones_paca.geojson</span>
+                    <span className="font-semibold text-sm truncate">zones_dijon.geojson</span>
                     <Badge
                       variant="outline"
                       className="text-[10px] shrink-0 border-fuchsia-500/40 text-fuchsia-500"
@@ -871,7 +873,7 @@ function ImportPane() {
               </div>
             </Card>
 
-            <div className="rounded-xl border bg-card/40 p-4">
+            <div data-import-panel className="rounded-xl border bg-card/40 p-4">
               <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 font-medium mb-3">
                 Pipeline d’import
               </div>
@@ -906,10 +908,10 @@ function ImportPane() {
 
             {/* raw uploaded file — streamed in line by line during upload, so the
                 demo shows the source GeoJSON being read into the GIS render */}
-            <div className="overflow-hidden rounded-xl border bg-card/40">
+            <div data-import-panel className="overflow-hidden rounded-xl border bg-card/40">
               <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
                 <Braces className="size-3.5 shrink-0 text-fuchsia-500" />
-                <span className="text-xs font-medium">zones_paca.geojson</span>
+                <span className="text-xs font-medium">zones_dijon.geojson</span>
                 <Badge
                   variant="outline"
                   className="text-[10px] shrink-0 border-fuchsia-500/40 text-fuchsia-500"
@@ -950,7 +952,10 @@ function ImportPane() {
 
           {/* RIGHT — live preview + attribute table */}
           <div className="min-w-0 space-y-4">
-            <div className="relative aspect-[16/9] overflow-hidden rounded-xl border bg-[#0b0b14]">
+            <div
+              data-import-panel
+              className="relative aspect-[16/9] overflow-hidden rounded-xl border bg-[#0b0b14]"
+            >
               <div
                 className="absolute inset-0"
                 style={{ backgroundImage: DOT_GRID, backgroundSize: '16px 16px' }}
@@ -1002,7 +1007,7 @@ function ImportPane() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-xl border">
+            <div data-import-panel className="overflow-hidden rounded-xl border">
               <div className="grid grid-cols-[36px_1.5fr_1.6fr_auto_6rem] items-center gap-3 bg-muted/50 px-3 py-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                 <span>Aperçu</span>
                 <span>Zone</span>
@@ -1075,7 +1080,10 @@ function ImportPane() {
         </div>
 
         {/* bottom — supported formats + capabilities */}
-        <div className="mt-5 grid grid-cols-1 gap-4 border-t pt-4 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div
+          data-import-panel
+          className="mt-5 grid grid-cols-1 gap-4 border-t pt-4 lg:grid-cols-[1fr_auto] lg:items-center"
+        >
           <div>
             <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 font-medium mb-2">
               Formats supportés

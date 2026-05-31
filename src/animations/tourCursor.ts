@@ -111,6 +111,19 @@ export type TourCursor = {
     lngLat: [number, number],
     opts: { pulse: TourPulse; at: string },
   ) => void
+  // Variantes « écran » : cible un point viewport fixe (ex. un bouton DOM via
+  // getBoundingClientRect) plutôt qu'une coordonnée carte. `from` sème le curseur
+  // à un point de départ explicite (ex. le poste rouge) pour une entrée visible.
+  glideToPoint: (
+    tl: gsap.core.Timeline,
+    point: { x: number; y: number },
+    opts: { at: number | string; duration: number; from?: { x: number; y: number } },
+  ) => void
+  pressAtPoint: (
+    tl: gsap.core.Timeline,
+    point: { x: number; y: number },
+    opts: { at: string },
+  ) => void
 }
 
 const SEED_OFFSET = { dx: 48, dy: -44 }
@@ -174,6 +187,65 @@ export function createTourCursor(map: MLMap): TourCursor {
       )
       tl.call(() => pulse.burst(lngLat), [], at)
       // …puis remonte avec un petit rebond.
+      tl.to(
+        pos,
+        {
+          y: `-=${PRESS_PX}`,
+          duration: 0.26,
+          ease: 'back.out(2.4)',
+          onUpdate: () => dispatchCursor(pos.x, pos.y),
+        },
+        `${at}+=0.1`,
+      )
+    },
+
+    glideToPoint(tl, point, { at, duration, from }) {
+      if (!seeded) {
+        seeded = true
+        tl.call(
+          () => {
+            const s = from ?? { x: point.x + SEED_OFFSET.dx, y: point.y + SEED_OFFSET.dy }
+            pos.x = s.x
+            pos.y = s.y
+            dispatchCursor(pos.x, pos.y)
+          },
+          [],
+          at,
+        )
+      }
+      tl.to(
+        pos,
+        {
+          x: point.x,
+          y: point.y,
+          duration,
+          ease: 'power2.inOut',
+          onUpdate: () => dispatchCursor(pos.x, pos.y),
+        },
+        at,
+      )
+    },
+
+    pressAtPoint(tl, point, { at }) {
+      tl.call(
+        () => {
+          pos.x = point.x
+          pos.y = point.y
+          dispatchCursor(pos.x, pos.y)
+        },
+        [],
+        at,
+      )
+      tl.to(
+        pos,
+        {
+          y: `+=${PRESS_PX}`,
+          duration: 0.1,
+          ease: 'power2.in',
+          onUpdate: () => dispatchCursor(pos.x, pos.y),
+        },
+        at,
+      )
       tl.to(
         pos,
         {

@@ -1,16 +1,22 @@
 import type { Map as MLMap } from 'maplibre-gl'
 import type { BasemapId } from '@/map/basemaps'
 import { addBuildings3D, removeBuildings3D } from '@/map/layers/buildings3d'
+import { addTrafficFlow, removeTrafficFlow } from '@/map/layers/trafficFlow'
+import { addHikingTerrain, type HikingHandle } from '@/map/layers/hikingTerrain'
 import { STATIC_LADEFENSE_HEIGHTS } from '@/data/sample-buildings'
 import { addVectorStyled, removeVectorStyled } from '@/map/layers/vectorStyled'
 import { addMeasureTool, MEASURE_DEMO_BLOCK, type MeasureHandle } from '@/map/layers/measureLayer'
 import { addDrawAnalysis, DRAW_DEMO_POLYGON, type DrawHandle } from '@/map/layers/drawAnalysis'
 import { addIsochrones, removeIsochrones, computeIsochroneStats } from '@/map/layers/isochrones'
 import { SWIPE_VIEW } from '@/map/swipe-view'
-import { addIgnRaster, removeIgnRaster, setIgnRasterOpacity } from '@/map/layers/wmsRaster'
 import { addHeatmap, removeHeatmap } from '@/map/layers/heatmap'
 import { addCadastre, removeCadastre } from '@/map/layers/cadastre'
 import { addRealtimeSupervision, type RealtimeHandle } from '@/map/layers/realtime'
+import {
+  showRecoveryToast,
+  dismissSurchargeToast,
+  dismissRecoveryToast,
+} from '@/components/IncidentToast'
 import { useMapDataStore } from '@/store/map-data-store'
 import { useTourStore } from '@/store/tour-store'
 import { HEATMAP_CITY_COUNTS } from '@/data/sample-points'
@@ -21,7 +27,6 @@ export type ChartKind =
   | 'basemap'
   | 'table'
   | 'measure'
-  | 'raster'
   | 'heatmap'
   | 'highlight'
   | 'layers-presentation'
@@ -30,6 +35,7 @@ export type ChartKind =
   | 'isochrone'
   | 'swipe'
   | 'realtime'
+  | 'hiking'
   | 'ecosystem'
   | 'techstack'
 
@@ -95,13 +101,17 @@ export type TourStep = {
 let measureHandle: MeasureHandle | null = null
 let drawHandle: DrawHandle | null = null
 let realtimeHandle: RealtimeHandle | null = null
+let hikingHandle: HikingHandle | null = null
 
 // ── Séquence HTA (supervision live → surcharge → réparation → rétablissement).
 // Le poste incident est le poste source P-4521 (id 1) : flambe sur cue puis se
-// rétablit vers sa charge nominale (base 0,58 → vert). Le curseur scripté survole
-// d'abord un poste vert puis l'ambre « surveillé » (contraste avec le rouge).
+// rétablit vers sa charge nominale (base 0,58 → vert). En supervision, le curseur
+// survole un poste « surveillé » (ambre) pour montrer la fiche express live.
 export const HTA_INCIDENT_ID = 1
-export const HTA_HOVER_IDS = [3, 10]
+// Postes balayés en supervision : un arc NE → SO qui passe sur 2 postes nominaux
+// (8 Étang du Coq, 2 La Borderie) puis les 2 « surveillés » ambre (10 La Charmoie,
+// 5 Bois Renault) — tous visibles au cadrage overview z10.2.
+export const HTA_HOVER_IDS = [8, 2, 10, 5]
 // Accès à la couche live pour le curseur scripté (RtScriptedCursor).
 export const getRealtimeHandle = () => realtimeHandle
 const HTA_IDS = new Set([
@@ -136,6 +146,9 @@ function htaLeave() {
   useMapDataStore.getState().setRealtime(null)
   useMapDataStore.getState().resetPOIStatus()
   useTourStore.getState().setIncidentClicked(false)
+  // Sortie du bloc HTA : on referme tout toast d'incident encore affiché.
+  dismissSurchargeToast()
+  dismissRecoveryToast()
 }
 
 export const STEPS: TourStep[] = [
@@ -205,12 +218,54 @@ export const STEPS: TourStep[] = [
     cinematic: true,
     onEnter(map) {
       addBuildings3D(map, { colorByHeight: true })
+      addTrafficFlow(map)
       useMapDataStore.getState().setBuildingHeights(STATIC_LADEFENSE_HEIGHTS)
     },
     onLeave(map) {
+      removeTrafficFlow(map)
       removeBuildings3D(map)
       useMapDataStore.getState().setBuildingHeights([])
     },
+  },
+  {
+    id: 'terrain-hiking',
+    title: 'Terrain 3D · randonnée',
+    description:
+      'Changement d’échelle, cap sur les Alpes : le relief du massif du Mont-Blanc est reconstitué en 3D à partir d’un modèle numérique d’élévation (DEM), drapé d’imagerie satellite et ombré. Un randonneur grimpe en direct depuis Chamonix (~1 060 m) le long d’un sentier d’altitude jusqu’à près de 3 020 m — son tracé se révèle derrière lui et le profil d’altitude défile dans le panneau.',
+    basemap: 'satellite',
+    // Cadrage de départ du sentier : le vol d'entrée atterrit ici, puis la timeline GSAP
+    // prend la main et fait suivre la caméra au randonneur sur une ligne lissée (centre +
+    // cap ; pitch/zoom restent ceux-ci). Pas de `cinematic` (sa rotation idle gênerait).
+    camera: { center: [6.8888, 45.936], zoom: 14.2, pitch: 68, bearing: 172 },
+    chart: 'hiking',
+    // Vol longue distance La Défense → Chamonix (flyTo en arc).
+    pan: { duration: 5200 },
+    // Terrain/ciel/randonneur montés une fois la caméra posée sur le style
+    // satellite chargé (cf. measure/draw) ; la boucle GSAP rejoue alors au bon
+    // endroit lors d'un retour arrière.
+    enterOnSettle: true,
+    onEnter(map) {
+      hikingHandle = addHikingTerrain(map, (frac) =>
+        useMapDataStore.getState().setHikeProgress(frac),
+      )
+    },
+    onLeave() {
+      hikingHandle?.detach()
+      hikingHandle = null
+      useMapDataStore.getState().setHikeProgress(0)
+    },
+  },
+  {
+    id: 'customize-theme',
+    title: 'Thème & personnalisation',
+    description:
+      'L’application s’adapte à votre marque : thème clair/sombre, couleurs et fonds de plan personnalisables. Ici, on bascule l’interface en mode sombre — la carte suit avec un fond de plan dark assorti.',
+    // Spotlight sur le bouton de thème dans la sidebar ; le faux curseur va le cliquer.
+    element: '#gp-theme-toggle',
+    basemap: 'positron',
+    // Vue large « tout le workspace » : le reveal balaie sidebar + carte d’un coup.
+    camera: { center: [2.5, 46.5], zoom: 5, pitch: 0, bearing: 0 },
+    chart: 'none',
   },
   {
     id: 'layers-import-pick',
@@ -330,25 +385,6 @@ export const STEPS: TourStep[] = [
     },
   },
   {
-    id: 'raster-wms',
-    title: 'Overlay raster IGN + opacité',
-    description:
-      'Couche raster orthophoto IGN Géoportail superposée à la carte vectorielle. Slider d’opacité dans le panneau de droite.',
-    basemap: 'positron',
-    camera: { center: [2.3486, 48.8534], zoom: 14, pitch: 0, bearing: 0 },
-    chart: 'raster',
-    onEnter(map) {
-      addIgnRaster(map, useMapDataStore.getState().rasterOpacity)
-      const unsub = useMapDataStore.subscribe((s) => setIgnRasterOpacity(map, s.rasterOpacity))
-      ;(map as MLMap & { __gpRasterUnsub?: () => void }).__gpRasterUnsub = unsub
-    },
-    onLeave(map) {
-      const unsub = (map as MLMap & { __gpRasterUnsub?: () => void }).__gpRasterUnsub
-      unsub?.()
-      removeIgnRaster(map)
-    },
-  },
-  {
     id: 'swipe',
     title: 'Comparaison avant / après',
     description:
@@ -378,9 +414,11 @@ export const STEPS: TourStep[] = [
     id: 'rt-supervision',
     title: 'Supervision temps réel',
     description:
-      'Tout le réseau HTA 20 kV de Sologne, supervisé en direct : charge des postes (vert → ambre → rouge), courant qui circule sur les lignes, flotte de maintenance géolocalisée. Le curseur balaie quelques postes — un survol affiche la fiche express. Flux SCADA simulé, rafraîchi chaque seconde — en production via WebSocket / Redis.',
+      'Tout le réseau HTA 20 kV de Sologne, supervisé en direct : charge des postes (vert → ambre → rouge), courant qui circule sur les lignes, flotte de maintenance géolocalisée. Le curseur survole un poste — la fiche express s’affiche en direct. Flux SCADA simulé, rafraîchi chaque seconde — en production via WebSocket / Redis.',
     basemap: 'positron',
-    camera: { center: [1.85, 47.46], zoom: 10.6, pitch: 0, bearing: 0 },
+    // Cadrage « tout le réseau » : le poste source (est) et les postes ouest
+    // tiennent à l'écran — la surcharge à venir s'affichera bien en contexte.
+    camera: { center: [1.82, 47.45], zoom: 10.2, pitch: 0, bearing: 0 },
     chart: 'realtime',
     pan: { duration: 4200 },
     enterOnSettle: true,
@@ -398,10 +436,16 @@ export const STEPS: TourStep[] = [
     id: 'rt-surcharge',
     title: 'Surcharge détectée',
     description:
-      "La charge du poste source P-4521 grimpe d'un coup au-delà du seuil critique : le poste vire au rouge, l'anneau d'alerte « sonar » se déclenche et la conduite est notifiée en temps réel.",
+      "La charge du poste source P-4521 grimpe d'un coup au-delà du seuil critique : le poste vire au rouge et l'anneau d'alerte « sonar » se déclenche. La conduite zoome sur le poste et ouvre sa fiche d'intervention.",
     basemap: 'positron',
-    camera: { center: [1.85, 47.46], zoom: 10.6, pitch: 0, bearing: 0 },
+    // Même cadrage que la supervision : on entre sans vol, la surcharge éclate
+    // en contexte réseau (overview). Le curseur scripté (RtScriptedCursor) joue
+    // ensuite le vol vers le poste + le clic qui ouvre la fiche.
+    camera: { center: [1.82, 47.45], zoom: 10.2, pitch: 0, bearing: 0 },
     chart: 'realtime',
+    // GATE : « Suivant » reste verrouillé (incidentClicked) jusqu'à ce que le
+    // curseur ait cliqué le poste et ouvert sa fiche (cf. TourController +
+    // RtScriptedCursor). Pas de skip anticipé pendant le climax.
     onEnter(map) {
       ensureRealtime(map).triggerSurcharge(HTA_INCIDENT_ID)
     },
@@ -411,15 +455,19 @@ export const STEPS: TourStep[] = [
     id: 'rt-todo',
     title: 'Étape 1 · À faire',
     description:
-      "Intervention engagée : la conduite zoome sur P-4521 et le curseur ouvre sa fiche. Statut initial — à inspecter. Le technicien voit le contexte (tension, charge, anomalies, dernière visite) avant d'agir.",
+      "Intervention engagée : la fiche de P-4521 est ouverte. Statut initial — à inspecter. Le technicien voit le contexte (tension, charge, anomalies, dernière visite) avant d'agir.",
+    element: '.gp-popup',
     basemap: 'positron',
+    // Le vol a déjà été joué par le curseur en « Surcharge détectée » : on reste
+    // sur le poste (z15.2), transition instantanée, fiche déjà ouverte.
     camera: { center: [2.04, 47.428], zoom: 15.2, pitch: 0, bearing: 0 },
     chart: 'realtime',
-    pan: { duration: 3000 },
-    enterOnSettle: true,
     onEnter(map) {
-      // Garantit l'état rouge (re-jeu après retour arrière ou saut direct).
-      ensureRealtime(map).triggerSurcharge(HTA_INCIDENT_ID)
+      const rt = ensureRealtime(map)
+      // Garantit l'état rouge + fiche ouverte (re-jeu après retour arrière / saut).
+      rt.triggerSurcharge(HTA_INCIDENT_ID)
+      if (!rt.popupOpen()) rt.openPost(HTA_INCIDENT_ID)
+      useMapDataStore.getState().setPOIStatus(String(HTA_INCIDENT_ID), 'todo')
     },
     onLeave: htaLeave,
   },
@@ -453,6 +501,8 @@ export const STEPS: TourStep[] = [
       const rt = ensureRealtime(map)
       if (!rt.popupOpen()) rt.openPost(HTA_INCIDENT_ID)
       useMapDataStore.getState().setPOIStatus(String(HTA_INCIDENT_ID), 'done')
+      // Réseau rétabli : toast de succès symétrique (auto-fermeture).
+      showRecoveryToast()
     },
     onLeave: htaLeave,
   },
@@ -462,7 +512,8 @@ export const STEPS: TourStep[] = [
     description:
       'Recul sur tout le réseau : plus aucun poste en alerte, charge nominale partout. La supervision confirme le retour à la normale — flux SCADA toujours en direct.',
     basemap: 'positron',
-    camera: { center: [1.85, 47.46], zoom: 10.6, pitch: 0, bearing: 0 },
+    // Même cadrage overview que la supervision : recul symétrique « tout vert ».
+    camera: { center: [1.82, 47.45], zoom: 10.2, pitch: 0, bearing: 0 },
     chart: 'realtime',
     pan: { duration: 3600 },
     onEnter(map) {
@@ -500,3 +551,9 @@ export const STEPS: TourStep[] = [
     chart: 'none',
   },
 ]
+
+// Step « Thème & personnalisation » : le faux curseur y bascule l'app en dark.
+// Les steps AVANT (intro catalogue/import) restent en light ; ce step et ceux
+// d'APRÈS passent en dark (cf. TourController.applyStepTheme).
+export const THEME_FLIP_STEP_ID = 'customize-theme'
+export const THEME_FLIP_INDEX = STEPS.findIndex((s) => s.id === THEME_FLIP_STEP_ID)

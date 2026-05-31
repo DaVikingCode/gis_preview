@@ -89,7 +89,7 @@ export function addBuildings3D(map: MLMap, opts?: { colorByHeight?: boolean }) {
         ],
       ] as never,
       'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
-      'fill-extrusion-opacity': 0.85,
+      'fill-extrusion-opacity': 1,
     },
   })
 }

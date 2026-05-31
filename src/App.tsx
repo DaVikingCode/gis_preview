@@ -4,13 +4,17 @@ import { CinematicCamera } from '@/map/CinematicCamera'
 import { SwipeCompare } from '@/map/SwipeCompare'
 import { TourController } from '@/tour/TourController'
 import { RtScriptedCursor } from '@/components/RtScriptedCursor'
+import { ThemeFlipCursor } from '@/components/ThemeFlipCursor'
+import { TourThemeSync } from '@/components/TourThemeSync'
 import { DebugPanel } from '@/tour/DebugPanel'
+import { TrafficFlowDebugPanel } from '@/tour/TrafficFlowDebugPanel'
 import { ChartsPanel } from '@/charts/ChartsPanel'
 import { StartScreen } from '@/tour/StartScreen'
 import { AppSidebar } from '@/components/AppSidebar'
 import { useTourStore } from '@/store/tour-store'
 import { STEPS } from '@/tour/steps'
 import { SmoothCursor } from '@/components/ui/smooth-cursor'
+import { Toaster } from '@/components/ui/sonner'
 import { Button } from '@/components/ui/button'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { ArrowLeft } from 'lucide-react'
@@ -37,14 +41,19 @@ function Overlays() {
   const isSwipe = started && STEPS[currentStep]?.id === 'swipe'
   return (
     <>
+      {/* Toasts d'incident (séquence HTA). z au-dessus de l'overlay driver.js
+          (~100100) mais sous le faux curseur (100120). */}
+      <Toaster position="bottom-right" style={{ zIndex: 100115 }} />
       <CinematicCamera />
       {isSwipe && <SwipeCompare />}
       {started && <LayersButton />}
       {started && <TourController />}
       {started && <TourTraceCursor />}
       {started && <RtScriptedCursor />}
+      {started && <ThemeFlipCursor />}
       {started && <ChartsPanel />}
       {started && import.meta.env.DEV && <DebugPanel />}
+      {started && import.meta.env.DEV && <TrafficFlowDebugPanel />}
       {!started && <StartScreen />}
       {started && (
         <div className="absolute bottom-4 left-4" style={{ zIndex: 100100 }}>
@@ -77,6 +86,7 @@ function App() {
       <SidebarProvider className="h-full min-h-0">
         <Shell />
       </SidebarProvider>
+      <TourThemeSync />
     </div>
   )
 }

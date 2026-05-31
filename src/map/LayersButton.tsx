@@ -102,13 +102,13 @@ export function LayersButton() {
       }
       tl.fromTo(
         btn,
-        { boxShadow: '0 0 0 0 rgba(170,59,255,0)' },
-        { boxShadow: '0 0 24px 5px rgba(170,59,255,0.6)', duration: 0.13, ease: 'power2.out' },
+        { boxShadow: '0 0 0 0 rgba(255, 235, 4, 0)' },
+        { boxShadow: '0 0 24px 5px rgba(255, 235, 4, 0.6)', duration: 0.13, ease: 'power2.out' },
         CLICK,
       )
       tl.to(
         btn,
-        { boxShadow: '0 0 0 0 rgba(170,59,255,0)', duration: 0.6, ease: 'power2.out' },
+        { boxShadow: '0 0 0 0 rgba(255, 235, 4, 0)', duration: 0.6, ease: 'power2.out' },
         `${CLICK}+=0.13`,
       )
 
@@ -138,7 +138,7 @@ export function LayersButton() {
           <span
             data-ripple
             aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-lg border-2 border-[#aa3bff] bg-[#aa3bff]/15 opacity-0"
+            className="pointer-events-none absolute inset-0 rounded-lg border-2 border-[#FFEB04] bg-[#FFEB04]/15 opacity-0"
           />
         </div>
       </div>

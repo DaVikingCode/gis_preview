@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { useTourStore } from '@/store/tour-store'
 import { useMapMaybe } from '@/map/MapContext'
 import { STEPS } from './steps'
 import { addBuildings3D } from '@/map/layers/buildings3d'
 import { Play } from 'lucide-react'
+import dvcWordmark from '@/assets/dvc-wordmark.svg?inline'
 
 export function StartScreen() {
   const start = useTourStore((s) => s.start)
@@ -28,9 +28,7 @@ export function StartScreen() {
     >
       <Card className="max-w-xl mx-4 text-center">
         <CardHeader className="items-center gap-3">
-          <Badge variant="outline" className="mx-auto">
-            DaVikingCode · GIS preview
-          </Badge>
+          <img src={dvcWordmark} alt="DaVikingCode" className="mx-auto h-7 w-auto" />
           <CardTitle className="text-3xl">Une démo de nos capacités cartographiques</CardTitle>
           <CardDescription className="text-balance">
             {STEPS.length} étapes : bâtiments 3D, modèles animés, fonds de plan, vecteurs stylés,

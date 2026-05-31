@@ -18,12 +18,21 @@ type State = {
   // Catalogue de couches : la modale ne se monte qu'une fois ce flag passé à true
   // (déclenché par le faux curseur qui « clique » le bouton Couches sur la carte).
   layersPanelOpen: boolean
-  // Séquence HTA (rt-todo) : passe à true quand le faux curseur a « cliqué » le
-  // poste en surcharge et ouvert sa fiche — verrouille « Suivant » tant que false.
+  // Séquence HTA (rt-surcharge) : passe à true quand le faux curseur a « cliqué »
+  // le poste en surcharge et ouvert sa fiche — verrouille « Suivant » tant que false.
   incidentClicked: boolean
+  // Step « Comparaison avant / après » : passe à true quand le faux curseur a fini
+  // de glisser le slider — verrouille « Suivant » tant que c'est false.
+  swipeDone: boolean
+  // Step « Terrain 3D · randonnée » : passe à true quand le randonneur a atteint le
+  // sommet (fin de la montée) — verrouille « Suivant » tant que la rando n'est pas finie.
+  hikeDone: boolean
   // Vrai pendant un vol caméra (pan/flyIn) : verrouille « Suivant » pour empêcher
   // de zapper l'étape tant que la caméra n'a pas atterri.
   flying: boolean
+  // Step « Thème & personnalisation » : passe à true quand le faux curseur a
+  // basculé le thème — verrouille « Suivant » tant que c'est false.
+  themeFlipDone: boolean
   jumpToStep: ((i: number) => void) | null
 }
 type Actions = {
@@ -39,7 +48,10 @@ type Actions = {
   setTraceCursorHidden: (v: boolean) => void
   setLayersPanelOpen: (v: boolean) => void
   setIncidentClicked: (v: boolean) => void
+  setSwipeDone: (v: boolean) => void
+  setHikeDone: (v: boolean) => void
   setFlying: (v: boolean) => void
+  setThemeFlipDone: (v: boolean) => void
   setJumpToStep: (fn: ((i: number) => void) | null) => void
 }
 
@@ -55,7 +67,10 @@ export const useTourStore = create<State & Actions>((set) => ({
   traceCursorHidden: false,
   layersPanelOpen: false,
   incidentClicked: false,
+  swipeDone: false,
+  hikeDone: false,
   flying: false,
+  themeFlipDone: false,
   jumpToStep: null,
   start: () => set({ started: true, currentStep: 0 }),
   setStep: (i) => set({ currentStep: i }),
@@ -72,7 +87,10 @@ export const useTourStore = create<State & Actions>((set) => ({
       traceCursorHidden: false,
       layersPanelOpen: false,
       incidentClicked: false,
+      swipeDone: false,
+      hikeDone: false,
       flying: false,
+      themeFlipDone: false,
     }),
   setCinematic: (v) => set({ cinematicActive: v }),
   setImportDone: (v) => set({ importDone: v }),
@@ -82,6 +100,9 @@ export const useTourStore = create<State & Actions>((set) => ({
   setTraceCursorHidden: (v) => set({ traceCursorHidden: v }),
   setLayersPanelOpen: (v) => set({ layersPanelOpen: v }),
   setIncidentClicked: (v) => set({ incidentClicked: v }),
+  setSwipeDone: (v) => set({ swipeDone: v }),
+  setHikeDone: (v) => set({ hikeDone: v }),
   setFlying: (v) => set({ flying: v }),
+  setThemeFlipDone: (v) => set({ themeFlipDone: v }),
   setJumpToStep: (fn) => set({ jumpToStep: fn }),
 }))

@@ -16,14 +16,17 @@ export type PosteCfg = {
   jitter: number
 }
 
-// Indexé par POIProps.id (cf. SAMPLE_POIS). Bois Renault (id 5, 3 anomalies,
-// élagage prioritaire) oscille au-dessus du seuil critique → alerte récurrente.
+// Indexé par POIProps.id (cf. SAMPLE_POIS). Baseline volontairement CALME : aucun
+// poste ne franchit le seuil critique de lui-même, pour que la surcharge scriptée
+// du poste source (id 1) soit la SEULE anomalie rouge du scénario (réseau « tout
+// vert » à l'entrée). Bois Renault (id 5) et La Charmoie (id 10) restent en
+// « surveillé » (ambre) pour le réalisme — jamais rouge.
 export const RT_POSTE_CONFIG: Record<number, PosteCfg> = {
   1: { capMva: 11, base: 0.58, jitter: 0.05 }, // P-4521 poste source Salbris
   2: { capMva: 0.12, base: 0.55, jitter: 0.07 },
   3: { capMva: 0.16, base: 0.5, jitter: 0.07 },
   4: { capMva: 0.42, base: 0.6, jitter: 0.06 },
-  5: { capMva: 0.06, base: 0.88, jitter: 0.06 }, // P-1102 Bois Renault → surcharge
+  5: { capMva: 0.06, base: 0.8, jitter: 0.04 }, // P-1102 Bois Renault → surveillé (ambre)
   6: { capMva: 0.1, base: 0.52, jitter: 0.07 },
   7: { capMva: 0.26, base: 0.58, jitter: 0.05 },
   8: { capMva: 0.1, base: 0.6, jitter: 0.07 },

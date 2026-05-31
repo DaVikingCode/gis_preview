@@ -5,17 +5,29 @@ import { useMap } from '@/map/MapContext'
 import { SmoothCursor } from '@/components/ui/smooth-cursor'
 import { useTourStore } from '@/store/tour-store'
 import { useMapDataStore } from '@/store/map-data-store'
-import { createTourCursor, createTourPulse } from '@/animations/tourCursor'
+import { createTourCursor, projectClient } from '@/animations/tourCursor'
+import { showSurchargeToast, dismissSurchargeToast } from '@/components/IncidentToast'
 import { STEPS, getRealtimeHandle, HTA_INCIDENT_ID, HTA_HOVER_IDS } from '@/tour/steps'
 
-// Anneau « clic » sonar rouge (même teinte CRIT que la couche realtime).
-const CLICK_PULSE = '#d06b63'
+// Cadrage du poste incident pendant le climax — DOIT matcher la caméra du step
+// rt-todo pour que l'avancée vers « À faire » soit instantanée (aucun saut).
+const SURCHARGE_ZOOM = 15.2
+// Temps d'observation de la surcharge + lecture du toast avant que le curseur bouge.
+const SURCHARGE_HOLD_SEC = 1.1
+// Durée du vol overview → poste (déclenché par le clic « Localiser »).
+const SURCHARGE_FLY_MS = 2800
+// Filet de sécurité : si le geste/vol est interrompu, on lève QUAND MÊME la gate
+// (« Suivant » ne doit jamais rester coincée). > durée totale du geste + vol.
+const SURCHARGE_SAFETY_SEC = 8
 
 // Faux curseur de la séquence HTA. Deux gestes scriptés, pilotés par GSAP et
-// synchronisés avec la couche temps réel (tooltips + fiche) :
-//  · `rt-supervision` : balaye 2 postes en affichant leur tooltip live.
-//  · `rt-todo` : glisse sur le poste en surcharge, « clique », ouvre la fiche et
-//    déverrouille « Suivant » (gate incidentClicked).
+// synchronisés avec la couche temps réel :
+//  · `rt-supervision` : balaie plusieurs postes (vert → ambre) et affiche leur fiche
+//    express live — la « supervision » du réseau.
+//  · `rt-surcharge` : la surcharge éclate en contexte (overview) + un toast sonner
+//    « Surcharge détectée » s'affiche ; le curseur glisse du poste rouge jusqu'au
+//    bouton « Localiser » du toast et le clique → vol sur le poste + fiche +
+//    déverrouillage (gate incidentClicked). C'est le climax du scénario.
 // Curseur non intrusif (hideSystemCursor=false) : le vrai curseur reste visible.
 export function RtScriptedCursor() {
   const map = useMap()
@@ -27,22 +39,24 @@ export function RtScriptedCursor() {
   const [hidden, setHidden] = useState(false)
 
   // Curseur ré-affiché à chaque changement d'étape (avant de rejouer le geste).
+  // Note : le SmoothCursor reste invisible tant qu'aucun pointermove scripté n'a
+  // été émis — pas de curseur fantôme pendant l'observation/vol de la surcharge.
   useEffect(() => setHidden(false), [id])
 
-  // ── S1 : balayage de survol (tooltips) sur quelques postes.
+  // ── Supervision : balayage de plusieurs postes (fiche express), puis on cache.
   useGSAP(
     () => {
       if (id !== 'rt-supervision' || flying || reduced) return
       const rt = getRealtimeHandle()
       if (!rt) return
       const cursor = createTourCursor(map)
-      const tl = gsap.timeline({ delay: 0.5, defaults: { ease: 'power2.inOut' } })
+      const tl = gsap.timeline({ delay: 0.6, defaults: { ease: 'power2.inOut' } })
       for (const pid of HTA_HOVER_IDS) {
         const ll = rt.getPostLngLat(pid)
         if (!ll) continue
-        cursor.glideTo(tl, ll, { at: '>', duration: 0.9 })
+        cursor.glideTo(tl, ll, { at: '>', duration: 0.7 })
         tl.call(() => rt.showTooltip(pid), [], '>')
-        tl.to({}, { duration: 1.15 })
+        tl.to({}, { duration: 0.85 })
         tl.call(() => rt.hideTooltip(), [], '>')
       }
       tl.call(() => setHidden(true))
@@ -51,37 +65,128 @@ export function RtScriptedCursor() {
     { dependencies: [id, flying, feedReady], revertOnUpdate: true },
   )
 
-  // ── S3 : glisse sur le poste en surcharge, clique → ouvre la fiche + gate.
+  // ── Surcharge (climax) : la surcharge a éclaté en contexte (onEnter du step), le
+  // toast d'alerte s'affiche ; le curseur glisse jusqu'au bouton « Localiser » et le
+  // clique → vol vers le poste + fiche + gate levée à l'atterrissage.
   useGSAP(
     () => {
-      if (id !== 'rt-todo' || flying) return
+      if (id !== 'rt-surcharge' || flying) return
       const rt = getRealtimeHandle()
       if (!rt) return
       const ll = rt.getPostLngLat(HTA_INCIDENT_ID)
       if (!ll) return
-      const commit = () => {
+
+      let cancelled = false
+      let committed = false
+      let localized = false
+
+      // Fiche ouverte + statut + gate levée — idempotent (moveend ET filet y mènent).
+      const commitOnce = () => {
+        if (committed) return
+        committed = true
         rt.openPost(HTA_INCIDENT_ID)
         useMapDataStore.getState().setPOIStatus(String(HTA_INCIDENT_ID), 'todo')
+        // Déverrouille « Suivant » (gate du step rt-surcharge).
         useTourStore.getState().setIncidentClicked(true)
       }
-      if (reduced) {
-        commit()
-        return
+
+      // « Localiser » : vol overview → poste. La gate ne se lève qu'à l'atterrissage
+      // (moveend) — « Suivant » reste verrouillé pendant tout le vol.
+      const localize = () => {
+        if (localized) return
+        localized = true
+        dismissSurchargeToast()
+        if (reduced) {
+          map.jumpTo({ center: ll, zoom: SURCHARGE_ZOOM })
+          commitOnce()
+          return
+        }
+        map.flyTo({
+          center: ll,
+          zoom: SURCHARGE_ZOOM,
+          duration: SURCHARGE_FLY_MS,
+          curve: 1.42,
+          essential: true,
+        })
+        map.once('moveend', () => {
+          if (!cancelled) commitOnce()
+        })
       }
+
+      // Toast d'alerte persistant : son bouton « Localiser » appelle localize().
+      showSurchargeToast(localize)
+
+      // Filet de sécurité : la gate se lève même si le geste/vol est coupé.
+      const safety = gsap.delayedCall(SURCHARGE_SAFETY_SEC, () => {
+        dismissSurchargeToast()
+        commitOnce()
+      })
+
+      if (reduced) {
+        // Pas de curseur : on laisse voir le toast un instant puis on localise.
+        const auto = gsap.delayedCall(SURCHARGE_HOLD_SEC, localize)
+        return () => {
+          cancelled = true
+          auto.kill()
+          safety.kill()
+          dismissSurchargeToast()
+        }
+      }
+
       const cursor = createTourCursor(map)
-      const pulse = createTourPulse(map, CLICK_PULSE, 'rt-click-pulse')
-      const tl = gsap.timeline({ delay: 0.5, defaults: { ease: 'power2.inOut' } })
-      cursor.glideTo(tl, ll, { at: 0, duration: 0.85 })
-      tl.addLabel('press', '>')
-      cursor.finishAt(tl, ll, { pulse, at: 'press' })
-      tl.call(commit, [], 'press+=0.18')
-      tl.call(() => setHidden(true), [], 'press+=0.7')
-      return () => pulse.remove()
+      let glideTl: gsap.core.Timeline | null = null
+
+      // 1) surcharge observée + toast affiché, 2) le curseur part du poste rouge et
+      // glisse jusqu'au bouton « Localiser », 3) clic réel → vol + fiche.
+      const gesture = gsap.delayedCall(SURCHARGE_HOLD_SEC, () => {
+        if (cancelled) return
+        const btn = document.querySelector<HTMLButtonElement>('[data-rt-localize]')
+        if (!btn) {
+          // Toast/bouton absent (cas limite) : on localise directement.
+          localize()
+          return
+        }
+        const r = btn.getBoundingClientRect()
+        const target = { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+        const from = projectClient(map, ll) // départ : le poste rouge (centre carte)
+        const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } })
+        glideTl = tl
+        cursor.glideToPoint(tl, target, { at: 0, duration: 1, from })
+        tl.addLabel('press', '>')
+        cursor.pressAtPoint(tl, target, { at: 'press' })
+        // Retour tactile sur le bouton (enfoncement) + clic réel synchronisé.
+        tl.to(
+          btn,
+          { scale: 0.94, duration: 0.1, ease: 'power2.in', transformOrigin: '50% 50%' },
+          'press',
+        )
+        tl.to(btn, { scale: 1, duration: 0.24, ease: 'back.out(2.4)' }, 'press+=0.1')
+        tl.call(
+          () => {
+            // Clic réel (un humain cliquerait pareil) + appel direct garanti :
+            // selon le portage du toast, le clic synthétique peut ne pas atteindre
+            // le délégué React — localize() (idempotent) sécurise le déclenchement.
+            btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+            localize()
+          },
+          [],
+          'press+=0.12',
+        )
+        tl.call(() => setHidden(true), [], 'press+=0.7')
+      })
+
+      return () => {
+        cancelled = true
+        gesture.kill()
+        safety.kill()
+        glideTl?.kill()
+        dismissSurchargeToast()
+      }
     },
     { dependencies: [id, flying, feedReady], revertOnUpdate: true },
   )
 
-  if (id !== 'rt-supervision' && id !== 'rt-todo') return null
+  if (id !== 'rt-supervision' && id !== 'rt-surcharge') return null
   return (
     <SmoothCursor
       key={id}

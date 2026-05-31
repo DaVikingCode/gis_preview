@@ -1,11 +1,17 @@
 import type { StyleSpecification } from 'maplibre-gl'
 
-export type BasemapId = 'positron' | 'liberty' | 'bright' | 'satellite'
+export type BasemapId = 'positron' | 'liberty' | 'bright' | 'satellite' | 'darkmatter'
 
 export const BASEMAPS: Record<BasemapId, { label: string; style: string | StyleSpecification }> = {
   positron: {
     label: 'Positron',
     style: 'https://tiles.openfreemap.org/styles/positron',
+  },
+  // Jumeau sombre de Positron (Carto Dark Matter) — utilisé par la démo de
+  // personnalisation pour basculer le fond de plan en dark.
+  darkmatter: {
+    label: 'Dark Matter',
+    style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
   },
   liberty: {
     label: 'Liberty',
