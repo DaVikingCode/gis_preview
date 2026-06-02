@@ -72,8 +72,9 @@
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  /* Pastille de marque DVC : carré jaune + glyphe sombre dans les deux thèmes. */
+  --sidebar-primary: #ffeb04;
+  --sidebar-primary-foreground: #232323;
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
@@ -132,7 +133,8 @@ body,
   background: rgba(11, 13, 18, 0.72);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
-  border: 1px solid var(--accent-border);
+  /* Step Mesure en gris DVC (et non jaune) — bordure gris clair visible sur la pastille sombre. */
+  border: 1px solid rgba(128, 128, 128, 0.55);
   color: #fff;
   font-size: 11px;
   font-weight: 600;
@@ -431,6 +433,14 @@ body,
   cursor: pointer;
 }
 
+/* Vue tabulaire : une fois la démo scriptée finie, le survol RÉEL des lignes pilote
+   le spotlight de la zone liée sur la carte. driver.js coupe les pointer-events hors
+   élément actif → on force tout le sous-arbre du panneau (id bat le `*` de driver). */
+#data-table-panel,
+#data-table-panel * {
+  pointer-events: auto !important;
+}
+
 /* ─── driver.js tour popover — shadcn aesthetic ───────────────────────── */
 .driver-popover.gp-tour {
   --gp-tour-radius: calc(var(--radius) + 4px);
@@ -543,6 +553,24 @@ body,
   margin: 0 !important;
 }
 .driver-popover.gp-tour.gp-tour-bottom .driver-popover-arrow {
+  display: none !important;
+}
+
+/* Data-table step: the panel is a bottom overlay (inset-x-4 bottom-4 h-[52vh])
+   living inside SidebarInset, so its left edge is offset by the sidebar. Pin the
+   popover just above its top edge; the left edge is aligned to the panel in JS
+   (onPopoverRender). !important is required because driver.js rewrites
+   left/top/transform inline on every render. */
+.driver-popover.gp-tour.gp-tour-above-table {
+  position: fixed !important;
+  left: var(--gp-tour-table-left, 16px) !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: calc(52vh + 28px) !important;
+  transform: none !important;
+  margin: 0 !important;
+}
+.driver-popover.gp-tour.gp-tour-above-table .driver-popover-arrow {
   display: none !important;
 }
 

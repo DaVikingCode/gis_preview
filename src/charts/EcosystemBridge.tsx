@@ -11,8 +11,8 @@ import { useEcosystemBeams } from '@/hooks/animations/useEcosystemBeams'
 // vite-plus/client), recoloré en blanc via CSS mask sur la pastille.
 import qgisLogo from '@/assets/logos/qgis.svg?inline'
 import arcgisLogo from '@/assets/logos/arcgis.svg?inline'
-import autocadLogo from '@/assets/logos/autocad.svg?inline'
 import googleearthLogo from '@/assets/logos/googleearth.svg?inline'
+import googlesheetsLogo from '@/assets/logos/googlesheets.svg?inline'
 
 // Accent unique de la maquette (cf. --accent-border, src/index.css) — réservé aux
 // conduits de données animés et au halo du hub. Tout le reste reste monochrome
@@ -42,27 +42,9 @@ function LogoMask({ src, className }: { src: string; className?: string }) {
   )
 }
 
-// Glyphes de repli (trait blanc via currentColor) pour les plateformes sans logo
-// fourni — PostGIS & GeoServer. Déposez postgis.svg / geoserver.svg dans
-// src/assets/logos pour passer au vrai logo.
-function PostgisGlyph({ className }: GlyphProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.7}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <ellipse cx="12" cy="6" rx="7" ry="3" />
-      <path d="M5 6v12c0 1.66 3.13 3 7 3s7-1.34 7-3V6" />
-      <path d="M5 12c0 1.66 3.13 3 7 3s7-1.34 7-3" />
-    </svg>
-  )
-}
-
+// Glyphe de repli (trait blanc via currentColor) pour les plateformes sans logo
+// fourni — GeoServer. Déposez geoserver.svg dans src/assets/logos pour passer
+// au vrai logo.
 function GeoserverGlyph({ className }: GlyphProps) {
   return (
     <svg
@@ -116,17 +98,24 @@ type Platform = {
 const PLATFORMS: Platform[] = [
   { id: 'qgis', name: 'QGIS', sub: 'Projets & couches', side: 'left', row: 0, logo: qgisLogo },
   {
-    id: 'postgis',
-    name: 'PostGIS',
-    sub: 'Base spatiale',
+    id: 'googlesheets',
+    name: 'Google Sheets',
+    sub: 'Tableurs & attributs',
     side: 'left',
     row: 1,
-    Glyph: PostgisGlyph,
+    logo: googlesheetsLogo,
   },
-  { id: 'autocad', name: 'AutoCAD', sub: 'DWG / DXF', side: 'left', row: 2, logo: autocadLogo },
-  { id: 'arcgis', name: 'ArcGIS Pro', sub: 'Esri', side: 'right', row: 0, logo: arcgisLogo },
   {
     id: 'geoserver',
+    name: 'GeoServer',
+    sub: 'WMS / WFS',
+    side: 'left',
+    row: 2,
+    Glyph: GeoserverGlyph,
+  },
+  { id: 'arcgis', name: 'ArcGIS Pro', sub: 'Esri', side: 'right', row: 0, logo: arcgisLogo },
+  {
+    id: 'geoserver-out',
     name: 'GeoServer',
     sub: 'WMS / WFS',
     side: 'right',
@@ -276,7 +265,6 @@ export function EcosystemBridge() {
         id="ecosystem-diagram"
         className="relative flex flex-col gap-0 overflow-hidden bg-card/95 py-0 shadow-2xl backdrop-blur-md pointer-events-auto w-[1040px] max-w-[96vw] max-h-[88vh]"
       >
-        {/* Header */}
         <div className="relative z-10 px-7 pt-6 pb-4 border-b text-left">
           <div className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">
             Interopérabilité
@@ -290,9 +278,7 @@ export function EcosystemBridge() {
           </p>
         </div>
 
-        {/* Body: import column | central hub | export column */}
         <div ref={containerRef} className="relative flex-1 px-10 py-9">
-          {/* Neutral ambient bloom behind the hub */}
           <div
             data-eco-ambient
             className="pointer-events-none absolute left-1/2 top-1/2 size-[440px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[60px]"
@@ -301,7 +287,6 @@ export function EcosystemBridge() {
             }}
           />
 
-          {/* Conduit layer — behind the tiles */}
           <div ref={beamsRef} className="pointer-events-none absolute inset-0 z-0">
             {conduits.length > 0 && (
               <svg
@@ -322,7 +307,6 @@ export function EcosystemBridge() {
                 </defs>
                 {conduits.map((c) => (
                   <g key={c.id}>
-                    {/* Static rail (drawn in by GSAP) */}
                     <path
                       data-eco-rail
                       d={c.d}
@@ -332,7 +316,6 @@ export function EcosystemBridge() {
                       strokeLinecap="round"
                       style={{ strokeDasharray: 100, strokeDashoffset: 100 }}
                     />
-                    {/* Accent pulse streaming along the conduit */}
                     <path
                       data-eco-pulse
                       data-row={c.row}
@@ -351,7 +334,6 @@ export function EcosystemBridge() {
           </div>
 
           <div className="relative z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-x-12">
-            {/* Import column */}
             <div
               data-eco-col="left"
               className="flex w-full max-w-[240px] flex-col gap-4 justify-self-end"
@@ -368,7 +350,6 @@ export function EcosystemBridge() {
               })}
             </div>
 
-            {/* Central hub */}
             <div data-eco-hub className="relative flex flex-col items-center">
               <div
                 data-eco-glow
@@ -399,7 +380,6 @@ export function EcosystemBridge() {
               </div>
             </div>
 
-            {/* Export column */}
             <div
               data-eco-col="right"
               className="flex w-full max-w-[240px] flex-col gap-4 justify-self-start"
@@ -418,7 +398,6 @@ export function EcosystemBridge() {
           </div>
         </div>
 
-        {/* Formats bar */}
         <div className="relative border-t px-7 py-4">
           <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground/60">
             Formats &amp; connecteurs pris en charge

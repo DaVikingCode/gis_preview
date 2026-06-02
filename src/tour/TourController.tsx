@@ -9,19 +9,22 @@ import { useGateUnlockNudge } from '@/hooks/animations/useGateUnlockNudge'
 
 type DriverInstance = ReturnType<typeof driver>
 
+// Lecture automatique : temps de pause sur une étape une fois qu'elle est posée
+// (caméra arrivée + gate levée) avant d'enchaîner sur la suivante. Réglable.
+const AUTOPLAY_DWELL_MS = 3000
+
 // Gates that block the Next button until a step's interaction completes.
 function isStepLocked(
   idx: number,
   st: {
     importDone: boolean
     dropDone: boolean
-    drawDone: boolean
     measureDone: boolean
     layersPanelOpen: boolean
     incidentClicked: boolean
     swipeDone: boolean
-    hikeDone: boolean
     themeFlipDone: boolean
+    tableLinkDone: boolean
     flying: boolean
   },
 ): boolean {
@@ -34,7 +37,6 @@ function isStepLocked(
   if (id === 'layers-import') return !st.importDone
   // Verrouillé tant que le faux curseur n'a pas déposé le fichier (avance auto).
   if (id === 'layers-import-pick') return !st.dropDone
-  if (id === 'draw-analysis') return !st.drawDone
   if (id === 'measure') return !st.measureDone
   // Bloque « Suivant » tant que le faux curseur n'a pas ouvert le panneau Couches.
   if (id === 'layers-overview') return !st.layersPanelOpen
@@ -42,8 +44,8 @@ function isStepLocked(
   if (id === 'rt-surcharge') return !st.incidentClicked
   // Bloque tant que le faux curseur n'a pas fini de glisser le slider avant/après.
   if (id === 'swipe') return !st.swipeDone
-  // Bloque tant que le randonneur n'a pas terminé la montée (pas de boucle).
-  if (id === 'terrain-hiking') return !st.hikeDone
+  // Bloque tant que le faux curseur n'a pas fini de survoler les lignes (table ↔ carte).
+  if (id === 'data-table') return !st.tableLinkDone
   return false
 }
 
@@ -84,6 +86,7 @@ export async function applyBasemap(map: maplibregl.Map, id: BasemapId) {
 export function TourController() {
   const map = useMap()
   const started = useTourStore((s) => s.started)
+  const autoPlay = useTourStore((s) => s.autoPlay)
   const currentStep = useTourStore((s) => s.currentStep)
   const setStep = useTourStore((s) => s.setStep)
   const setBasemapStore = useTourStore((s) => s.setBasemap)
@@ -115,9 +118,13 @@ export function TourController() {
           // its content — pin this step's popover to the bottom-center instead.
           // Same for the ecosystem/interop and techstack diagrams (also centered
           // full-screen overlays whose content the popover would otherwise cover).
+          // The data-table panel is a full-width bottom overlay (h-[52vh]) — pin
+          // the popover just above it, flush left.
           ...(s.id === 'layers-import' || s.id === 'ecosystem' || s.id === 'techstack'
             ? { popoverClass: 'gp-tour gp-tour-bottom' }
-            : {}),
+            : s.id === 'data-table'
+              ? { popoverClass: 'gp-tour gp-tour-above-table' }
+              : {}),
         },
       })),
       // Gate: block advancing past gated steps until their interaction finishes
@@ -145,6 +152,27 @@ export function TourController() {
           'gp-tour-await',
           STEPS[active]?.id === 'layers-overview' && locked,
         )
+        // Step Vue tabulaire : la popover est épinglée juste au-dessus du panneau
+        // (CSS gp-tour-above-table). On aligne son bord gauche sur le bord réel du
+        // panneau via une variable CSS lue par un `left !important` (driver.js réécrit
+        // `style.left` APRÈS ce hook, ce qui effacerait un inline ; le `!important`
+        // CSS, lui, gagne). Le panneau peut ne pas être encore monté à ce render —
+        // on réessaie sur quelques frames jusqu'à le trouver.
+        if (STEPS[active]?.id === 'data-table') {
+          let tries = 12
+          const alignToTable = () => {
+            const panel = document.getElementById('data-table-panel')
+            if (panel) {
+              document.documentElement.style.setProperty(
+                '--gp-tour-table-left',
+                `${Math.round(panel.getBoundingClientRect().left)}px`,
+              )
+            } else if (tries-- > 0) {
+              requestAnimationFrame(alignToTable)
+            }
+          }
+          alignToTable()
+        }
         const bar = document.createElement('div')
         bar.className = 'gp-tour-stepper'
         bar.setAttribute('role', 'progressbar')
@@ -172,17 +200,16 @@ export function TourController() {
         if (STEPS[idx]?.id === THEME_FLIP_STEP_ID) useTourStore.getState().setThemeFlipDone(false)
         if (STEPS[idx]?.id === 'layers-import') useTourStore.getState().setImportDone(false)
         if (STEPS[idx]?.id === 'layers-import-pick') useTourStore.getState().setDropDone(false)
-        if (STEPS[idx]?.id === 'draw-analysis') useTourStore.getState().setDrawDone(false)
         if (STEPS[idx]?.id === 'measure') useTourStore.getState().setMeasureDone(false)
         // Re-ferme le panneau Couches au (re)passage sur le step pour rejouer le
-        // faux curseur (comme le re-lock measure/draw au retour arrière).
+        // faux curseur (comme le re-lock measure au retour arrière).
         if (STEPS[idx]?.id === 'layers-overview') useTourStore.getState().setLayersPanelOpen(false)
         // Re-verrouille le clic du poste en surcharge pour rejouer le faux curseur.
         if (STEPS[idx]?.id === 'rt-surcharge') useTourStore.getState().setIncidentClicked(false)
         // Re-verrouille le slider avant/après pour rejouer le faux curseur.
         if (STEPS[idx]?.id === 'swipe') useTourStore.getState().setSwipeDone(false)
-        // Re-verrouille la rando : « Suivant » se déverrouille à l'arrivée au sommet.
-        if (STEPS[idx]?.id === 'terrain-hiking') useTourStore.getState().setHikeDone(false)
+        // Re-verrouille la liaison table ↔ carte pour rejouer le balayage du curseur.
+        if (STEPS[idx]?.id === 'data-table') useTourStore.getState().setTableLinkDone(false)
       },
       onHighlighted: (_el, _step, opts) => {
         // Backup: ensure Zustand step stays in sync even on same-element transitions
@@ -255,13 +282,12 @@ export function TourController() {
       st: {
         importDone: boolean
         dropDone: boolean
-        drawDone: boolean
         measureDone: boolean
         layersPanelOpen: boolean
         incidentClicked: boolean
         swipeDone: boolean
-        hikeDone: boolean
         themeFlipDone: boolean
+        tableLinkDone: boolean
         flying: boolean
       },
       step: number,
@@ -269,12 +295,11 @@ export function TourController() {
       const id = STEPS[step]?.id
       const isGated =
         id === 'layers-import' ||
-        id === 'draw-analysis' ||
         id === 'measure' ||
         id === 'layers-overview' ||
         id === 'rt-surcharge' ||
         id === 'swipe' ||
-        id === 'terrain-hiking' ||
+        id === 'data-table' ||
         id === THEME_FLIP_STEP_ID
       const locked = isStepLocked(step, st)
       const btn = document.querySelector<HTMLButtonElement>('.driver-popover-next-btn')
@@ -295,6 +320,58 @@ export function TourController() {
     apply(st, st.currentStep)
     return useTourStore.subscribe((s) => apply(s, s.currentStep))
   }, [started, nudge])
+
+  // Lecture automatique : une fois l'étape posée (caméra arrivée + gate levée),
+  // enchaîne tout seul après AUTOPLAY_DWELL_MS. On réutilise le pipeline existant
+  // (isStepLocked + driver.moveNext) — aucune nouvelle logique de navigation.
+  useEffect(() => {
+    if (!started || !autoPlay) return
+    let timer: ReturnType<typeof setTimeout> | null = null
+    let scheduledFor = -1
+    const clear = () => {
+      if (timer) clearTimeout(timer)
+      timer = null
+      scheduledFor = -1
+    }
+    const tick = (st: ReturnType<typeof useTourStore.getState>) => {
+      const d = driverRef.current
+      if (!d) return
+      const idx = st.currentStep
+      // Étape changée depuis la planification → annule le timer périmé.
+      if (scheduledFor !== -1 && scheduledFor !== idx) clear()
+      // On n'arme rien sur la dernière étape (l'outro reste affiché), sur les
+      // étapes qui s'auto-avancent déjà via leur faux curseur (clickLayer /
+      // dropImport), ni tant qu'un vol est en cours ou qu'une gate est fermée.
+      if (
+        !d.hasNextStep() ||
+        STEPS[idx]?.clickLayer ||
+        STEPS[idx]?.dropImport ||
+        isStepLocked(idx, st)
+      ) {
+        clear()
+        return
+      }
+      // Déjà un compte à rebours pour CETTE étape : ne pas le réarmer (sinon des
+      // `set` non liés — ex. setCinematic à l'atterrissage — le repousseraient).
+      if (timer && scheduledFor === idx) return
+      scheduledFor = idx
+      timer = setTimeout(() => {
+        timer = null
+        scheduledFor = -1
+        // L'état a pu changer pendant l'attente : on revérifie avant d'avancer.
+        const s = useTourStore.getState()
+        if (!s.autoPlay || isStepLocked(s.currentStep, s)) return
+        const d2 = driverRef.current
+        if (d2?.hasNextStep()) d2.moveNext()
+      }, AUTOPLAY_DWELL_MS)
+    }
+    tick(useTourStore.getState())
+    const unsub = useTourStore.subscribe(tick)
+    return () => {
+      clear()
+      unsub()
+    }
+  }, [started, autoPlay])
 
   useEffect(() => {
     if (!started) return

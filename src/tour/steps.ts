@@ -6,7 +6,6 @@ import { addHikingTerrain, type HikingHandle } from '@/map/layers/hikingTerrain'
 import { STATIC_LADEFENSE_HEIGHTS } from '@/data/sample-buildings'
 import { addVectorStyled, removeVectorStyled } from '@/map/layers/vectorStyled'
 import { addMeasureTool, MEASURE_DEMO_BLOCK, type MeasureHandle } from '@/map/layers/measureLayer'
-import { addDrawAnalysis, DRAW_DEMO_POLYGON, type DrawHandle } from '@/map/layers/drawAnalysis'
 import { addIsochrones, removeIsochrones, computeIsochroneStats } from '@/map/layers/isochrones'
 import { SWIPE_VIEW } from '@/map/swipe-view'
 import { addHeatmap, removeHeatmap } from '@/map/layers/heatmap'
@@ -31,7 +30,6 @@ export type ChartKind =
   | 'highlight'
   | 'layers-presentation'
   | 'layers-applied'
-  | 'draw'
   | 'isochrone'
   | 'swipe'
   | 'realtime'
@@ -90,7 +88,7 @@ export type TourStep = {
   leaveBeforePan?: boolean
   cinematic?: boolean
   // Run onEnter only once the camera has settled (on moveend), not before the
-  // flight. Required for scripted animations (measure/draw) so the trace replays
+  // flight. Required for scripted animations (measure) so the trace replays
   // at the right place when navigating back (pan flight) instead of off-screen.
   enterOnSettle?: boolean
   onEnter?: (map: MLMap, ctx: StepContext) => void | Promise<void>
@@ -99,18 +97,13 @@ export type TourStep = {
 
 // Per-step ephemeral state (e.g. measure tool handle)
 let measureHandle: MeasureHandle | null = null
-let drawHandle: DrawHandle | null = null
 let realtimeHandle: RealtimeHandle | null = null
 let hikingHandle: HikingHandle | null = null
 
-// ── Séquence HTA (supervision live → surcharge → réparation → rétablissement).
-// Le poste incident est le poste source P-4521 (id 1) : flambe sur cue puis se
-// rétablit vers sa charge nominale (base 0,58 → vert). En supervision, le curseur
-// survole un poste « surveillé » (ambre) pour montrer la fiche express live.
+// Séquence HTA (supervision live → surcharge → réparation → rétablissement).
+// Poste incident = poste source P-4521 (id 1) : flambe sur cue puis se rétablit.
 export const HTA_INCIDENT_ID = 1
-// Postes balayés en supervision : un arc NE → SO qui passe sur 2 postes nominaux
-// (8 Étang du Coq, 2 La Borderie) puis les 2 « surveillés » ambre (10 La Charmoie,
-// 5 Bois Renault) — tous visibles au cadrage overview z10.2.
+// Postes balayés en supervision (arc NE → SO) : 2 nominaux puis 2 « surveillés » ambre.
 export const HTA_HOVER_IDS = [8, 2, 10, 5]
 // Accès à la couche live pour le curseur scripté (RtScriptedCursor).
 export const getRealtimeHandle = () => realtimeHandle
@@ -156,7 +149,7 @@ export const STEPS: TourStep[] = [
     id: 'workspace-sidebar',
     title: 'Espace de travail',
     description:
-      'Toutes vos données métier centralisées à gauche : couches du projet (cadastre, bâtiments, réseau…), jeux de données importés (GeoJSON, Shapefile, WMTS) et activité de l’équipe. Le compte connecté reste accessible en bas.',
+      'Toutes vos données métier réunies au même endroit : couches du projet, jeux de données importés et activité de l’équipe.',
     element: '[data-slot="sidebar-inner"]',
     basemap: 'positron',
     camera: { center: [2.5, 46.5], zoom: 5, pitch: 0, bearing: 0 },
@@ -166,7 +159,7 @@ export const STEPS: TourStep[] = [
     id: 'layers-overview',
     title: 'Catalogue de couches',
     description:
-      'Fonds de plan, réseau électrique (HTA/BT, postes, poteaux), overlays raster (cadastre, débroussaillement, UAS) et zones protégées (Natura 2000, ZNIEFF, parcs, réserves…). Toutes activables individuellement ou par catégorie, stylées via expressions data-driven.',
+      'Activez vos couches d’un clic, individuellement ou par catégorie : fonds de plan, réseaux, raster et zones protégées.',
     // Ancré sur le bouton Couches : la modale n'existe pas encore (elle s'ouvre
     // quand le faux curseur « clique » ce bouton — cf. LayersButton).
     element: '#layers-open-button',
@@ -177,8 +170,7 @@ export const STEPS: TourStep[] = [
   {
     id: 'layers-pick-cadastre',
     title: 'Sélection de la couche',
-    description:
-      'On choisit « Cadastre » dans la catégorie Raster du catalogue. Suivant pour l’appliquer réellement sur la carte.',
+    description: 'Choisissez une couche dans le catalogue. Suivant pour l’appliquer sur la carte.',
     element: '#layers-presentation-modal',
     basemap: 'positron',
     camera: { center: [2.5, 46.5], zoom: 5, pitch: 0, bearing: 0 },
@@ -187,12 +179,15 @@ export const STEPS: TourStep[] = [
   },
   {
     id: 'layers-apply-cadastre',
-    title: 'Cadastre appliqué',
+    title: 'Cadastre',
     description:
-      'Le catalogue se réduit, la carte zoome sur une commune et la couche cadastre (WMTS IGN PARCELLAIRE_EXPRESS) s’affiche réellement — limites de parcelles par-dessus le fond de plan.',
+      'La couche s’affiche sur la carte : limites de parcelles cadastrales par-dessus le fond de plan.',
     basemap: 'positron',
     camera: { center: [2.321, 48.829], zoom: 17.4, pitch: 0, bearing: 0 },
-    flyIn: { fromZoom: 11, duration: 4200 },
+    // Le saut (caché derrière le backdrop plein écran de la modale) atterrit déjà
+    // au-dessus de z13 : les parcelles cadastrales sont visibles dès que la modale
+    // se dissout. Glisse douce z14 → 17.4 pendant la dissolution.
+    flyIn: { fromZoom: 14, duration: 3000 },
     chart: 'layers-applied',
     appliedLayer: 'cadastre',
     // Retire la couche cadastre avant le vol vers le step suivant (Bâtiments 3D),
@@ -207,9 +202,9 @@ export const STEPS: TourStep[] = [
   },
   {
     id: 'layers-apply-buildings',
-    title: 'Bâtiments 3D appliqués',
+    title: 'Bâtiments 3D',
     description:
-      'Suivant active la couche suivante : extrusion 3D des bâtiments sur le quartier d’affaires de La Défense, colorés selon leur hauteur. La même mécanique vaut pour n’importe quelle couche du catalogue.',
+      'Bâtiments en 3D, colorés selon leur hauteur — ici La Défense. La même mécanique vaut pour n’importe quelle couche.',
     basemap: 'positron',
     camera: { center: [2.251476, 48.88991], zoom: 16.14, pitch: 67, bearing: -83.1 },
     chart: 'buildings',
@@ -231,19 +226,22 @@ export const STEPS: TourStep[] = [
     id: 'terrain-hiking',
     title: 'Terrain 3D · randonnée',
     description:
-      'Changement d’échelle, cap sur les Alpes : le relief du massif du Mont-Blanc est reconstitué en 3D à partir d’un modèle numérique d’élévation (DEM), drapé d’imagerie satellite et ombré. Un randonneur grimpe en direct depuis Chamonix (~1 060 m) le long d’un sentier d’altitude jusqu’à près de 3 020 m — son tracé se révèle derrière lui et le profil d’altitude défile dans le panneau.',
+      'Relief 3D reconstitué à partir d’un modèle d’élévation, drapé d’imagerie satellite. Ici, un parcours d’altitude suivi en direct dans les Alpes.',
     basemap: 'satellite',
-    // Cadrage de départ du sentier : le vol d'entrée atterrit ici, puis la timeline GSAP
-    // prend la main et fait suivre la caméra au randonneur sur une ligne lissée (centre +
-    // cap ; pitch/zoom restent ceux-ci). Pas de `cinematic` (sa rotation idle gênerait).
-    camera: { center: [6.8888, 45.936], zoom: 14.2, pitch: 68, bearing: 172 },
+    // Cadrage FIXE du sentier : le vol d'entrée atterrit ici et la caméra n'en bouge plus pendant
+    // toute la montée (la timeline GSAP n'anime que le randonneur, pas la caméra) — aucun re-rendu
+    // terrain forcé par frame, donc bien meilleurs fps. Pas de `cinematic`.
+    camera: { center: [6.93397, 45.906809], zoom: 13.14, pitch: 57.3, bearing: -57.1 },
     chart: 'hiking',
     // Vol longue distance La Défense → Chamonix (flyTo en arc).
-    pan: { duration: 5200 },
-    // Terrain/ciel/randonneur montés une fois la caméra posée sur le style
-    // satellite chargé (cf. measure/draw) ; la boucle GSAP rejoue alors au bon
-    // endroit lors d'un retour arrière.
+    pan: { duration: 3800 },
+    // Monté une fois la caméra posée pour que la boucle GSAP rejoue au bon endroit
+    // au retour arrière (cf. measure).
     enterOnSettle: true,
+    // Le step PRÉCÉDENT (bâtiments 3D) a un `pan` : un retour arrière passe donc par le vol pané,
+    // qui sinon différerait le détachement jusqu'à l'atterrissage — markers (randonneur + pin),
+    // popup POI et timeline GSAP de la rando traîneraient sur tout le vol. On nettoie AVANT le pan.
+    leaveBeforePan: true,
     onEnter(map) {
       hikingHandle = addHikingTerrain(map, (frac) =>
         useMapDataStore.getState().setHikeProgress(frac),
@@ -259,7 +257,7 @@ export const STEPS: TourStep[] = [
     id: 'customize-theme',
     title: 'Thème & personnalisation',
     description:
-      'L’application s’adapte à votre marque : thème clair/sombre, couleurs et fonds de plan personnalisables. Ici, on bascule l’interface en mode sombre — la carte suit avec un fond de plan dark assorti.',
+      'L’application s’adapte à votre marque : thème clair/sombre, couleurs et fonds de plan personnalisables.',
     // Spotlight sur le bouton de thème dans la sidebar ; le faux curseur va le cliquer.
     element: '#gp-theme-toggle',
     basemap: 'positron',
@@ -271,7 +269,7 @@ export const STEPS: TourStep[] = [
     id: 'layers-import-pick',
     title: 'Vos propres données',
     description:
-      'GeoJSON, KML, Shapefile, GPX, CSV géolocalisé — glissez-déposez vos fichiers ou connectez vos endpoints. L’import démarre automatiquement.',
+      'Glissez-déposez vos fichiers — GeoJSON, KML, Shapefile, GPX, CSV — ou connectez vos sources de données.',
     element: '#layers-presentation-modal',
     basemap: 'positron',
     camera: { center: [2.5, 46.5], zoom: 5, pitch: 0, bearing: 0 },
@@ -282,7 +280,7 @@ export const STEPS: TourStep[] = [
     id: 'layers-import',
     title: 'Import d’une couche',
     description:
-      'La couche de zones Dijon (GeoJSON) est téléversée, reprojetée (Lambert-93 → WGS 84) et validée, puis ajoutée à la carte. Patientez la fin de l’import.',
+      'Vos données sont importées, reprojetées et validées automatiquement, puis ajoutées à la carte.',
     element: '#layers-presentation-modal',
     basemap: 'positron',
     camera: { center: [2.5, 46.5], zoom: 5, pitch: 0, bearing: 0 },
@@ -292,7 +290,7 @@ export const STEPS: TourStep[] = [
     id: 'data-table',
     title: 'Vue tabulaire des données',
     description:
-      'La couche que vous venez d’importer, vue en tableau : responsables, statuts, couverture et tendances. Ce sont exactement les mêmes objets que sur la carte.',
+      'Vos données en tableau — les mêmes objets que sur la carte. Triez, filtrez, suivez statuts et tendances.',
     element: '#data-table-panel',
     basemap: 'positron',
     // Bottom padding lifts the features into the top half, above the table overlay.
@@ -312,7 +310,7 @@ export const STEPS: TourStep[] = [
     id: 'measure',
     title: 'Mesure interactive',
     description:
-      'Le périmètre d’un pâté de maison est tracé automatiquement : la distance est calculée en direct (Turf.js), la boucle se referme sur le premier point, puis la zone se remplit.',
+      'Mesurez distances et périmètres directement sur la carte, avec un calcul mis à jour en direct.',
     basemap: 'positron',
     camera: { center: [5.3689, 43.2944], zoom: 15.5, pitch: 0, bearing: 0 },
     chart: 'measure',
@@ -341,36 +339,10 @@ export const STEPS: TourStep[] = [
     },
   },
   {
-    id: 'draw-analysis',
-    title: 'Dessin & analyse spatiale',
-    description:
-      'Une zone est tracée automatiquement : la surface est calculée en direct (Turf) et les postes HTA tombant à l’intérieur sont comptés par requête point-dans-polygone.',
-    basemap: 'positron',
-    camera: { center: [1.85, 47.44], zoom: 10, pitch: 0, bearing: 0 },
-    chart: 'draw',
-    enterOnSettle: true,
-    onEnter(map) {
-      useTourStore.getState().setDrawDone(false)
-      useTourStore.getState().setTraceCursorHidden(false)
-      drawHandle = addDrawAnalysis(map, (stats) => useMapDataStore.getState().setDrawStats(stats), {
-        auto: true,
-        polygon: DRAW_DEMO_POLYGON,
-        onLastClick: () => useTourStore.getState().setTraceCursorHidden(true),
-        onComplete: () => useTourStore.getState().setDrawDone(true),
-      })
-    },
-    onLeave() {
-      drawHandle?.detach()
-      drawHandle = null
-      useTourStore.getState().setDrawDone(false)
-      useTourStore.getState().setTraceCursorHidden(false)
-    },
-  },
-  {
     id: 'isochrones',
     title: 'Isochrones d’accessibilité',
     description:
-      'Depuis le centre de maintenance, les zones atteignables en 5, 10 et 15 minutes de route. Croisé avec le réseau, ça répond à « combien de postes puis-je joindre à temps ? » — base de l’optimisation des tournées.',
+      'Visualisez les zones atteignables par temps de trajet — la base pour planifier et optimiser vos tournées.',
     basemap: 'positron',
     camera: { center: [1.85, 47.44], zoom: 9.6, pitch: 0, bearing: 0 },
     flyIn: { fromZoom: 7.5, duration: 3800 },
@@ -388,7 +360,7 @@ export const STEPS: TourStep[] = [
     id: 'swipe',
     title: 'Comparaison avant / après',
     description:
-      'Deux millésimes d’orthophotos IGN sur la même emprise, séparés par un curseur que tu fais glisser. Pan et zoom restent synchronisés entre les deux cartes — l’outil classique du suivi diachronique.',
+      'Comparez deux états d’un même territoire avec un curseur — idéal pour suivre une évolution dans le temps.',
     basemap: 'positron',
     camera: { center: SWIPE_VIEW.center, zoom: SWIPE_VIEW.zoom, pitch: 0, bearing: 0 },
     chart: 'swipe',
@@ -397,7 +369,7 @@ export const STEPS: TourStep[] = [
     id: 'heatmap',
     title: 'Heatmap de densité',
     description:
-      'Couche heatmap MapLibre native sur ~1100 points pondérés. Top 5 des villes les plus denses dans le panneau.',
+      'Faites ressortir les zones de forte concentration à partir de vos points de données.',
     basemap: 'positron',
     camera: { center: [2.5, 46.5], zoom: 5.4, pitch: 0, bearing: 0 },
     chart: 'heatmap',
@@ -414,7 +386,7 @@ export const STEPS: TourStep[] = [
     id: 'rt-supervision',
     title: 'Supervision temps réel',
     description:
-      'Tout le réseau HTA 20 kV de Sologne, supervisé en direct : charge des postes (vert → ambre → rouge), courant qui circule sur les lignes, flotte de maintenance géolocalisée. Le curseur survole un poste — la fiche express s’affiche en direct. Flux SCADA simulé, rafraîchi chaque seconde — en production via WebSocket / Redis.',
+      'Supervisez l’ensemble de vos installations en direct : état des équipements, flux et équipes sur le terrain, mis à jour en continu.',
     basemap: 'positron',
     // Cadrage « tout le réseau » : le poste source (est) et les postes ouest
     // tiennent à l'écran — la surcharge à venir s'affichera bien en contexte.
@@ -434,9 +406,9 @@ export const STEPS: TourStep[] = [
   },
   {
     id: 'rt-surcharge',
-    title: 'Surcharge détectée',
+    title: 'Anomalie en direct',
     description:
-      "La charge du poste source P-4521 grimpe d'un coup au-delà du seuil critique : le poste vire au rouge et l'anneau d'alerte « sonar » se déclenche. La conduite zoome sur le poste et ouvre sa fiche d'intervention.",
+      'Une anomalie est détectée et remontée instantanément. La supervision vous y conduit pour agir sans délai.',
     basemap: 'positron',
     // Même cadrage que la supervision : on entre sans vol, la surcharge éclate
     // en contexte réseau (overview). Le curseur scripté (RtScriptedCursor) joue
@@ -453,9 +425,9 @@ export const STEPS: TourStep[] = [
   },
   {
     id: 'rt-todo',
-    title: 'Étape 1 · À faire',
+    title: 'Détection',
     description:
-      "Intervention engagée : la fiche de P-4521 est ouverte. Statut initial — à inspecter. Le technicien voit le contexte (tension, charge, anomalies, dernière visite) avant d'agir.",
+      'La plateforme rassemble tout le contexte de l’équipement concerné — vous gardez la main dès le départ.',
     element: '.gp-popup',
     basemap: 'positron',
     // Le vol a déjà été joué par le curseur en « Surcharge détectée » : on reste
@@ -473,9 +445,9 @@ export const STEPS: TourStep[] = [
   },
   {
     id: 'rt-in-progress',
-    title: 'Étape 2 · En cours',
+    title: 'Intervention',
     description:
-      "L'agent est sur place — la cellule HTA est ouverte, le diagnostic démarre. La supervision conduite suit l'intervention en temps réel pendant que le poste reste en alerte.",
+      'L’intervention se pilote et se suit en direct, sans jamais perdre de vue l’ensemble de vos données.',
     element: '.gp-popup',
     basemap: 'positron',
     camera: { center: [2.04, 47.428], zoom: 15.2, pitch: 0, bearing: 0 },
@@ -490,9 +462,9 @@ export const STEPS: TourStep[] = [
   },
   {
     id: 'rt-done',
-    title: 'Étape 3 · Terminé — réseau rétabli',
+    title: 'Résolution',
     description:
-      "Intervention validée : la charge de P-4521 redescend sous le seuil, le poste repasse au vert dans le flux temps réel et l'alerte se lève. La donnée remonte au SI métier.",
+      'Une fois résolue, la situation est tracée et l’information remonte automatiquement à vos outils métier.',
     element: '.gp-popup',
     basemap: 'positron',
     camera: { center: [2.04, 47.428], zoom: 15.2, pitch: 0, bearing: 0 },
@@ -508,9 +480,9 @@ export const STEPS: TourStep[] = [
   },
   {
     id: 'rt-recap',
-    title: 'Réseau rétabli',
+    title: 'Retour à la normale',
     description:
-      'Recul sur tout le réseau : plus aucun poste en alerte, charge nominale partout. La supervision confirme le retour à la normale — flux SCADA toujours en direct.',
+      'Vue d’ensemble retrouvée : tout est revenu à la normale, et la supervision continue en direct.',
     basemap: 'positron',
     // Même cadrage overview que la supervision : recul symétrique « tout vert ».
     camera: { center: [1.82, 47.45], zoom: 10.2, pitch: 0, bearing: 0 },
@@ -545,15 +517,14 @@ export const STEPS: TourStep[] = [
     id: 'outro',
     title: 'Et bien plus encore',
     description:
-      'Point clouds Potree, mesures d’aires, WMS multi-sources, clustering, intégration backend GeoServer / MapProxy… On en discute ?',
+      'Nuages de points, mesures de surfaces, sources multiples, intégrations sur mesure… et bien plus. On en discute ?',
     basemap: 'positron',
     camera: { center: [2.5, 46.5], zoom: 5, pitch: 0, bearing: 0 },
     chart: 'none',
   },
 ]
 
-// Step « Thème & personnalisation » : le faux curseur y bascule l'app en dark.
-// Les steps AVANT (intro catalogue/import) restent en light ; ce step et ceux
-// d'APRÈS passent en dark (cf. TourController.applyStepTheme).
+// Step où le faux curseur bascule l'app en dark : les steps avant restent light,
+// ce step et les suivants passent en dark (cf. TourController.applyStepTheme).
 export const THEME_FLIP_STEP_ID = 'customize-theme'
 export const THEME_FLIP_INDEX = STEPS.findIndex((s) => s.id === THEME_FLIP_STEP_ID)

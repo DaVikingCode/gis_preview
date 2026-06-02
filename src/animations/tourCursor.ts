@@ -3,26 +3,52 @@ import gsap from 'gsap'
 import * as turf from '@turf/turf'
 import type { Feature, FeatureCollection, MultiPolygon, Point, Polygon } from 'geojson'
 
-// Helpers partagés par les tracés auto (Mesure, Dessin) pour piloter le faux
-// curseur de démo (SmoothCursor scripté) et marquer chaque « clic » sur la carte.
-
-// lngLat → coordonnées viewport (clientX/clientY). map.project() renvoie des px
-// relatifs au conteneur #map-canvas ; on ajoute l'offset du canvas (sidebar…).
+// map.project() renvoie des px relatifs au conteneur #map-canvas ; on ajoute
+// l'offset du canvas (sidebar…) pour obtenir des coordonnées viewport.
 export function projectClient(map: MLMap, lngLat: [number, number]): { x: number; y: number } {
   const p = map.project(lngLat)
   const r = map.getCanvas().getBoundingClientRect()
   return { x: r.left + p.x, y: r.top + p.y }
 }
 
-// Dispatch d'un pointermove synthétique : seul le SmoothCursor `scripted` le suit
-// (maplibre n'écoute pas pointermove → aucun effet de bord sur la carte).
-export function dispatchCursor(x: number, y: number): void {
-  window.dispatchEvent(new PointerEvent('pointermove', { clientX: x, clientY: y, bubbles: true }))
+// Angle (deg) orientant la pointe du SVG vers la direction (dx, dy). Le SVG pointe
+// vers le haut au repos → +90.
+export function cursorAngle(dx: number, dy: number): number {
+  return Math.atan2(dy, dx) * (180 / Math.PI) + 90
 }
 
-// Pulse « clic » on-map : une couche cercle 1-feature qu'on anime (rayon + opacité)
-// à chaque point posé. `pulse` = petit (par sommet), `burst` = grand (final).
-// Partagée par les deux steps (jamais simultanés).
+// DOIT matcher `restAngle` des SmoothCursor scriptés (-35° = pointeur OS incliné
+// haut-gauche). Le curseur y revient en arrivant.
+export const CURSOR_REST_ANGLE = -35
+
+// Fraction du trajet à partir de laquelle on commence à revenir vers la position
+// naturelle (les ~30 derniers % du glissement).
+const SETTLE_FROM = 0.7
+
+// Angle dispatché pendant un glissement orienté : vise `aimDeg`, puis revient en douceur
+// à CURSOR_REST_ANGLE sur la fin du trajet (t ≥ SETTLE_FROM) → le curseur « arrive »
+// droit, dans sa position naturelle, juste avant le clic / la fin du geste.
+export function settledAngle(aimDeg: number, t: number): number {
+  if (t <= SETTLE_FROM) return aimDeg
+  const k = (t - SETTLE_FROM) / (1 - SETTLE_FROM)
+  const e = k * k * (3 - 2 * k) // smoothstep
+  let d = CURSOR_REST_ANGLE - aimDeg
+  while (d > 180) d -= 360
+  while (d < -180) d += 360
+  return aimDeg + d * e
+}
+
+// pointermove synthétique : seul le SmoothCursor `scripted` le suit (maplibre
+// n'écoute pas pointermove → aucun effet de bord sur la carte). Sans `angleDeg`, le
+// curseur conserve son dernier angle (voulu pendant une press / clic).
+export function dispatchCursor(x: number, y: number, angleDeg?: number): void {
+  const ev = new PointerEvent('pointermove', { clientX: x, clientY: y, bubbles: true })
+  if (angleDeg !== undefined) (ev as PointerEvent & { gpAngle?: number }).gpAngle = angleDeg
+  window.dispatchEvent(ev)
+}
+
+// Pulse « clic » on-map : couche cercle animée (rayon + opacité) à chaque point posé.
+// `pulse` = petit (par sommet), `burst` = grand (final).
 export type TourPulse = {
   pulse: (lngLat: [number, number]) => void
   burst: (lngLat: [number, number]) => void
@@ -93,27 +119,24 @@ export function createTourPulse(map: MLMap, color: string, id = 'gp-tour-pulse')
   }
 }
 
-// Pilote le faux curseur le long d'une timeline GSAP. Une instance par tracé :
-// `pos` est partagé entre les glissements pour un mouvement continu de sommet en
-// sommet. Le tout premier glissement « sème » le curseur en léger décalage pour
-// une entrée visible, puis glisse jusqu'à la cible.
+// Pilote le faux curseur le long d'une timeline GSAP. `pos` est partagé entre les
+// glissements pour un mouvement continu de sommet en sommet ; le premier glissement
+// « sème » le curseur en léger décalage pour une entrée visible.
 export type TourCursor = {
   glideTo: (
     tl: gsap.core.Timeline,
     lngLat: [number, number],
     opts: { at: number | string; duration: number },
   ) => void
-  // Petit final quand le polygone est terminé : le curseur « presse » le point de
-  // fermeture (clic visible) en synchro avec une onde forte. Ancré sur un label
-  // (`at`) pour se synchroniser avec la propagation du remplissage.
+  // Le curseur « presse » le point de fermeture (clic) en synchro avec une onde
+  // forte. Ancré sur le label `at` pour se caler sur la propagation du remplissage.
   finishAt: (
     tl: gsap.core.Timeline,
     lngLat: [number, number],
     opts: { pulse: TourPulse; at: string },
   ) => void
-  // Variantes « écran » : cible un point viewport fixe (ex. un bouton DOM via
-  // getBoundingClientRect) plutôt qu'une coordonnée carte. `from` sème le curseur
-  // à un point de départ explicite (ex. le poste rouge) pour une entrée visible.
+  // Variantes « écran » : cible un point viewport fixe (ex. un bouton DOM) plutôt
+  // qu'une coordonnée carte. `from` sème le curseur à un départ explicite.
   glideToPoint: (
     tl: gsap.core.Timeline,
     point: { x: number; y: number },
@@ -129,9 +152,14 @@ export type TourCursor = {
 const SEED_OFFSET = { dx: 48, dy: -44 }
 const PRESS_PX = 8
 
-export function createTourCursor(map: MLMap): TourCursor {
+export function createTourCursor(map: MLMap, opts?: { aim?: boolean }): TourCursor {
   const pos = { x: 0, y: 0 }
   let seeded = false
+  // Mode `aim` : l'angle du segment (pos → cible) est dispatché pour orienter le
+  // curseur. Les press dispatchent sans angle → le curseur conserve `aimDeg` (pas de
+  // snap). En mode non-aim (Mesure/Dessin), aucun angle n'est émis.
+  const aim = opts?.aim ?? false
+  let aimDeg: number | undefined
 
   return {
     glideTo(tl, lngLat, { at, duration }) {
@@ -148,15 +176,46 @@ export function createTourCursor(map: MLMap): TourCursor {
           at,
         )
       }
+      if (!aim) {
+        // Chemin historique (Mesure/Dessin). function-based : reprojeté au démarrage
+        // du tween (caméra figée → stable).
+        tl.to(
+          pos,
+          {
+            x: () => projectClient(map, lngLat).x,
+            y: () => projectClient(map, lngLat).y,
+            duration,
+            ease: 'power2.inOut',
+            onUpdate: () => dispatchCursor(pos.x, pos.y),
+          },
+          at,
+        )
+        return
+      }
+      // Chemin orienté : glissement en ligne droite (caméra figée → reprojetée une
+      // fois au départ), retour à la position naturelle sur la fin (settledAngle).
+      const start = { x: 0, y: 0 }
+      const target = { x: 0, y: 0 }
+      const prog = { t: 0 }
       tl.to(
-        pos,
+        prog,
         {
-          // function-based : reprojeté au démarrage du tween (caméra figée → stable).
-          x: () => projectClient(map, lngLat).x,
-          y: () => projectClient(map, lngLat).y,
+          t: 1,
           duration,
           ease: 'power2.inOut',
-          onUpdate: () => dispatchCursor(pos.x, pos.y),
+          onStart: () => {
+            start.x = pos.x
+            start.y = pos.y
+            const p = projectClient(map, lngLat)
+            target.x = p.x
+            target.y = p.y
+            aimDeg = cursorAngle(target.x - start.x, target.y - start.y)
+          },
+          onUpdate: () => {
+            pos.x = start.x + (target.x - start.x) * prog.t
+            pos.y = start.y + (target.y - start.y) * prog.t
+            dispatchCursor(pos.x, pos.y, settledAngle(aimDeg ?? CURSOR_REST_ANGLE, prog.t))
+          },
         },
         at,
       )
@@ -213,14 +272,40 @@ export function createTourCursor(map: MLMap): TourCursor {
           at,
         )
       }
+      if (!aim) {
+        // Chemin historique — INCHANGÉ.
+        tl.to(
+          pos,
+          {
+            x: point.x,
+            y: point.y,
+            duration,
+            ease: 'power2.inOut',
+            onUpdate: () => dispatchCursor(pos.x, pos.y),
+          },
+          at,
+        )
+        return
+      }
+      // Chemin orienté : progression + retour à la position naturelle sur la fin.
+      const start = { x: 0, y: 0 }
+      const prog = { t: 0 }
       tl.to(
-        pos,
+        prog,
         {
-          x: point.x,
-          y: point.y,
+          t: 1,
           duration,
           ease: 'power2.inOut',
-          onUpdate: () => dispatchCursor(pos.x, pos.y),
+          onStart: () => {
+            start.x = pos.x
+            start.y = pos.y
+            aimDeg = cursorAngle(point.x - start.x, point.y - start.y)
+          },
+          onUpdate: () => {
+            pos.x = start.x + (point.x - start.x) * prog.t
+            pos.y = start.y + (point.y - start.y) * prog.t
+            dispatchCursor(pos.x, pos.y, settledAngle(aimDeg ?? CURSOR_REST_ANGLE, prog.t))
+          },
         },
         at,
       )
@@ -260,11 +345,9 @@ export function createTourCursor(map: MLMap): TourCursor {
   }
 }
 
-// Révélation du remplissage par PROPAGATION depuis le coin de fin de tracé : un
-// cercle (Turf) grandit depuis `ring[0]` et est intersecté avec le polygone, si
-// bien que la couleur « inonde » la zone depuis ce coin. Une fois propagée, on
-// assombrit le remplissage d'un cran. Ajoute ses tweens à la timeline, ancrés au
-// label `at` (synchro avec le clic final du curseur).
+// Remplissage révélé par propagation : un cercle Turf grandit depuis `ring[0]` et
+// est intersecté avec le polygone, si bien que la couleur « inonde » la zone depuis
+// ce coin. Tweens ancrés au label `at` (synchro avec le clic final du curseur).
 export function addFloodReveal(
   tl: gsap.core.Timeline,
   map: MLMap,

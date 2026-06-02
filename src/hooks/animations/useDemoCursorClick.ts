@@ -3,21 +3,17 @@ import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { useTourStore } from '@/store/tour-store'
 import { dispatchCursor } from '@/animations/tourCursor'
+import { useCursorAim } from '@/hooks/animations/useCursorAim'
 
-// Faux curseur qui amène une carte du catalogue dans la vue puis la « clique » —
-// le step juste avant que la couche correspondante soit appliquée sur la carte.
-// C'est le SmoothCursor (magicui) piloté par des pointermove synthétiques ;
-// rendu en `rotate=false` (comme le curseur du bouton Couches) pour qu'il ne
-// pivote jamais. Le geste de clic est un appui humain : la pointe descend (chute,
-// power2.in) puis remonte avec un léger rebond (back.out), en synchro avec la
-// carte qui s'enfonce et un halo. En reduced-motion la chorégraphie est ignorée
-// mais la visite avance quand même.
+// Faux curseur qui amène une carte du catalogue dans la vue puis la « clique »,
+// juste avant que la couche correspondante soit appliquée sur la carte.
 export function useDemoCursorClick(
   rootRef: RefObject<HTMLDivElement | null>,
   viewportRef: RefObject<HTMLDivElement | null>,
   clickLayer: string | undefined,
   isImport: boolean,
 ) {
+  const aim = useCursorAim()
   useGSAP(
     () => {
       const root = rootRef.current
@@ -38,7 +34,6 @@ export function useDemoCursorClick(
       vp.scrollTo({ top, behavior: reduced ? 'auto' : 'smooth' })
 
       if (reduced) {
-        // Pas de chorégraphie — on avance quand même (pas de « Suivant » manuel).
         gsap.delayedCall(0.6, advance)
         return
       }
@@ -50,10 +45,9 @@ export function useDemoCursorClick(
       // Délai : laisse le scroll lissé se stabiliser avant de viser la carte.
       const tl = gsap.timeline({ delay: 0.6 })
 
-      // ── Glissement « main humaine » : Bézier quadratique arqué depuis le
-      // bas-droite de la carte jusqu'à son centre (point de contrôle décalé
-      // perpendiculairement à la corde → trajectoire courbe, jamais une ligne
-      // droite robotique).
+      // Glissement « main humaine » : Bézier quadratique arqué depuis le bas-droite
+      // de la carte jusqu'à son centre (point de contrôle décalé perpendiculairement
+      // à la corde, pour une trajectoire courbe et non une ligne droite).
       let sx = 0
       let sy = 0
       let ex = 0
@@ -84,19 +78,12 @@ export function useDemoCursorClick(
           t: 1,
           duration: 0.8,
           ease: 'power3.inOut',
-          onUpdate: () => {
-            const t = g.t
-            const mt = 1 - t
-            const x = mt * mt * sx + 2 * mt * t * cx + t * t * ex
-            const y = mt * mt * sy + 2 * mt * t * cy + t * t * ey
-            dispatchCursor(x, y)
-          },
+          // Oriente la pointe le long de la courbe (tangente Bézier).
+          onUpdate: () => aim.bezier(g.t, { x: sx, y: sy }, { x: cx, y: cy }, { x: ex, y: ey }),
         },
         '+=0.3',
       )
 
-      // ── Clic : la pointe descend (chute) puis remonte avec un rebond, en synchro
-      // avec la carte qui s'enfonce + un halo ambre qui se propage.
       const CLICK = 'click'
       tl.addLabel(CLICK)
       const press = { y: 0 }

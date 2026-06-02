@@ -37,8 +37,7 @@ export function IsochroneChart() {
       </div>
 
       <p className="text-[11px] text-muted-foreground mt-3">
-        Zones atteignables en voiture depuis le centre de maintenance. Compte des postes HTA par
-        point-in-polygon (Turf).
+        Zones atteignables par temps de trajet — un appui pour planifier vos tournées.
       </p>
     </div>
   )

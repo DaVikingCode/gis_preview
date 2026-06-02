@@ -16,7 +16,7 @@ import {
 
 export const WORKSPACE = {
   name: 'DaVikingCode',
-  plan: 'GIS',
+  plan: 'Espace SIG',
 } as const
 
 export type WorkspaceLayer = {
@@ -76,50 +76,6 @@ export const DATASETS: WorkspaceDataset[] = [
     Icon: Table2,
     records: 1160,
     updated: 'il y a 12 j',
-  },
-]
-
-export type WorkspaceActivity = {
-  id: string
-  user: string
-  initials: string
-  action: string
-  target: string
-  ago: string
-}
-
-export const ACTIVITY: WorkspaceActivity[] = [
-  {
-    id: 'a1',
-    user: 'Camille',
-    initials: 'CR',
-    action: 'a importé',
-    target: 'parcelles_2024',
-    ago: '2 h',
-  },
-  {
-    id: 'a2',
-    user: 'Naïm',
-    initials: 'NB',
-    action: 'a stylé',
-    target: 'la couche Réseau',
-    ago: '5 h',
-  },
-  {
-    id: 'a3',
-    user: 'Léa',
-    initials: 'LM',
-    action: 'a publié',
-    target: 'Atlas Urbain',
-    ago: 'hier',
-  },
-  {
-    id: 'a4',
-    user: 'Camille',
-    initials: 'CR',
-    action: 'a annoté',
-    target: '3 parcelles',
-    ago: 'hier',
   },
 ]
 

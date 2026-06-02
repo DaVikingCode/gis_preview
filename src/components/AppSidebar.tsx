@@ -1,3 +1,5 @@
+import { useRef, useState } from 'react'
+import type { ComponentType } from 'react'
 import {
   Sidebar,
   SidebarContent,
@@ -7,11 +9,10 @@ import {
   SidebarHeader,
   SidebarInput,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -22,13 +23,71 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ChevronsUpDown, LogOut, Settings, UserRound } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { ACTIVITY, CURRENT_USER, DATASETS, LAYERS, WORKSPACE } from '@/data/sample-workspace'
+import {
+  Activity,
+  ChevronsUpDown,
+  Columns2,
+  Database,
+  Flame,
+  Globe2,
+  Layers,
+  LogOut,
+  Map,
+  Ruler,
+  Settings,
+  Timer,
+  Upload,
+  UserRound,
+  Users,
+} from 'lucide-react'
+import { CURRENT_USER, DATASETS, LAYERS, WORKSPACE } from '@/data/sample-workspace'
 import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler'
+import { useSidebarReveal } from '@/hooks/animations/useSidebarReveal'
 import dvcMark from '@/assets/dvc-mark.svg?inline'
 
+type NavItem = {
+  id: string
+  label: string
+  Icon: ComponentType<{ className?: string }>
+  badge?: number
+}
+
+const NAV: { label: string; items: NavItem[] }[] = [
+  {
+    label: 'Atelier',
+    items: [
+      { id: 'map', label: 'Carte', Icon: Map },
+      { id: 'layers', label: 'Couches', Icon: Layers, badge: LAYERS.length },
+      { id: 'data', label: 'Jeux de données', Icon: Database, badge: DATASETS.length },
+      { id: 'import', label: 'Imports', Icon: Upload },
+    ],
+  },
+  {
+    label: 'Analyses',
+    items: [
+      { id: 'measure', label: 'Mesure & dessin', Icon: Ruler },
+      { id: 'isochrone', label: 'Isochrones', Icon: Timer },
+      { id: 'heatmap', label: 'Densité', Icon: Flame },
+      { id: 'swipe', label: 'Comparaison', Icon: Columns2 },
+    ],
+  },
+  {
+    label: 'Espace de travail',
+    items: [
+      { id: 'team', label: 'Équipe', Icon: Users },
+      { id: 'activity', label: 'Activité', Icon: Activity },
+      { id: 'publications', label: 'Publications', Icon: Globe2 },
+      { id: 'settings', label: 'Paramètres', Icon: Settings },
+    ],
+  },
+]
+
 export function AppSidebar() {
+  const contentRef = useRef<HTMLDivElement>(null)
+  useSidebarReveal(contentRef)
+
+  const [active, setActive] = useState('map')
+
   return (
     <Sidebar variant="inset">
       <SidebarHeader className="gap-3">
@@ -52,93 +111,31 @@ export function AppSidebar() {
             <DropdownMenuItem>Bac à sable</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <SidebarInput placeholder="Rechercher une couche…" />
+        <SidebarInput placeholder="Rechercher…" />
       </SidebarHeader>
 
-      <SidebarContent>
-        <Tabs defaultValue="layers" className="px-2 pt-1">
-          <TabsList className="w-full">
-            <TabsTrigger value="layers" className="flex-1">
-              Couches
-            </TabsTrigger>
-            <TabsTrigger value="data" className="flex-1">
-              Données
-            </TabsTrigger>
-            <TabsTrigger value="activity" className="flex-1">
-              Activité
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="layers">
-            <SidebarGroup className="p-0">
-              <SidebarGroupLabel>Couches du projet</SidebarGroupLabel>
-              <SidebarMenu>
-                {LAYERS.map((layer) => (
-                  <SidebarMenuItem key={layer.id}>
-                    <SidebarMenuButton
-                      isActive={layer.visible}
-                      className={cn(!layer.visible && 'opacity-55')}
-                    >
-                      <layer.Icon className="size-4" />
-                      <span>{layer.label}</span>
-                      <Badge variant="secondary" className="ml-auto tabular-nums">
-                        {layer.count.toLocaleString('fr-FR')}
-                      </Badge>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-          </TabsContent>
-
-          <TabsContent value="data">
-            <SidebarGroup className="p-0">
-              <SidebarGroupLabel>Jeux de données</SidebarGroupLabel>
-              <SidebarMenu>
-                {DATASETS.map((ds) => (
-                  <SidebarMenuItem key={ds.id}>
-                    <SidebarMenuButton size="lg">
-                      <ds.Icon className="size-4" />
-                      <span className="grid flex-1 leading-tight">
-                        <span className="truncate font-medium">{ds.name}</span>
-                        <span className="truncate text-xs text-muted-foreground tabular-nums">
-                          {ds.records > 0
-                            ? `${ds.records.toLocaleString('fr-FR')} objets · ${ds.updated}`
-                            : `Service raster · ${ds.updated}`}
-                        </span>
-                      </span>
-                      <Badge variant="outline" className="ml-auto">
-                        {ds.format}
-                      </Badge>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-          </TabsContent>
-
-          <TabsContent value="activity">
-            <SidebarGroup className="p-0">
-              <SidebarGroupLabel>Activité récente</SidebarGroupLabel>
-              <ul className="flex flex-col gap-3 px-2 py-1">
-                {ACTIVITY.map((item) => (
-                  <li key={item.id} className="flex items-start gap-2.5">
-                    <Avatar className="size-7">
-                      <AvatarFallback className="text-[10px]">{item.initials}</AvatarFallback>
-                    </Avatar>
-                    <div className="grid gap-0.5 text-xs leading-snug">
-                      <p className="text-sidebar-foreground">
-                        <span className="font-medium">{item.user}</span> {item.action}{' '}
-                        <span className="font-medium">{item.target}</span>
-                      </p>
-                      <span className="text-muted-foreground">il y a {item.ago}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </SidebarGroup>
-          </TabsContent>
-        </Tabs>
+      <SidebarContent ref={contentRef}>
+        {NAV.map((group) => (
+          <SidebarGroup key={group.label} data-reveal>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarMenu>
+              {group.items.map((item) => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    isActive={active === item.id}
+                    onClick={() => setActive(item.id)}
+                  >
+                    <item.Icon className="size-4" />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                  {item.badge != null && (
+                    <SidebarMenuBadge className="tabular-nums">{item.badge}</SidebarMenuBadge>
+                  )}
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter>

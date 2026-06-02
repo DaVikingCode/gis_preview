@@ -108,7 +108,7 @@ export function RealtimeChart() {
     return (
       <div className="flex items-center gap-2 py-6 text-xs text-muted-foreground">
         <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-        Connexion au flux SCADA…
+        Connexion au flux temps réel…
       </div>
     )
   }
@@ -224,7 +224,7 @@ export function RealtimeChart() {
       )}
 
       <p className="mt-3 text-[11px] text-muted-foreground">
-        Flux SCADA simulé, rafraîchi chaque seconde. En production : WebSocket / Redis.
+        Supervision en temps réel, mise à jour en continu.
       </p>
     </div>
   )

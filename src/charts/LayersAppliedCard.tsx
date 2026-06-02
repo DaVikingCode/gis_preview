@@ -22,7 +22,7 @@ type AppliedLayerDef = {
 const REGISTRY: Record<AppliedLayerId, AppliedLayerDef> = {
   cadastre: {
     label: 'Cadastre',
-    sub: 'WMTS IGN · PARCELLAIRE_EXPRESS',
+    sub: 'Parcelles cadastrales (IGN)',
     preview: CadastreImg,
     text: 'text-amber-400',
     bg: 'bg-amber-500/15',
@@ -31,7 +31,7 @@ const REGISTRY: Record<AppliedLayerId, AppliedLayerDef> = {
   },
   buildings3d: {
     label: 'Bâtiments 3D',
-    sub: 'Extrusion vectorielle OpenMapTiles',
+    sub: 'Bâtiments en relief 3D',
     Icon: Building2,
     text: 'text-sky-400',
     bg: 'bg-sky-500/15',

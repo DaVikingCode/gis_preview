@@ -20,8 +20,7 @@ export interface SmoothCursorProps {
   // overriding the move-driven visibility.
   hidden?: boolean
   // Rotate the cursor to face its travel direction (default true). Set false for a
-  // real-pointer feel (e.g. clicking a button) so it never spins on a direction
-  // change.
+  // real-pointer feel so it never spins on a direction change.
   rotate?: boolean
   // Fixed tilt (deg) used when `rotate` is false — e.g. -35 to point up-left like a
   // real OS pointer instead of straight up (the SVG's default orientation).
@@ -115,6 +114,9 @@ export function SmoothCursor({
   const lastUpdateTime = useRef(0)
   const previousAngle = useRef(0)
   const accumulatedRotation = useRef(0)
+  // False jusqu'au 1er angle dispatché (gpAngle) : on initialise alors l'accumulateur
+  // sur l'orientation courante pour tourner en douceur (sans jump). Reset avec `positioned`.
+  const aimed = useRef(false)
   // False jusqu'au tout premier déplacement : on téléporte alors le curseur au
   // point d'apparition (sans ressort) au lieu de le faire glisser depuis (0,0).
   const positioned = useRef(false)
@@ -205,6 +207,27 @@ export function SmoothCursor({
       cursorX.set(currentPos.x)
       cursorY.set(currentPos.y)
 
+      // Rotation pilotée par la timeline GSAP : l'angle de trajectoire est dispatché
+      // (gpAngle) et suivi par le ressort, par plus-court-chemin. Au 1er angle on PART de
+      // l'orientation courante (position naturelle) et on tourne en douceur vers la
+      // direction — surtout pas de jump, qui « snapperait » à l'apparition. Un event sans
+      // gpAngle (les press n'en envoient pas) laisse le curseur CONSERVER son dernier angle.
+      const aimDeg = (e as PointerEvent & { gpAngle?: number }).gpAngle
+      if (typeof aimDeg === 'number') {
+        if (!aimed.current) {
+          aimed.current = true
+          const current = rotation.get()
+          accumulatedRotation.current = current
+          previousAngle.current = current
+        }
+        let angleDiff = aimDeg - previousAngle.current
+        if (angleDiff > 180) angleDiff -= 360
+        if (angleDiff < -180) angleDiff += 360
+        accumulatedRotation.current += angleDiff
+        rotation.set(accumulatedRotation.current)
+        previousAngle.current = aimDeg
+      }
+
       if (speed > 0.1) {
         if (rotate) {
           const currentAngle =
@@ -270,6 +293,7 @@ export function SmoothCursor({
   useEffect(() => {
     if (!hidden) return
     positioned.current = false
+    aimed.current = false
     setIsVisible(false)
   }, [hidden])
 

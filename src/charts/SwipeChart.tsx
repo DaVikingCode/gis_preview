@@ -5,8 +5,8 @@ export function SwipeChart() {
     <div>
       <div className="text-sm font-medium text-foreground">Avant / Après</div>
       <p className="text-xs text-muted-foreground mt-1">
-        Glisse le curseur vertical pour comparer deux millésimes d’orthophotos IGN sur la même
-        emprise, parfaitement synchronisés au pan et au zoom.
+        Glissez le curseur pour comparer deux états d’un même territoire, parfaitement synchronisés
+        au déplacement et au zoom.
       </p>
       <Separator className="my-3" />
       <ul className="text-xs space-y-1.5">
@@ -20,7 +20,7 @@ export function SwipeChart() {
         </li>
       </ul>
       <p className="text-[11px] text-muted-foreground mt-3">
-        Cas d’usage : suivi de l’urbanisation, évolution du trait de côte, analyse diachronique.
+        Cas d’usage : suivi de l’urbanisation, évolution du littoral, comparaison dans le temps.
       </p>
     </div>
   )

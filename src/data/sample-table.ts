@@ -139,4 +139,28 @@ const ATTRS: Record<string, RowAttrs> = {
   },
 }
 
-export const SAMPLE_TABLE: DataRow[] = ZONES.map((z) => ({ ...z, ...ATTRS[z.id] }))
+// Réordonne le tableau : les 3 zones les plus proches du centre de la bbox de toutes
+// les zones passent en tête. Ce sont celles que le faux curseur survole au step « Vue
+// tabulaire » — ainsi elles correspondent aux premières lignes ET restent à l'écran
+// (jamais une zone hors cadre). Le reste garde son ordre d'origine.
+const allX = ZONES.flatMap((z) => z.ring.map((p) => p[0]))
+const allY = ZONES.flatMap((z) => z.ring.map((p) => p[1]))
+const bboxCx = (Math.min(...allX) + Math.max(...allX)) / 2
+const bboxCy = (Math.min(...allY) + Math.max(...allY)) / 2
+const distToCenter = (z: Zone) => {
+  const cx = z.ring.reduce((s, p) => s + p[0], 0) / z.ring.length
+  const cy = z.ring.reduce((s, p) => s + p[1], 0) / z.ring.length
+  return Math.hypot(cx - bboxCx, cy - bboxCy)
+}
+const centermost = new Set(
+  [...ZONES]
+    .sort((a, b) => distToCenter(a) - distToCenter(b))
+    .slice(0, 3)
+    .map((z) => z.id),
+)
+const ORDERED_ZONES: Zone[] = [
+  ...ZONES.filter((z) => centermost.has(z.id)),
+  ...ZONES.filter((z) => !centermost.has(z.id)),
+]
+
+export const SAMPLE_TABLE: DataRow[] = ORDERED_ZONES.map((z) => ({ ...z, ...ATTRS[z.id] }))

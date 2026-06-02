@@ -34,32 +34,28 @@ const RAW_POIS: HikePoi[] = [
   {
     id: 'grotte-de-glace',
     name: 'Grotte de glace',
-    description:
-      'Galerie recreusée chaque année à même le glacier. À l’intérieur, parois et sculptures de glace translucide où la température reste sous zéro toute l’année.',
+    description: 'Galerie recreusée chaque année à même le glacier.',
     photo: grotteGlaceImg,
     coord: [6.9220048, 45.9270893],
   },
   {
     id: 'mer-de-glace',
     name: 'Mer de Glace',
-    description:
-      'Plus grand glacier de France : sept kilomètres de glace en mouvement descendant du massif du Mont-Blanc. Le sentier domine ses séracs et ses crevasses bleutées.',
+    description: 'Le plus grand glacier de France, en mouvement perpétuel.',
     photo: merDeGlaceImg,
     coord: [6.9362431, 45.9103145],
   },
   {
     id: 'refuge-altitude',
     name: 'Refuge d’altitude',
-    description:
-      'Halte des alpinistes avant l’assaut des sommets : couchage, ravitaillement et point de départ des courses. Dernier abri gardé avant la haute montagne.',
+    description: 'Dernier abri gardé avant la haute montagne.',
     photo: refugeImg,
     coord: [6.9294331, 45.884695],
   },
   {
     id: 'dent-du-requin',
     name: 'Dent du Requin',
-    description:
-      'Aiguille de granit emblématique de la Vallée Blanche. Voie d’escalade réputée et panorama à 360° sur la Mer de Glace et les aiguilles de Chamonix.',
+    description: 'Aiguille de granit emblématique de la Vallée Blanche.',
     photo: dentDuRequinImg,
     coord: [6.9174998, 45.8875843],
   },

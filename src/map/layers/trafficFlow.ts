@@ -298,9 +298,54 @@ function metersBetween(a: [number, number], b: [number, number]): number {
   return Math.hypot(dx, dy)
 }
 
-// Ré-échantillonne un tracé lng/lat à pas ~constant (stepM). Interpolation linéaire
-// lng/lat (négligeable à ~12 m). Produit des sommets denses → la triangle-strip n'a
-// plus de longues diagonales visibles et les champs interpolés (t, débit) sont lisses.
+// Spline Catmull-Rom centripète (α=0.5) sur un segment p1→p2, paramètre t∈[0..1].
+// Passe par p1 et p2 ; p0/p3 donnent les tangentes. La paramétrisation centripète
+// (tj = ti + dist^α) évite les boucles/dépassements aux virages serrés que produit
+// la variante uniforme. Blending de Barry–Goldman.
+function catmullRom(
+  p0: [number, number],
+  p1: [number, number],
+  p2: [number, number],
+  p3: [number, number],
+  t: number,
+): [number, number] {
+  const alpha = 0.5
+  const tj = (ti: number, a: [number, number], b: [number, number]): number => {
+    const d = Math.hypot(b[0] - a[0], b[1] - a[1])
+    return ti + Math.pow(d, alpha)
+  }
+  const t0 = 0
+  const t1 = tj(t0, p0, p1)
+  const t2 = tj(t1, p1, p2)
+  const t3 = tj(t2, p2, p3)
+  // Points dégénérés (coords dupliquées aux bords) → repli linéaire p1→p2.
+  if (t1 === t0 || t2 === t1 || t3 === t2) {
+    return [p1[0] + (p2[0] - p1[0]) * t, p1[1] + (p2[1] - p1[1]) * t]
+  }
+  const tt = t1 + (t2 - t1) * t
+  const lerp = (
+    a: [number, number],
+    b: [number, number],
+    ta: number,
+    tb: number,
+    x: number,
+  ): [number, number] => {
+    const f = (x - ta) / (tb - ta)
+    return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]
+  }
+  const a1 = lerp(p0, p1, t0, t1, tt)
+  const a2 = lerp(p1, p2, t1, t2, tt)
+  const a3 = lerp(p2, p3, t2, t3, tt)
+  const b1 = lerp(a1, a2, t0, t2, tt)
+  const b2 = lerp(a2, a3, t1, t3, tt)
+  return lerp(b1, b2, t1, t2, tt)
+}
+
+// Ré-échantillonne un tracé lng/lat à pas ~constant (stepM). Interpole sur une spline
+// Catmull-Rom centripète passant par les points d'origine → les coudes sont arrondis
+// (pas seulement les bords du ruban via le miter). Produit des sommets denses → la
+// triangle-strip n'a plus de longues diagonales et les champs interpolés (t, débit)
+// sont lisses.
 function densify(coords: [number, number][], stepM: number): [number, number][] {
   if (coords.length < 2) return coords
   const segLen: number[] = []
@@ -326,9 +371,12 @@ function densify(coords: [number, number][], stepM: number): [number, number][] 
       break
     }
     const f = segLen[i] > 0 ? (target - acc) / segLen[i] : 0
-    const a = coords[i]
-    const b = coords[i + 1]
-    out.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f])
+    const last = coords.length - 1
+    const p0 = coords[Math.max(0, i - 1)]
+    const p1 = coords[i]
+    const p2 = coords[i + 1]
+    const p3 = coords[Math.min(last, i + 2)]
+    out.push(catmullRom(p0, p1, p2, p3, f))
   }
   return out
 }

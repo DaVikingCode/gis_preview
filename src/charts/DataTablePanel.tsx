@@ -1,3 +1,5 @@
+import { useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Line, LineChart, ResponsiveContainer } from 'recharts'
 import { TrendingDown, TrendingUp, Map as MapIcon, Table2 } from 'lucide-react'
 import {
@@ -11,9 +13,14 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { SmoothCursor } from '@/components/ui/smooth-cursor'
 import { SAMPLE_TABLE, type DataRow, type RowStatus } from '@/data/sample-table'
-import { CATEGORY_COLORS } from '@/map/layers/vectorStyled'
+import { CATEGORY_COLORS, setVectorHover } from '@/map/layers/vectorStyled'
 import type { VectorCategory } from '@/data/sample-vectors'
+import { useMapMaybe } from '@/map/MapContext'
+import { useTourStore } from '@/store/tour-store'
+import { STEPS } from '@/tour/steps'
+import { useDataTableCursor } from '@/hooks/animations/useDataTableCursor'
 
 const STATUS: Record<RowStatus, { label: string; dot: string; className: string }> = {
   actif: {
@@ -132,12 +139,40 @@ function Sparkline({ trend }: { trend: number[] }) {
   )
 }
 
-function Row({ row, index }: { row: DataRow; index: number }) {
+function Row({
+  row,
+  index,
+  active,
+  interactive,
+  onHover,
+}: {
+  row: DataRow
+  index: number
+  active: boolean
+  // Survol réel autorisé (une fois la démo scriptée terminée) → la ligne pilote elle
+  // aussi le spotlight de la zone sur la carte.
+  interactive: boolean
+  onHover: (id: string | null) => void
+}) {
   const status = STATUS[row.status]
+  const accent = CATEGORY_COLORS[row.category]
   return (
     <TableRow
-      className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both border-border/60"
-      style={{ animationDelay: `${index * 55 + 120}ms`, animationDuration: '420ms' }}
+      data-row-id={row.id}
+      data-category={row.category}
+      onMouseEnter={interactive ? () => onHover(row.id) : undefined}
+      onMouseLeave={interactive ? () => onHover(null) : undefined}
+      className={`fade-in slide-in-from-bottom-2 fill-mode-both animate-in border-border/60 transition-colors duration-200${
+        interactive ? ' cursor-pointer' : ''
+      }`}
+      style={{
+        animationDelay: `${index * 55 + 120}ms`,
+        animationDuration: '420ms',
+        // Survol piloté par le faux curseur (pas de :hover CSS) : fond teinté + barre
+        // d'accent gauche dans la couleur de catégorie, en synchro avec la zone carte.
+        background: active ? `${accent}1f` : undefined,
+        boxShadow: active ? `inset 3px 0 0 0 ${accent}` : undefined,
+      }}
     >
       <TableCell>
         <div className="flex flex-col">
@@ -187,8 +222,31 @@ function Row({ row, index }: { row: DataRow; index: number }) {
 
 export function DataTablePanel() {
   const total = SAMPLE_TABLE.reduce((sum, r) => sum + r.objects, 0)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const map = useMapMaybe()
+  const [activeRowId, setActiveRowId] = useState<string | null>(null)
+  const stepId = useTourStore((s) => STEPS[s.currentStep]?.id)
+  const tableLinkDone = useTourStore((s) => s.tableLinkDone)
+  // Le vol caméra du step est en cours : on attend qu'il se pose (moveend →
+  // setFlying(false)) avant de lancer le balayage du curseur.
+  const flying = useTourStore((s) => s.flying)
+  // Le balayage ne joue qu'à l'entrée du step, une fois le vol posé et tant que la
+  // gate n'est pas levée.
+  const active = stepId === 'data-table' && !flying && !tableLinkDone
+  // Une fois la démo scriptée finie (gate levée), le survol réel des lignes prend le
+  // relais : hover une ligne → spotlight la zone liée sur la carte.
+  const interactive = stepId === 'data-table' && tableLinkDone
+
+  useDataTableCursor(rootRef, active, map, setActiveRowId)
+
+  const handleHover = (id: string | null) => {
+    setActiveRowId(id)
+    if (map) setVectorHover(map, id)
+  }
+
   return (
     <div
+      ref={rootRef}
       id="data-table-panel"
       className="pointer-events-auto absolute inset-x-4 bottom-4 flex h-[52vh] flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/95 shadow-2xl ring-1 ring-foreground/10 backdrop-blur-md animate-in fade-in slide-in-from-bottom-8 duration-500"
       style={{ zIndex: 100100 }}
@@ -234,11 +292,32 @@ export function DataTablePanel() {
           </TableHeader>
           <TableBody>
             {SAMPLE_TABLE.map((row, i) => (
-              <Row key={row.id} row={row} index={i} />
+              <Row
+                key={row.id}
+                row={row}
+                index={i}
+                active={row.id === activeRowId}
+                interactive={interactive}
+                onHover={handleHover}
+              />
             ))}
           </TableBody>
         </Table>
       </ScrollArea>
+      {/* Faux curseur scripté : portalé à <body>, z au-dessus de l'overlay driver pour
+          rester visible le long du balayage. rotate=false comme les autres curseurs de
+          démo ; l'orientation vient de l'angle dispatché par useDataTableCursor. */}
+      {active &&
+        createPortal(
+          <SmoothCursor
+            scripted
+            hideSystemCursor={false}
+            rotate={false}
+            restAngle={-35}
+            zIndex={1000000100}
+          />,
+          document.body,
+        )}
     </div>
   )
 }

@@ -15,8 +15,8 @@ const LYR_LINE = 'gp-measure-line'
 const LYR_DOTS = 'gp-measure-dots'
 const LYR_FILL = 'gp-measure-fill'
 
-const DOT_COLOR = '#FFEB04'
-const FILL_COLOR = '#FFEB04'
+const DOT_COLOR = '#353535'
+const FILL_COLOR = '#353535'
 const FILL_BASE = 0.18
 const FILL_DARK = 0.3
 
@@ -103,7 +103,7 @@ export function addMeasureTool(
       id: LYR_LINE,
       type: 'line',
       source: SRC_LINE,
-      paint: { 'line-color': '#FFEB04', 'line-width': 3 },
+      paint: { 'line-color': '#353535', 'line-width': 3 },
     })
   }
   if (!map.getLayer(LYR_PTS)) {
@@ -114,7 +114,7 @@ export function addMeasureTool(
       paint: {
         'circle-radius': 5,
         'circle-color': '#fff',
-        'circle-stroke-color': '#FFEB04',
+        'circle-stroke-color': '#353535',
         'circle-stroke-width': 2,
       },
     })
@@ -198,14 +198,13 @@ export function addMeasureTool(
     } else {
       tl = gsap.timeline()
       const cursor = createTourCursor(map)
-      const click = createTourPulse(map, '#FFEB04')
+      const click = createTourPulse(map, '#353535')
       pulse = click
       const GLIDE = Math.min(0.4, stepSec * 0.5)
       ring.forEach(([lng, lat], i) => {
         const at = i * stepSec
-        // Le faux curseur glisse vers le sommet…
+        // Le curseur glisse vers le sommet, puis « clique » : point posé + pulse à l'arrivée.
         cursor.glideTo(tl!, [lng, lat], { at, duration: GLIDE })
-        // …puis « clique » : point posé + pulse, juste après son arrivée.
         tl!.call(
           () => {
             points.push({ lng, lat })
@@ -215,20 +214,15 @@ export function addMeasureTool(
           [],
           at + GLIDE,
         )
-        // Le segment fraîchement tracé (sommet précédent → courant) affiche sa
-        // longueur en pop juste à côté de l'arête.
         if (i > 0) labels!.addSegment(tl, ring[i - 1], ring[i], { at: at + GLIDE })
       })
-      // Beat A : le curseur revient au 1er point → la boucle se referme (trame invisible).
+      // Le curseur revient au 1er point → la boucle se referme.
       cursor.glideTo(tl, ring[0], { at: '>', duration: GLIDE })
       tl.call(() => {
         closed = true
         refresh()
       })
-      // Segment de fermeture (dernier sommet → 1er) : son label arrive avec la boucle.
       labels.addSegment(tl, ring[ring.length - 1], ring[0], { at: '<' })
-      // Beat B : final — le curseur « presse » le coin de fermeture (onde), puis la
-      // trame de points éclot en vague DEPUIS ce coin.
       const REVEAL = 'reveal'
       tl.addLabel(REVEAL)
       cursor.finishAt(tl, ring[0], { pulse: click, at: REVEAL })
@@ -236,7 +230,7 @@ export function addMeasureTool(
       // pendant que la trame se propage, au lieu d'attendre la fin).
       tl.call(() => opts?.onLastClick?.(), [], REVEAL)
       reveal.reveal(tl, REVEAL)
-      // Beat C : déverrouille la suite une fois le final joué.
+      // Déverrouille la suite une fois le final joué.
       tl.call(() => opts?.onComplete?.())
     }
   }

@@ -140,7 +140,7 @@ export function HikingChart() {
       </div>
 
       <p data-hk-section className="mt-3 text-[11px] text-muted-foreground">
-        Relief 3D drapé sur DEM Mapterhorn (terrain + ombrage). Position suivie en direct (Turf.js).
+        Relief 3D à partir d’un modèle d’élévation. Position suivie en direct.
       </p>
     </div>
   )

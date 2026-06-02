@@ -23,6 +23,7 @@ import { SAMPLE_TABLE, type RowStatus } from '@/data/sample-table'
 import { CATEGORY_COLORS } from '@/map/layers/vectorStyled'
 import { ZonePreview } from '@/charts/DataTablePanel'
 import { useModalReveal } from '@/hooks/animations/useModalReveal'
+import { useModalExit } from '@/hooks/animations/useModalExit'
 import { useLayerCardsStagger } from '@/hooks/animations/useLayerCardsStagger'
 import { useModalHeaderReveal } from '@/hooks/animations/useModalHeaderReveal'
 import { useDemoCursorClick } from '@/hooks/animations/useDemoCursorClick'
@@ -31,6 +32,9 @@ import { useLayerSpotlight } from '@/hooks/animations/useLayerSpotlight'
 import { useImportSimulation } from '@/hooks/animations/useImportSimulation'
 import { useImportPaneReveal } from '@/hooks/animations/useImportPaneReveal'
 
+import PositronImg from '@/assets/layer-previews/positron.webp'
+import LibertyImg from '@/assets/layer-previews/liberty.webp'
+import BrightImg from '@/assets/layer-previews/bright.webp'
 import SatelliteImg from '@/assets/layer-previews/sattelite.webp'
 import IgnImg from '@/assets/layer-previews/ign.webp'
 import HtaImg from '@/assets/layer-previews/hta.webp'
@@ -80,19 +84,6 @@ type Category = {
   layers: LayerItem[]
 }
 
-const gradient = (a: string, b: string, label: string) =>
-  `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 96'>
-      <defs><linearGradient id='g' x1='0' x2='1' y1='0' y2='1'>
-        <stop offset='0' stop-color='${a}'/>
-        <stop offset='1' stop-color='${b}'/>
-      </linearGradient></defs>
-      <rect width='160' height='96' fill='url(#g)'/>
-      <text x='80' y='54' font-family='system-ui' font-size='12' font-weight='600'
-        text-anchor='middle' fill='white' opacity='0.85'>${label}</text>
-    </svg>`,
-  )}`
-
 const CATEGORIES: Category[] = [
   {
     id: 'basemaps',
@@ -103,24 +94,9 @@ const CATEGORIES: Category[] = [
     text: 'text-sky-500',
     dot: 'bg-sky-500',
     layers: [
-      {
-        id: 'positron',
-        name: 'Positron',
-        preview: gradient('#f8fafc', '#cbd5e1', 'Positron'),
-        active: true,
-      },
-      {
-        id: 'liberty',
-        name: 'Liberty',
-        preview: gradient('#fef3c7', '#f59e0b', 'Liberty'),
-        active: false,
-      },
-      {
-        id: 'bright',
-        name: 'Bright',
-        preview: gradient('#bbf7d0', '#10b981', 'Bright'),
-        active: false,
-      },
+      { id: 'positron', name: 'Positron', preview: PositronImg, active: true },
+      { id: 'liberty', name: 'Liberty', preview: LibertyImg, active: false },
+      { id: 'bright', name: 'Bright', preview: BrightImg, active: false },
       { id: 'satellite', name: 'Satellite', preview: SatelliteImg, active: false },
       { id: 'ign-plan', name: 'Plan IGN', preview: IgnImg, active: false },
     ],
@@ -221,9 +197,21 @@ const CATEGORIES: Category[] = [
   },
 ]
 
-export function LayersPresentationModal() {
+export function LayersPresentationModal({
+  exiting = false,
+  onExited = () => {},
+}: {
+  exiting?: boolean
+  onExited?: () => void
+}) {
   const rootRef = useRef<HTMLDivElement>(null)
-  const currentStep = useTourStore((s) => s.currentStep)
+  const liveStep = useTourStore((s) => s.currentStep)
+  // Pendant la sortie, `currentStep` a déjà avancé : on gèle le step affiché sur le
+  // dernier step catalogue pour que le contenu (titre, curseur, onglets) ne change
+  // pas sous nos yeux pendant que la modale se dissout.
+  const frozenStepRef = useRef(liveStep)
+  if (!exiting) frozenStepRef.current = liveStep
+  const currentStep = exiting ? frozenStepRef.current : liveStep
   const step = STEPS[currentStep]
   const isImport = step?.id === 'layers-import'
   const clickLayer = step?.clickLayer
@@ -265,6 +253,7 @@ export function LayersPresentationModal() {
   }, [isImport])
 
   useModalReveal(rootRef)
+  useModalExit(rootRef, exiting, onExited)
   useLayerCardsStagger(rootRef, isImport)
   useModalHeaderReveal(rootRef, step?.id)
   useDemoCursorClick(rootRef, viewportRef, clickLayer, isImport)
@@ -471,10 +460,8 @@ function LayerCard({ layer, cat }: { layer: LayerItem; cat: Category }) {
         )}
       />
 
-      {/* legibility scrim */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
 
-      {/* active accent — top hairline + inner color wash */}
       {layer.active && (
         <>
           <div className={cn('absolute inset-x-0 top-0 h-0.5', cat.dot)} />
@@ -482,7 +469,6 @@ function LayerCard({ layer, cat }: { layer: LayerItem; cat: Category }) {
         </>
       )}
 
-      {/* status pill */}
       <div className="absolute right-2 top-2">
         <span
           className={cn(
@@ -497,7 +483,6 @@ function LayerCard({ layer, cat }: { layer: LayerItem; cat: Category }) {
         </span>
       </div>
 
-      {/* title */}
       <div className="absolute inset-x-0 bottom-0 p-3">
         <h4 className="text-sm font-semibold leading-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] line-clamp-2">
           {layer.name}
@@ -565,9 +550,9 @@ const CATEGORY_LEGEND = Object.keys(CATEGORY_LABELS)
 // The import pipeline shown as a vertical stepper, lit up stage by stage.
 const STAGES = [
   { key: 'upload', label: 'Téléversement', sub: `1 fichier · ${IMPORT_SIZE_KO} Ko` },
-  { key: 'reproject', label: 'Reprojection', sub: 'Lambert-93 → WGS 84' },
+  { key: 'reproject', label: 'Reprojection', sub: 'Coordonnées harmonisées' },
   { key: 'schema', label: 'Validation du schéma', sub: '6 attributs détectés' },
-  { key: 'index', label: 'Indexation spatiale', sub: `R-tree · ${IMPORT_FEATURES} entités` },
+  { key: 'index', label: 'Indexation spatiale', sub: `${IMPORT_FEATURES} entités` },
   { key: 'render', label: 'Ajout à la carte', sub: 'Style par catégorie' },
 ] as const
 
@@ -579,12 +564,9 @@ const STAGE_STATUS: Record<string, string> = {
   render: 'Application du style…',
 }
 
-// Render the real zone rings into the SVG viewBox. We decouple *layout* from
-// *feature size*: each ring is projected undistorted (cos(lat) correction + Y
-// flip so shapes never stretch), then the zone centroids are spread across — and
-// slightly past — all four edges so the wide 16:9 frame fills up and zones bleed
-// off every side, like a real map window onto a larger dataset. The polygons
-// themselves keep their true shape; only their spacing is exaggerated.
+// Layout is decoupled from feature size: rings are projected undistorted, then
+// centroids are spread past all four edges so zones bleed off-frame. Polygons keep
+// their true shape; only their spacing is exaggerated.
 const VB_W = 420
 const VB_H = 250
 const VB_PAD = 16
@@ -659,10 +641,7 @@ const IMPORT_ZONES = baseZones.map(({ z, pts, cx, cy }) => {
 // Dotted canvas background — Railway/node-editor style (static, non-draggable).
 const DOT_GRID = 'radial-gradient(circle, rgba(255,255,255,0.13) 1px, transparent 1.6px)'
 
-// --- Raw GeoJSON source preview ---------------------------------------------
-// A faithful-looking source view of the uploaded file, streamed in line by line
-// during the "upload" stage so the demo shows the raw file → GIS render link.
-// Coordinates are projected to Lambert-93 (EPSG:2154) integers so the file is
+// Coordinates are projected to Lambert-93 (EPSG:2154) integers so the file stays
 // internally consistent with the "Reprojection L93 → WGS 84" pipeline stage.
 type SrcTok = { s: string; k: 'p' | 'k' | 's' | 'n'; color?: string }
 type SrcLine = { d: number; t: SrcTok[] }
@@ -820,7 +799,6 @@ function ImportPane() {
     <ScrollArea className="h-full max-h-[70vh]">
       <div ref={paneRef} className="px-6 pb-6 pt-2">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,400px)_1fr] gap-5">
-          {/* LEFT — file upload + pipeline */}
           <div className="space-y-4">
             <Card data-up-card className="p-4 border-fuchsia-500/40 bg-fuchsia-500/5">
               <div className="flex items-start gap-3">
@@ -950,7 +928,6 @@ function ImportPane() {
             </div>
           </div>
 
-          {/* RIGHT — live preview + attribute table */}
           <div className="min-w-0 space-y-4">
             <div
               data-import-panel
@@ -1072,14 +1049,13 @@ function ImportPane() {
             >
               <Check className="size-4 shrink-0 text-emerald-500" />
               <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                Couche « zones_dijon » ajoutée — {IMPORT_FEATURES} zones, reprojetées et indexées,
-                prêtes pour la vue tabulaire.
+                Couche importée — {IMPORT_FEATURES} zones reprojetées et prêtes pour la vue
+                tabulaire.
               </span>
             </div>
           </div>
         </div>
 
-        {/* bottom — supported formats + capabilities */}
         <div
           data-import-panel
           className="mt-5 grid grid-cols-1 gap-4 border-t pt-4 lg:grid-cols-[1fr_auto] lg:items-center"

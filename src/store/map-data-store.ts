@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { emptyDrawStats, type DrawStats } from '@/map/layers/drawAnalysis'
 import type { IsochroneStats } from '@/map/layers/isochrones'
 import type { RealtimeFeed } from '@/map/layers/realtime'
 
@@ -13,7 +12,6 @@ type State = {
   heatmapTopZones: { name: string; value: number }[]
   poiStatus: Record<string, POIStatus>
   gateNudgeAt: number
-  drawStats: DrawStats
   isochroneStats: IsochroneStats[]
   realtime: RealtimeFeed | null
   hikeProgress: number
@@ -27,7 +25,6 @@ type Actions = {
   setPOIStatus: (id: string, status: POIStatus) => void
   resetPOIStatus: () => void
   nudgeGate: () => void
-  setDrawStats: (v: DrawStats) => void
   setIsochroneStats: (v: IsochroneStats[]) => void
   setRealtime: (v: RealtimeFeed | null) => void
   setHikeProgress: (v: number) => void
@@ -47,7 +44,6 @@ export const useMapDataStore = create<State & Actions>((set) => ({
   heatmapTopZones: [],
   poiStatus: {},
   gateNudgeAt: 0,
-  drawStats: emptyDrawStats(),
   isochroneStats: [],
   realtime: null,
   hikeProgress: 0,
@@ -66,7 +62,6 @@ export const useMapDataStore = create<State & Actions>((set) => ({
     set((state) => ({ poiStatus: { ...state.poiStatus, [id]: status } })),
   resetPOIStatus: () => set({ poiStatus: {} }),
   nudgeGate: () => set({ gateNudgeAt: Date.now() }),
-  setDrawStats: (v) => set({ drawStats: v }),
   setIsochroneStats: (v) => set({ isochroneStats: v }),
   setRealtime: (v) => set({ realtime: v }),
   setHikeProgress: (v) => set({ hikeProgress: v }),

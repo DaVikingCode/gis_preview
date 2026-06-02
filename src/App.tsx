@@ -19,18 +19,14 @@ import { Button } from '@/components/ui/button'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { ArrowLeft } from 'lucide-react'
 
-// Faux curseur décoratif qui « clique » la carte pendant les tracés auto (Mesure,
-// Dessin). Réutilise le SmoothCursor du step cadastre, mais en mode non intrusif
-// (hideSystemCursor=false) : le vrai curseur de l'utilisateur reste visible.
+// Faux curseur décoratif qui « clique » la carte pendant le tracé auto (Mesure).
+// Mode non intrusif (hideSystemCursor=false) : le vrai curseur reste visible.
 function TourTraceCursor() {
   const id = useTourStore((s) => STEPS[s.currentStep]?.id)
   const hidden = useTourStore((s) => s.traceCursorHidden)
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  if (reduced || (id !== 'measure' && id !== 'draw-analysis')) return null
-  // On cache le curseur en fondu dès le dernier clic posé (pas à la fin du
-  // remplissage, qui se propage ensuite).
-  // `key` par step : une instance neuve par tracé (pas de flash à l'ancienne
-  // position lors du passage Mesure → Dessin).
+  if (reduced || id !== 'measure') return null
+  // `key` par step : une instance neuve par tracé.
   return <SmoothCursor key={id} scripted hideSystemCursor={false} hidden={hidden} zIndex={100060} />
 }
 

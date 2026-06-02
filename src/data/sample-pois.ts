@@ -36,7 +36,7 @@ export const SAMPLE_POIS: FeatureCollection<Point, POIProps> = {
         commune: 'Salbris (41)',
         voltage: '90 / 20 kV',
         lastInspection: '2025-10-02',
-        anomalies: 0,
+        anomalies: 2,
         notes:
           "Poste source supervisé depuis l'agence Conduite Centre. Accès portail nord, code badge OPS.",
         photo: posteSourceImg,

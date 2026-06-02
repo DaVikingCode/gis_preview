@@ -17,7 +17,7 @@ export function MeasureChart() {
       <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Points</div>
       <ScrollArea className="h-36 pr-2">
         <ol className="text-xs space-y-0.5">
-          {pts.length === 0 && <li className="text-muted-foreground italic">Tracé automatique…</li>}
+          {pts.length === 0 && <li className="text-muted-foreground italic">Mesure en cours…</li>}
           {pts.map((p, i) => (
             <li key={i} className="tabular-nums">
               {i + 1}. {p.lng.toFixed(4)}, {p.lat.toFixed(4)}
@@ -26,7 +26,7 @@ export function MeasureChart() {
         </ol>
       </ScrollArea>
       <p className="text-[11px] text-muted-foreground mt-2">
-        {done ? 'Périmètre du pâté de maison.' : 'Tracé automatique du périmètre…'}
+        {done ? 'Périmètre mesuré sur la carte.' : 'Mesure en direct…'}
       </p>
     </div>
   )

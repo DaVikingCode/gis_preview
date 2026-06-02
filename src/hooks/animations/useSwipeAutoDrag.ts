@@ -3,21 +3,17 @@ import { useState } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { dispatchCursor } from '@/animations/tourCursor'
+import { useCursorAim } from '@/hooks/animations/useCursorAim'
 import { useTourStore } from '@/store/tour-store'
 
 // Faux curseur scripté du step « Comparaison avant / après » : il attrape le knob
-// du slider et le glisse subtilement en ALLER-RETOUR — DROITE → GAUCHE (révèle
-// l'ortho actuelle) puis GAUCHE → DROITE (revient) — avant de relâcher. Tant que ce
-// va-et-vient n'est pas fini, « Suivant » reste verrouillé (gate swipeDone). C'est le
-// SmoothCursor (magicui) piloté par des pointermove
-// synthétiques (dispatchCursor). En reduced-motion : pas de geste, le slider reste
-// au centre et la gate se lève.
+// du slider et le glisse en aller-retour avant de relâcher (gate swipeDone).
 //
 // Le SmoothCursor est rendu en ressort (motion) → sa position À L'ÉCRAN traîne
 // derrière la cible dispatchée. Si on pilotait le séparateur depuis la cible, le
 // knob filerait DEVANT le curseur. On COLLE donc le knob, pendant le glissement, sur
-// la position RÉELLE du curseur (lue chaque frame via gsap.ticker) — comme le ghost
-// de useDemoCursorDrop. Le curseur « mène », le knob lui colle : un vrai drag.
+// la position RÉELLE du curseur (lue chaque frame via gsap.ticker). Le curseur
+// « mène », le knob lui colle : un vrai drag.
 
 const HOLD_SEC = 0.8 // observation de l'image de départ avant l'entrée du curseur
 const GLIDE_SEC = 0.6 // approche du curseur jusqu'au knob
@@ -51,6 +47,7 @@ export function useSwipeAutoDrag({
   reduced,
 }: Opts): boolean {
   const [cursorHidden, setCursorHidden] = useState(false)
+  const aim = useCursorAim()
 
   useGSAP(
     () => {
@@ -113,15 +110,23 @@ export function useSwipeAutoDrag({
       // créé dans le corps de useGSAP → capté par le contexte, révoqué au unmount).
       const tl = gsap.timeline({ delay: HOLD_SEC, defaults: { ease: 'power2.inOut' } })
 
-      // 1) approche du knob (immobile) : le curseur entre depuis sa graine bas-droite.
-      tl.to(cur, {
-        x: rect.left + startX,
-        y: rect.top + knobY,
+      // 1) approche du knob (immobile), curseur orienté le long de l'approche puis
+      //    redressé en arrivant. Progression via un proxy pour lisser le retour à la
+      //    verticale.
+      const apFrom = { x: cur.x, y: cur.y }
+      const apTo = { x: rect.left + startX, y: rect.top + knobY }
+      const ap = { t: 0 }
+      tl.to(ap, {
+        t: 1,
         duration: GLIDE_SEC,
-        onUpdate: move,
+        onUpdate: () => {
+          cur.x = apFrom.x + (apTo.x - apFrom.x) * ap.t
+          cur.y = apFrom.y + (apTo.y - apFrom.y) * ap.t
+          aim.segment(cur.x, cur.y, -SEED_DX, -SEED_DY, ap.t)
+        },
       })
 
-      // 2) « clic » : le visuel du knob s'enfonce, le curseur plonge un peu.
+      // 2) « clic »
       tl.addLabel('press', '>')
       tl.to(
         knobVisual,
@@ -134,9 +139,7 @@ export function useSwipeAutoDrag({
         'press',
       )
 
-      // 3) va-et-vient : le curseur mène, le knob lui colle (glueKnob). On dispatche la
-      //    cible ; le séparateur suit la position rendue réelle. Droite → gauche, brève
-      //    pause, puis gauche → droite (retour à la position de départ).
+      // 3) va-et-vient : droite → gauche, brève pause, puis gauche → droite.
       tl.addLabel('drag', '>')
       tl.call(
         () => {
@@ -146,15 +149,37 @@ export function useSwipeAutoDrag({
         [],
         'drag',
       )
-      tl.to(cur, { x: rect.left + endX, duration: DRAG_SEC, onUpdate: move }, 'drag')
-      tl.to(cur, { x: rect.left + startX, duration: DRAG_SEC, onUpdate: move }, `>+=${DWELL_SEC}`)
+      // La pointe vise le sens du déplacement (flip 180° lissé par le ressort).
+      tl.to(
+        cur,
+        {
+          x: rect.left + endX,
+          duration: DRAG_SEC,
+          onUpdate: () => aim.segment(cur.x, cur.y, -1, 0),
+        },
+        'drag',
+      )
+      tl.to(
+        cur,
+        {
+          x: rect.left + startX,
+          duration: DRAG_SEC,
+          onUpdate: () => aim.segment(cur.x, cur.y, 1, 0),
+        },
+        `>+=${DWELL_SEC}`,
+      )
 
-      // 4) relâcher : le curseur se redresse, le knob remonte (rebond). Le glue reste
-      //    actif le temps que le ressort se pose pile sur l'arrivée.
+      // 4) relâcher : curseur redressé, knob qui remonte. Le glue reste actif le temps
+      //    que le ressort se pose pile sur l'arrivée.
       tl.addLabel('release', '>')
       tl.to(
         cur,
-        { y: rect.top + knobY, duration: 0.26, ease: 'back.out(2.4)', onUpdate: move },
+        {
+          y: rect.top + knobY,
+          duration: 0.26,
+          ease: 'back.out(2.4)',
+          onUpdate: () => aim.rest(cur.x, cur.y),
+        },
         'release',
       )
       tl.to(

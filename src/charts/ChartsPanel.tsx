@@ -1,3 +1,5 @@
+import { useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTourStore } from '@/store/tour-store'
 import { STEPS } from '@/tour/steps'
@@ -9,7 +11,6 @@ import { HighlightChart } from './HighlightChart'
 import { LayersPresentationModal } from './LayersPresentationModal'
 import { LayersAppliedCard } from './LayersAppliedCard'
 import { DataTablePanel } from './DataTablePanel'
-import { DrawAnalysisChart } from './DrawAnalysisChart'
 import { IsochroneChart } from './IsochroneChart'
 import { SwipeChart } from './SwipeChart'
 import { RealtimeChart } from './RealtimeChart'
@@ -18,59 +19,93 @@ import { EcosystemBridge } from './EcosystemBridge'
 import { TechStackDiagram } from './TechStackDiagram'
 
 const META: Record<string, { title: string; description: string }> = {
-  buildings: { title: 'Hauteurs visibles', description: 'Échantillonnage des features 3D rendues' },
-  measure: { title: 'Mesure courante', description: 'Calcul Turf.js, mise à jour en temps réel' },
-  heatmap: { title: 'Top 5 densité', description: '~1 160 points pondérés' },
+  buildings: { title: 'Hauteurs visibles', description: 'Répartition des hauteurs de bâtiments' },
+  measure: { title: 'Mesure courante', description: 'Mise à jour en temps réel' },
+  heatmap: { title: 'Top 5 densité', description: 'Zones de plus forte densité' },
   basemap: { title: 'Fonds de plan', description: '4 styles disponibles' },
   highlight: { title: 'Bâtiment surligné', description: 'feature-state + paint case' },
-  draw: { title: 'Analyse spatiale', description: 'Polygone à main levée, requête Turf' },
-  isochrone: { title: 'Accessibilité', description: 'Isochrones 5 / 10 / 15 min' },
-  swipe: { title: 'Comparaison ortho', description: 'Avant / après, deux millésimes IGN' },
-  realtime: { title: 'Supervision réseau', description: 'Flux SCADA simulé · mise à jour live' },
-  hiking: { title: 'Profil d’élévation', description: 'Altitude vs distance · progression live' },
+  isochrone: { title: 'Accessibilité', description: 'Zones par temps de trajet' },
+  swipe: { title: 'Avant / après', description: 'Comparer deux états d’un territoire' },
+  realtime: { title: 'Supervision en direct', description: 'Mise à jour en continu' },
+  hiking: { title: 'Profil d’élévation', description: 'Altitude et progression, en direct' },
 }
 
 export function ChartsPanel() {
   const started = useTourStore((s) => s.started)
   const currentStep = useTourStore((s) => s.currentStep)
   const layersPanelOpen = useTourStore((s) => s.layersPanelOpen)
-  if (!started) return null
-  const step = STEPS[currentStep]
-  if (!step || step.chart === 'none') return null
-  if (step.chart === 'layers-presentation') {
-    // « Catalogue de couches » : la modale n'apparaît qu'une fois le bouton Couches
-    // « cliqué » par le faux curseur (LayersButton). Les autres steps catalogue
-    // (pick-cadastre, import…) la montent comme avant.
-    if (step.id === 'layers-overview' && !layersPanelOpen) return null
-    return <LayersPresentationModal />
+
+  const step = started ? STEPS[currentStep] : undefined
+  const chart = step?.chart
+
+  // Quand on quitte un step catalogue (ex. pick-cadastre → apply-cadastre), on garde
+  // la modale plein écran montée le temps de son fondu de sortie (collapse vers le
+  // chip) pendant que la caméra vole déjà. On ajuste l'état pendant le rendu (pattern
+  // React « valeur précédente ») pour que la modale ne disparaisse pas une seule frame
+  // — sinon elle « pop » avant que l'animation de sortie ne puisse jouer.
+  const [exiting, setExiting] = useState(false)
+  const prevChartRef = useRef<string | undefined>(undefined)
+  if (prevChartRef.current !== chart) {
+    const prev = prevChartRef.current
+    prevChartRef.current = chart
+    if (chart === 'layers-presentation') {
+      if (exiting) setExiting(false)
+    } else if (prev === 'layers-presentation') {
+      setExiting(true)
+    }
   }
-  if (step.chart === 'layers-applied') return <LayersAppliedCard key={step.id} />
-  if (step.chart === 'table') return <DataTablePanel />
-  if (step.chart === 'ecosystem') return <EcosystemBridge key={step.id} />
-  if (step.chart === 'techstack') return <TechStackDiagram key={step.id} />
-  const meta = META[step.chart]
+
+  if (!started || !step) return null
+
+  // « Catalogue de couches » : sur layers-overview la modale n'apparaît qu'une fois le
+  // bouton Couches « cliqué » par le faux curseur (LayersButton).
+  const overviewGate = step.id === 'layers-overview' && !layersPanelOpen
+  const showModal = (chart === 'layers-presentation' && !overviewGate) || exiting
+  const modal = showModal ? (
+    <LayersPresentationModal exiting={exiting} onExited={() => setExiting(false)} />
+  ) : null
+
+  let content: ReactNode = null
+  if (chart && chart !== 'none' && chart !== 'layers-presentation') {
+    if (chart === 'layers-applied') content = <LayersAppliedCard key={step.id} />
+    else if (chart === 'table') content = <DataTablePanel />
+    else if (chart === 'ecosystem') content = <EcosystemBridge key={step.id} />
+    else if (chart === 'techstack') content = <TechStackDiagram key={step.id} />
+    else {
+      const meta = META[chart]
+      content = (
+        <div
+          className="absolute top-4 right-16 w-80 pointer-events-auto"
+          style={{ zIndex: 100100 }}
+        >
+          <Card className="bg-card/95 backdrop-blur-md">
+            <CardHeader>
+              <CardTitle>{meta.title}</CardTitle>
+              <CardDescription>{meta.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {chart === 'buildings' && (
+                <BuildingsHeightChart byHeight={step.id === 'layers-apply-buildings'} />
+              )}
+              {chart === 'measure' && <MeasureChart />}
+              {chart === 'heatmap' && <HeatmapChart />}
+              {chart === 'basemap' && <BasemapChart />}
+              {chart === 'highlight' && <HighlightChart />}
+              {chart === 'isochrone' && <IsochroneChart />}
+              {chart === 'swipe' && <SwipeChart />}
+              {chart === 'realtime' && <RealtimeChart />}
+              {chart === 'hiking' && <HikingChart />}
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+  }
+
   return (
-    <div className="absolute top-4 right-16 w-80 pointer-events-auto" style={{ zIndex: 100100 }}>
-      <Card className="bg-card/95 backdrop-blur-md">
-        <CardHeader>
-          <CardTitle>{meta.title}</CardTitle>
-          <CardDescription>{meta.description}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {step.chart === 'buildings' && (
-            <BuildingsHeightChart byHeight={step.id === 'layers-apply-buildings'} />
-          )}
-          {step.chart === 'measure' && <MeasureChart />}
-          {step.chart === 'heatmap' && <HeatmapChart />}
-          {step.chart === 'basemap' && <BasemapChart />}
-          {step.chart === 'highlight' && <HighlightChart />}
-          {step.chart === 'draw' && <DrawAnalysisChart />}
-          {step.chart === 'isochrone' && <IsochroneChart />}
-          {step.chart === 'swipe' && <SwipeChart />}
-          {step.chart === 'realtime' && <RealtimeChart />}
-          {step.chart === 'hiking' && <HikingChart />}
-        </CardContent>
-      </Card>
-    </div>
+    <>
+      {content}
+      {modal}
+    </>
   )
 }
