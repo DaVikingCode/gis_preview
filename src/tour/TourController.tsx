@@ -78,6 +78,21 @@ function waitForStyle(map: maplibregl.Map, timeoutMs = 700): Promise<void> {
   })
 }
 
+// Résout l'élément ancre d'un step à la volée (driver.js accepte `() => Element`).
+// Sur mobile la sidebar est un tiroir Radix (Sheet) monté de façon asynchrone à
+// l'ouverture : au moment où driver.js pose le surlignage d'un step ancré dessus
+// (workspace-sidebar, bascule thème), l'élément n'existe pas encore dans le DOM.
+// driver.js retombe alors sur son « driver-dummy-element » (0×0, centré) → un petit
+// rond surligné au centre sur fond grisé. Si la cible est absente ou non rendue
+// (getClientRects vide = display:none / pas encore monté), on retombe sur le
+// conteneur plein écran plutôt que sur le dummy → aucun rond parasite (le Sheet a
+// déjà son propre scrim pour assombrir l'arrière-plan).
+function resolveStepElement(selector: string): Element {
+  const el = document.querySelector(selector)
+  if (el && el.getClientRects().length > 0) return el
+  return document.querySelector('#map-canvas') ?? document.body
+}
+
 export async function applyBasemap(map: maplibregl.Map, id: BasemapId) {
   map.setStyle(BASEMAPS[id].style as never, { diff: false })
   await new Promise<void>((resolve) => map.once('styledata', () => resolve()))
@@ -110,7 +125,7 @@ export function TourController() {
       prevBtnText: 'Précédent',
       doneBtnText: 'Terminer',
       steps: STEPS.map((s) => ({
-        element: s.element ?? '#map-canvas',
+        element: () => resolveStepElement(s.element ?? '#map-canvas'),
         popover: {
           title: s.title,
           description: s.description,

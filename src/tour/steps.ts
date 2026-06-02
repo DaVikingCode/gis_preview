@@ -209,7 +209,13 @@ export const STEPS: TourStep[] = [
     description:
       'Bâtiments en 3D, colorés selon leur hauteur — ici La Défense. La même mécanique vaut pour n’importe quelle couche.',
     basemap: 'positron',
-    camera: { center: [2.251476, 48.88991], zoom: 16.14, pitch: 67, bearing: -83.1 },
+    camera: {
+      center: [2.251476, 48.88991],
+      zoom: 16.14,
+      mobileZoom: 15,
+      pitch: 67,
+      bearing: -83.1,
+    },
     chart: 'buildings',
     appliedLayer: 'buildings3d',
     pan: { duration: 4200 },
@@ -321,7 +327,7 @@ export const STEPS: TourStep[] = [
     description:
       'Mesurez distances et périmètres directement sur la carte, avec un calcul mis à jour en direct.',
     basemap: 'positron',
-    camera: { center: [5.3689, 43.2944], zoom: 15.5, pitch: 0, bearing: 0 },
+    camera: { center: [5.3689, 43.2944], zoom: 15.5, mobileZoom: 14.4, pitch: 0, bearing: 0 },
     chart: 'measure',
     enterOnSettle: true,
     onEnter(map) {
@@ -399,7 +405,7 @@ export const STEPS: TourStep[] = [
     basemap: 'positron',
     // Cadrage « tout le réseau » : le poste source (est) et les postes ouest
     // tiennent à l'écran — la surcharge à venir s'affichera bien en contexte.
-    camera: { center: [1.82, 47.45], zoom: 10.2, pitch: 0, bearing: 0 },
+    camera: { center: [1.82, 47.45], zoom: 10.2, mobileZoom: 9.1, pitch: 0, bearing: 0 },
     chart: 'realtime',
     pan: { duration: 4200 },
     enterOnSettle: true,
@@ -422,7 +428,7 @@ export const STEPS: TourStep[] = [
     // Même cadrage que la supervision : on entre sans vol, la surcharge éclate
     // en contexte réseau (overview). Le curseur scripté (RtScriptedCursor) joue
     // ensuite le vol vers le poste + le clic qui ouvre la fiche.
-    camera: { center: [1.82, 47.45], zoom: 10.2, pitch: 0, bearing: 0 },
+    camera: { center: [1.82, 47.45], zoom: 10.2, mobileZoom: 9.1, pitch: 0, bearing: 0 },
     chart: 'realtime',
     // GATE : « Suivant » reste verrouillé (incidentClicked) jusqu'à ce que le
     // curseur ait cliqué le poste et ouvert sa fiche (cf. TourController +

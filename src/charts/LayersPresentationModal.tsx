@@ -305,7 +305,7 @@ export function LayersPresentationModal({
               onValueChange={(v) => scrollToCat(v as CategoryId)}
               className="shrink-0"
             >
-              <TabsList className="self-center mt-4 h-auto grid w-full max-w-[680px] grid-cols-2 p-1 sm:grid-cols-4">
+              <TabsList className="self-center mt-4 h-auto! grid w-full max-w-[680px] grid-cols-2 gap-1 p-1 sm:grid-cols-4 sm:gap-0">
                 {overviewCategories.map((cat) => (
                   <TabsTrigger
                     key={cat.id}

@@ -685,11 +685,11 @@ body,
     right: 12px !important;
     transform: none !important;
   }
-  /* gp-tour-above-table : la table passe à 60vh en mobile → remonter la popover. */
+  /* gp-tour-above-table : la table passe à 44vh en mobile → remonter la popover. */
   .driver-popover.gp-tour.gp-tour-above-table {
     left: 12px !important;
     right: 12px !important;
-    bottom: calc(60vh + 20px) !important;
+    bottom: calc(44vh + 20px) !important;
   }
 }
 

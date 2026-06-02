@@ -30,7 +30,7 @@ export function BuildingsHeightChart({ byHeight }: { byHeight?: boolean }) {
   const avg = heights.length ? Math.round(heights.reduce((a, h) => a + h, 0) / heights.length) : 0
   return (
     <div>
-      <ChartContainer config={config} className="h-48 w-full">
+      <ChartContainer config={config} className="h-28 w-full sm:h-48">
         <BarChart data={data} margin={{ left: -16, right: 8, top: 4, bottom: 0 }}>
           <CartesianGrid vertical={false} className="stroke-border" />
           <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} />

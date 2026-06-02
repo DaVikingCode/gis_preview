@@ -9,13 +9,13 @@ export function MeasureChart() {
   const done = useTourStore((s) => s.measureDone)
   return (
     <div>
-      <div className="text-3xl font-semibold text-foreground tabular-nums">
+      <div className="text-2xl font-semibold text-foreground tabular-nums sm:text-3xl">
         {km < 1 ? `${(km * 1000).toFixed(0)} m` : `${km.toFixed(2)} km`}
       </div>
       <div className="text-xs text-muted-foreground">périmètre</div>
-      <Separator className="my-3" />
+      <Separator className="my-2 sm:my-3" />
       <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Points</div>
-      <ScrollArea className="h-36 pr-2">
+      <ScrollArea className="h-24 pr-2 sm:h-36">
         <ol className="text-xs space-y-0.5">
           {pts.length === 0 && <li className="text-muted-foreground italic">Mesure en cours…</li>}
           {pts.map((p, i) => (

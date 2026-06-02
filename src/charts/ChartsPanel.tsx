@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { useTourStore } from '@/store/tour-store'
 import { STEPS } from '@/tour/steps'
 import { BuildingsHeightChart } from './BuildingsHeightChart'
@@ -34,6 +35,7 @@ export function ChartsPanel() {
   const started = useTourStore((s) => s.started)
   const currentStep = useTourStore((s) => s.currentStep)
   const layersPanelOpen = useTourStore((s) => s.layersPanelOpen)
+  const isMobile = useIsMobile()
 
   const step = started ? STEPS[currentStep] : undefined
   const chart = step?.chart
@@ -65,8 +67,13 @@ export function ChartsPanel() {
     <LayersPresentationModal exiting={exiting} onExited={() => setExiting(false)} />
   ) : null
 
+  // Sur mobile, la fiche d'anomalie (.gp-popup) s'ouvre sur le poste et le panneau
+  // supervision en haut la recouvrirait : on masque le panneau le temps de l'incident.
+  const realtimePopupSteps = new Set(['rt-surcharge', 'rt-todo', 'rt-in-progress', 'rt-done'])
+  const hideForPopup = isMobile && chart === 'realtime' && realtimePopupSteps.has(step.id)
+
   let content: ReactNode = null
-  if (chart && chart !== 'none' && chart !== 'layers-presentation') {
+  if (chart && chart !== 'none' && chart !== 'layers-presentation' && !hideForPopup) {
     if (chart === 'layers-applied') content = <LayersAppliedCard key={step.id} />
     else if (chart === 'table') content = <DataTablePanel />
     else if (chart === 'ecosystem') content = <EcosystemBridge key={step.id} />
@@ -78,10 +85,10 @@ export function ChartsPanel() {
           className="absolute top-3 right-3 left-16 w-auto pointer-events-auto sm:top-4 sm:left-auto sm:w-80"
           style={{ zIndex: 100100 }}
         >
-          <Card className="bg-card/95 backdrop-blur-md">
+          <Card size={isMobile ? 'sm' : 'default'} className="bg-card/95 backdrop-blur-md">
             <CardHeader>
               <CardTitle>{meta.title}</CardTitle>
-              <CardDescription>{meta.description}</CardDescription>
+              <CardDescription className="hidden sm:block">{meta.description}</CardDescription>
             </CardHeader>
             <CardContent>
               {chart === 'buildings' && (

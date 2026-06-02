@@ -248,24 +248,24 @@ export function DataTablePanel() {
     <div
       ref={rootRef}
       id="data-table-panel"
-      className="pointer-events-auto absolute inset-x-3 bottom-4 flex h-[60vh] flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/95 shadow-2xl ring-1 ring-foreground/10 backdrop-blur-md animate-in fade-in slide-in-from-bottom-8 duration-500 sm:inset-x-4 sm:h-[52vh]"
+      className="pointer-events-auto absolute inset-x-3 bottom-4 flex h-[44vh] flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/95 shadow-2xl ring-1 ring-foreground/10 backdrop-blur-md animate-in fade-in slide-in-from-bottom-8 duration-500 sm:inset-x-4 sm:h-[52vh]"
       style={{ zIndex: 100100 }}
     >
-      <header className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5">
-        <div className="flex flex-col gap-0.5">
+      <header className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3 sm:gap-4 sm:px-5 sm:py-3.5">
+        <div className="flex min-w-0 flex-col gap-0.5">
           <div className="flex items-center gap-2">
-            <Table2 className="size-4 text-[oklch(0.7_0.16_300)]" />
+            <Table2 className="size-4 shrink-0 text-[oklch(0.7_0.16_300)]" />
             <h2 className="font-heading text-base font-semibold leading-none">Vue tabulaire</h2>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="hidden text-xs text-muted-foreground sm:block">
             Les mêmes objets qu'à la carte, en tableau — tri, statuts, indicateurs et tendances.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <Badge variant="secondary" className="tabular-nums">
             {SAMPLE_TABLE.length} zones · {total.toLocaleString('fr-FR')} objets
           </Badge>
-          <div className="flex items-center rounded-lg border border-border/70 bg-background/60 p-0.5 text-xs">
+          <div className="hidden items-center rounded-lg border border-border/70 bg-background/60 p-0.5 text-xs sm:flex">
             <span className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-muted-foreground">
               <MapIcon className="size-3.5" /> Carte
             </span>

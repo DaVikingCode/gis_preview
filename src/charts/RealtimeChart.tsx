@@ -123,7 +123,7 @@ export function RealtimeChart() {
           <div className="flex items-baseline gap-1.5">
             <span
               ref={mwRef}
-              className="origin-left text-3xl font-semibold tabular-nums text-foreground"
+              className="origin-left text-2xl font-semibold tabular-nums text-foreground sm:text-3xl"
             >
               {totalMw.toFixed(1)}
             </span>
@@ -141,8 +141,8 @@ export function RealtimeChart() {
         </div>
       </div>
 
-      <div data-rt-section className="mt-3">
-        <ChartContainer config={chartConfig} className="h-24 w-full">
+      <div data-rt-section className="mt-2 sm:mt-3">
+        <ChartContainer config={chartConfig} className="h-16 w-full sm:h-24">
           <AreaChart data={rt.history} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="rt-grad" x1="0" y1="0" x2="0" y2="1">
@@ -173,12 +173,12 @@ export function RealtimeChart() {
         <Legend color={STATUS_COLOR.crit} label="alertes" n={counts.crit} />
       </div>
 
-      <Separator className="my-3" />
+      <Separator className="my-2 sm:my-3" />
 
       <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
         Charge par poste
       </div>
-      <ScrollArea className="h-32 pr-2">
+      <ScrollArea className="h-20 pr-2 sm:h-32">
         <div className="space-y-1.5">
           {rt.postes.map((p) => (
             <div key={p.id} data-rt-row className="flex items-center gap-2">
@@ -207,7 +207,7 @@ export function RealtimeChart() {
         </div>
       </ScrollArea>
 
-      <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+      <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground sm:mt-3">
         <span style={{ color: '#22d3ee' }}>▰</span>
         {rt.vehicles} équipes en intervention
       </div>
@@ -223,7 +223,7 @@ export function RealtimeChart() {
         </div>
       )}
 
-      <p className="mt-3 text-[11px] text-muted-foreground">
+      <p className="mt-3 hidden text-[11px] text-muted-foreground sm:block">
         Supervision en temps réel, mise à jour en continu.
       </p>
     </div>
