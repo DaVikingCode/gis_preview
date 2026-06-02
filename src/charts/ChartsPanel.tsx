@@ -75,7 +75,7 @@ export function ChartsPanel() {
       const meta = META[chart]
       content = (
         <div
-          className="absolute top-4 right-16 w-80 pointer-events-auto"
+          className="absolute top-3 right-3 left-16 w-auto pointer-events-auto sm:top-4 sm:left-auto sm:w-80"
           style={{ zIndex: 100100 }}
         >
           <Card className="bg-card/95 backdrop-blur-md">

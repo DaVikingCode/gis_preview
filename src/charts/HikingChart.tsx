@@ -69,7 +69,7 @@ export function HikingChart() {
       </div>
 
       <div data-hk-section className="mt-3">
-        <ChartContainer config={chartConfig} className="h-40 w-full">
+        <ChartContainer config={chartConfig} className="h-28 w-full sm:h-40">
           <AreaChart data={TRAIL_PROFILE} margin={{ top: 6, right: 8, bottom: 0, left: -14 }}>
             <defs>
               <linearGradient id="hk-grad" x1="0" y1="0" x2="0" y2="1">
@@ -139,7 +139,7 @@ export function HikingChart() {
         <Stat label="Sommet" value={`${TRAIL_SUMMIT_M} m`} />
       </div>
 
-      <p data-hk-section className="mt-3 text-[11px] text-muted-foreground">
+      <p data-hk-section className="mt-3 hidden text-[11px] text-muted-foreground sm:block">
         Relief 3D à partir d’un modèle d’élévation. Position suivie en direct.
       </p>
     </div>

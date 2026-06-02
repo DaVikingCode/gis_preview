@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { useMap } from '@/map/MapContext'
+import { useSidebar } from '@/components/ui/sidebar'
 import { useTourStore } from '@/store/tour-store'
 import { createTourCursor } from '@/animations/tourCursor'
 import { applyBasemap } from '@/tour/TourController'
@@ -17,6 +18,9 @@ const VT_MS = 650
 // le voile avant de le retirer en fondu. La gate `themeFlipDone` se lève à ce moment.
 export function useThemeFlipCursor() {
   const map = useMap()
+  // Sur mobile la sidebar est un tiroir : MobileSidebarTourSync l'ouvre sur ce step.
+  // On observe `openMobile` pour rejouer la séquence dès que #gp-theme-toggle est monté.
+  const { openMobile } = useSidebar()
   const id = useTourStore((s) => STEPS[s.currentStep]?.id)
   const flying = useTourStore((s) => s.flying)
   const done = useTourStore((s) => s.themeFlipDone)
@@ -30,7 +34,6 @@ export function useThemeFlipCursor() {
     () => {
       if (id !== THEME_FLIP_STEP_ID || flying || done) return
       const btn = document.querySelector<HTMLButtonElement>('#gp-theme-toggle')
-      if (!btn) return
 
       let cancelled = false
       let committed = false
@@ -42,7 +45,9 @@ export function useThemeFlipCursor() {
         if (committed || cancelled) return
         committed = true
         // Déclenche l'onClick de l'AnimatedThemeToggler (un humain cliquerait pareil).
-        btn.click()
+        // Le bouton peut manquer (tiroir mobile pas encore monté) : le swap de fond +
+        // la levée de gate ci-dessous suffisent à ne jamais bloquer la visite.
+        btn?.click()
 
         // Une fois le fond dark prêt, on retire le voile en fondu pour le révéler.
         const revealMap = () => {
@@ -65,7 +70,10 @@ export function useThemeFlipCursor() {
         useTourStore.getState().setThemeFlipDone(true)
       }
 
-      if (reduced) {
+      // Mouvement réduit OU bouton absent (tiroir mobile pas encore monté) : on
+      // bascule sans glide curseur. Si le tiroir s'ouvre ensuite, `openMobile` change
+      // → l'effet rejoue (revertOnUpdate) et trouve le bouton pour l'animation complète.
+      if (reduced || !btn) {
         const auto = gsap.delayedCall(0.6, flip)
         return () => {
           cancelled = true
@@ -102,7 +110,7 @@ export function useThemeFlipCursor() {
     // `done` n'est PAS une dépendance : le passer à true (fin du flip) ne doit pas
     // re-jouer/réinitialiser l'effet et tuer la séquence en cours. Le garde en tête
     // de callback suffit à ne pas rejouer le geste. `id` couvre l'aller/retour.
-    { dependencies: [id, flying], revertOnUpdate: true },
+    { dependencies: [id, flying, openMobile], revertOnUpdate: true },
   )
 
   return { hidden, scrimRef }

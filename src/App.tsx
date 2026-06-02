@@ -11,6 +11,7 @@ import { TrafficFlowDebugPanel } from '@/tour/TrafficFlowDebugPanel'
 import { ChartsPanel } from '@/charts/ChartsPanel'
 import { StartScreen } from '@/tour/StartScreen'
 import { AppSidebar } from '@/components/AppSidebar'
+import { MobileSidebarTourSync } from '@/components/MobileSidebarTourSync'
 import { useTourStore } from '@/store/tour-store'
 import { STEPS } from '@/tour/steps'
 import { SmoothCursor } from '@/components/ui/smooth-cursor'
@@ -67,6 +68,7 @@ function Shell() {
   return (
     <>
       {started && <AppSidebar />}
+      {started && <MobileSidebarTourSync />}
       <SidebarInset className="relative overflow-hidden">
         <MapCanvas>
           <Overlays />

@@ -277,7 +277,7 @@ export function LayersPresentationModal({
           'relative flex flex-col bg-card/95 backdrop-blur-md shadow-2xl pointer-events-auto overflow-hidden gap-0 py-0',
           // Same frame for catalogue and import — only the inner content swaps,
           // so the modal never resizes between the pick step and the import sim.
-          'w-[1180px] max-w-[96vw] max-h-[88vh]',
+          'w-full sm:w-[1180px] max-w-[96vw] max-h-[88vh]',
         )}
       >
         <div className="px-6 pt-5 pb-4 border-b text-left flex flex-col items-start justify-start">
@@ -305,7 +305,7 @@ export function LayersPresentationModal({
               onValueChange={(v) => scrollToCat(v as CategoryId)}
               className="shrink-0"
             >
-              <TabsList className="self-center mt-4 h-auto grid w-[680px] max-w-[92%] grid-cols-4 p-1">
+              <TabsList className="self-center mt-4 h-auto grid w-full max-w-[680px] grid-cols-2 p-1 sm:grid-cols-4">
                 {overviewCategories.map((cat) => (
                   <TabsTrigger
                     key={cat.id}
@@ -324,7 +324,7 @@ export function LayersPresentationModal({
 
             <div
               ref={viewportRef}
-              className="mt-4 max-h-[64vh] overflow-y-auto px-6 pb-6 pt-1 space-y-7"
+              className="mt-4 max-h-[64vh] overflow-y-auto px-4 pb-6 pt-1 space-y-7 sm:px-6"
             >
               <button
                 type="button"
@@ -373,7 +373,7 @@ export function LayersPresentationModal({
                     </span>
                     <div className="ml-1 h-px flex-1 bg-border/60" />
                   </div>
-                  <div className="grid grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
                     {cat.layers.map((layer) => (
                       <LayerCard key={layer.id} layer={layer} cat={cat} />
                     ))}
@@ -905,7 +905,7 @@ function ImportPane() {
               </div>
               <div
                 data-src-body
-                className="relative h-[360px] overflow-hidden bg-[#0b0b14] px-3 py-2.5 font-mono text-[11px] leading-relaxed"
+                className="relative h-[220px] overflow-hidden bg-[#0b0b14] px-3 py-2.5 font-mono text-[11px] leading-relaxed sm:h-[360px]"
               >
                 {IMPORT_SOURCE_LINES.map((line, i) => (
                   <SrcLineRow key={i} line={line} n={i + 1} />

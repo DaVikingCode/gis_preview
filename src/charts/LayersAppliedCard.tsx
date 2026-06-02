@@ -54,7 +54,7 @@ export function LayersAppliedCard() {
   return (
     <div
       ref={rootRef}
-      className="absolute top-4 right-16 w-72 pointer-events-auto"
+      className="absolute top-3 right-3 left-16 w-auto pointer-events-auto sm:top-4 sm:left-auto sm:w-72"
       style={{ zIndex: 100100 }}
     >
       <Card

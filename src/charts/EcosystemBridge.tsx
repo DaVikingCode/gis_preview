@@ -263,7 +263,7 @@ export function EcosystemBridge() {
 
       <Card
         id="ecosystem-diagram"
-        className="relative flex flex-col gap-0 overflow-hidden bg-card/95 py-0 shadow-2xl backdrop-blur-md pointer-events-auto w-[1040px] max-w-[96vw] max-h-[88vh]"
+        className="relative flex flex-col gap-0 overflow-hidden bg-card/95 py-0 shadow-2xl backdrop-blur-md pointer-events-auto w-full sm:w-[1040px] max-w-[96vw] max-h-[88vh]"
       >
         <div className="relative z-10 px-7 pt-6 pb-4 border-b text-left">
           <div className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">
@@ -278,7 +278,10 @@ export function EcosystemBridge() {
           </p>
         </div>
 
-        <div ref={containerRef} className="relative flex-1 px-10 py-9">
+        <div
+          ref={containerRef}
+          className="relative flex-1 overflow-y-auto px-4 py-6 sm:px-10 sm:py-9"
+        >
           <div
             data-eco-ambient
             className="pointer-events-none absolute left-1/2 top-1/2 size-[440px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[60px]"
@@ -287,7 +290,7 @@ export function EcosystemBridge() {
             }}
           />
 
-          <div ref={beamsRef} className="pointer-events-none absolute inset-0 z-0">
+          <div ref={beamsRef} className="pointer-events-none absolute inset-0 z-0 hidden sm:block">
             {conduits.length > 0 && (
               <svg
                 width={dims.width}
@@ -333,10 +336,10 @@ export function EcosystemBridge() {
             )}
           </div>
 
-          <div className="relative z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-x-12">
+          <div className="relative z-10 grid grid-cols-1 items-center gap-x-12 gap-y-6 sm:grid-cols-[1fr_auto_1fr] sm:gap-y-0">
             <div
               data-eco-col="left"
-              className="flex w-full max-w-[240px] flex-col gap-4 justify-self-end"
+              className="flex w-full max-w-[240px] flex-col gap-4 justify-self-center sm:justify-self-end"
             >
               <div
                 data-eco-label
@@ -382,7 +385,7 @@ export function EcosystemBridge() {
 
             <div
               data-eco-col="right"
-              className="flex w-full max-w-[240px] flex-col gap-4 justify-self-start"
+              className="flex w-full max-w-[240px] flex-col gap-4 justify-self-center sm:justify-self-start"
             >
               <div
                 data-eco-label

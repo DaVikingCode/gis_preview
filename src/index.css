@@ -656,6 +656,43 @@ body,
   pointer-events: none;
 }
 
+/* ─── Mobile (≤640px) : popovers en bottom-sheet ───────────────────────────
+   Sous ~375px, une popover ancrée (min-width 280px) recouvre son ancre et déborde.
+   On la transforme en feuille basse pleine largeur. !important obligatoire : driver.js
+   réécrit left/top/transform inline à chaque render. Les variantes gp-tour-bottom /
+   gp-tour-above-table (déjà fixées) ne sont relâchées qu'en largeur + recalées. */
+@media (max-width: 640px) {
+  .driver-popover.gp-tour {
+    min-width: 0 !important;
+    max-width: none !important;
+    width: auto !important;
+  }
+  .driver-popover.gp-tour:not(.gp-tour-bottom):not(.gp-tour-above-table) {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: auto !important;
+    bottom: 12px !important;
+    transform: none !important;
+    margin: 0 !important;
+  }
+  .driver-popover.gp-tour:not(.gp-tour-bottom):not(.gp-tour-above-table) .driver-popover-arrow {
+    display: none !important;
+  }
+  /* gp-tour-bottom (import / écosystème / techstack) : déjà bottom-centré → plein largeur. */
+  .driver-popover.gp-tour.gp-tour-bottom {
+    left: 12px !important;
+    right: 12px !important;
+    transform: none !important;
+  }
+  /* gp-tour-above-table : la table passe à 60vh en mobile → remonter la popover. */
+  .driver-popover.gp-tour.gp-tour-above-table {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: calc(60vh + 20px) !important;
+  }
+}
+
 /* Arrow tinting — match the card background per side */
 .driver-popover.gp-tour .driver-popover-arrow.driver-popover-arrow-side-left {
   border-left-color: var(--card);

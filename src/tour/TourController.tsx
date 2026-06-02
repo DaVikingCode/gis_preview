@@ -6,6 +6,7 @@ import { STEPS, THEME_FLIP_STEP_ID } from './steps'
 import { BASEMAPS, type BasemapId } from '@/map/basemaps'
 import { startPrewarm, cancelPrewarm } from '@/map/prewarm'
 import { useGateUnlockNudge } from '@/hooks/animations/useGateUnlockNudge'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 type DriverInstance = ReturnType<typeof driver>
 
@@ -94,6 +95,7 @@ export function TourController() {
   const prevStepRef = useRef<number>(-1)
   const drivingRef = useRef<boolean>(false)
   const nudge = useGateUnlockNudge()
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (driverRef.current) return
@@ -398,6 +400,10 @@ export function TourController() {
         left: step.camera.padding?.left ?? 0,
         right: step.camera.padding?.right ?? 0,
       }
+      // Sur petit écran, certains cadrages paraissent trop zoomés : on applique le
+      // zoom de repli mobile du step s'il en définit un.
+      const camZoom =
+        isMobile && step.camera.mobileZoom != null ? step.camera.mobileZoom : step.camera.zoom
       const desiredBm = step.basemap
       const bmWillChange = !!desiredBm && useTourStore.getState().basemap !== desiredBm
       // Going backward (Prev) should glide back to the previous step rather than
@@ -419,7 +425,7 @@ export function TourController() {
       if (!pan) {
         map.jumpTo({
           center: step.camera.center,
-          zoom: fly ? fly.fromZoom : step.camera.zoom,
+          zoom: fly ? fly.fromZoom : camZoom,
           pitch: step.camera.pitch ?? 0,
           bearing: step.camera.bearing ?? 0,
           padding,
@@ -449,7 +455,7 @@ export function TourController() {
         prevStepRef.current = cur
         map.flyTo({
           center: step.camera.center,
-          zoom: step.camera.zoom,
+          zoom: camZoom,
           pitch: step.camera.pitch ?? 0,
           bearing: step.camera.bearing ?? 0,
           padding,
@@ -484,7 +490,7 @@ export function TourController() {
         step.onEnter?.(map, { setBasemap: setBasemapStore })
         map.flyTo({
           center: step.camera.center,
-          zoom: step.camera.zoom,
+          zoom: camZoom,
           pitch: step.camera.pitch ?? 0,
           bearing: step.camera.bearing ?? 0,
           padding,
@@ -518,7 +524,9 @@ export function TourController() {
       cancelled = true
       leaveOnCleanup?.()
     }
-  }, [currentStep, started, map, setBasemapStore])
+    // isMobile : un changement de breakpoint en cours de visite ne rejoue pas le step
+    // (garde `prev === cur` ci-dessus) ; le zoom mobile s'applique à la navigation suivante.
+  }, [currentStep, started, map, setBasemapStore, isMobile])
 
   return null
 }

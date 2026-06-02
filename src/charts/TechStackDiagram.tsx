@@ -323,7 +323,7 @@ export function TechStackDiagram() {
 
       <Card
         id="techstack-diagram"
-        className="relative flex flex-col gap-0 overflow-hidden bg-card/95 py-0 shadow-2xl backdrop-blur-md pointer-events-auto w-[1040px] max-w-[96vw] max-h-[92vh]"
+        className="relative flex flex-col gap-0 overflow-hidden bg-card/95 py-0 shadow-2xl backdrop-blur-md pointer-events-auto w-full sm:w-[1040px] max-w-[96vw] max-h-[92vh]"
       >
         {/* Header */}
         <div className="relative z-10 px-7 pt-6 pb-4 border-b text-left">
@@ -340,7 +340,7 @@ export function TechStackDiagram() {
         </div>
 
         {/* Body: isometric stack (left) + pipeline legend (right) */}
-        <div className="relative grid flex-1 grid-cols-[1.18fr_0.82fr] items-center gap-2">
+        <div className="relative grid flex-1 grid-cols-1 items-center gap-2 overflow-y-auto sm:grid-cols-[1.18fr_0.82fr]">
           {/* Ambient bloom (neutral, very faint) behind the stack */}
           <div
             data-stack-glow

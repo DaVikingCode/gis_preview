@@ -55,6 +55,9 @@ export type TourStep = {
   camera: {
     center: [number, number]
     zoom: number
+    // Zoom de repli sur mobile (useIsMobile, <768px) : le viewport étant plus étroit,
+    // certains cadrages paraissent trop zoomés. Optionnel — sinon `zoom` est utilisé.
+    mobileZoom?: number
     pitch?: number
     bearing?: number
     // Offsets the visual center (px). e.g. bottom padding lifts the scene above
@@ -231,7 +234,13 @@ export const STEPS: TourStep[] = [
     // Cadrage FIXE du sentier : le vol d'entrée atterrit ici et la caméra n'en bouge plus pendant
     // toute la montée (la timeline GSAP n'anime que le randonneur, pas la caméra) — aucun re-rendu
     // terrain forcé par frame, donc bien meilleurs fps. Pas de `cinematic`.
-    camera: { center: [6.93397, 45.906809], zoom: 13.14, pitch: 57.3, bearing: -57.1 },
+    camera: {
+      center: [6.93397, 45.906809],
+      zoom: 13.14,
+      mobileZoom: 12.4,
+      pitch: 57.3,
+      bearing: -57.1,
+    },
     chart: 'hiking',
     // Vol longue distance La Défense → Chamonix (flyTo en arc).
     pan: { duration: 3800 },

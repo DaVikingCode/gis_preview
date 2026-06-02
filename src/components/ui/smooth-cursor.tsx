@@ -141,7 +141,11 @@ export function SmoothCursor({
     const mediaQuery = window.matchMedia(DESKTOP_POINTER_QUERY)
 
     const updateEnabled = () => {
-      const nextIsEnabled = mediaQuery.matches
+      // Un curseur scripté est piloté par des pointermove synthétiques, pas par la
+      // souris réelle : il doit s'afficher même sur mobile/tactile (sinon aucun faux
+      // curseur n'apparaît pendant la visite mobile). Le gate pointeur-fin ne
+      // concerne que le suivi du vrai pointeur (mode non scripté).
+      const nextIsEnabled = scripted || mediaQuery.matches
       setIsEnabled(nextIsEnabled)
 
       if (!nextIsEnabled) {
@@ -155,7 +159,7 @@ export function SmoothCursor({
     return () => {
       mediaQuery.removeEventListener('change', updateEnabled)
     }
-  }, [])
+  }, [scripted])
 
   useEffect(() => {
     if (!isEnabled) {

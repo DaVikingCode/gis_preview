@@ -35,7 +35,11 @@ export function POIPopup({ poi, onClose }: { poi: POIProps; onClose: () => void 
   usePoiPopupReveal(rootRef, haloRef)
 
   return (
-    <div ref={rootRef} className="relative w-80" style={{ transformOrigin: 'center bottom' }}>
+    <div
+      ref={rootRef}
+      className="relative w-[min(20rem,calc(100vw-2rem))]"
+      style={{ transformOrigin: 'center bottom' }}
+    >
       <div
         ref={haloRef}
         aria-hidden

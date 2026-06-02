@@ -248,7 +248,7 @@ export function DataTablePanel() {
     <div
       ref={rootRef}
       id="data-table-panel"
-      className="pointer-events-auto absolute inset-x-4 bottom-4 flex h-[52vh] flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/95 shadow-2xl ring-1 ring-foreground/10 backdrop-blur-md animate-in fade-in slide-in-from-bottom-8 duration-500"
+      className="pointer-events-auto absolute inset-x-3 bottom-4 flex h-[60vh] flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/95 shadow-2xl ring-1 ring-foreground/10 backdrop-blur-md animate-in fade-in slide-in-from-bottom-8 duration-500 sm:inset-x-4 sm:h-[52vh]"
       style={{ zIndex: 100100 }}
     >
       <header className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5">
@@ -277,7 +277,9 @@ export function DataTablePanel() {
       </header>
 
       <ScrollArea className="flex-1">
-        <Table>
+        {/* Sous ~640px les 8 colonnes ne tiennent pas : scroll horizontal natif
+            (le balayage vertical du faux curseur reste aligné sur les lignes). */}
+        <Table className="min-w-[680px] sm:min-w-0">
           <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur-md">
             <TableRow className="border-border/60 hover:bg-transparent">
               <TableHead>Zone</TableHead>
