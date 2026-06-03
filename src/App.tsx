@@ -8,6 +8,7 @@ import { ThemeFlipCursor } from '@/components/ThemeFlipCursor'
 import { TourThemeSync } from '@/components/TourThemeSync'
 import { DebugPanel } from '@/tour/DebugPanel'
 import { TrafficFlowDebugPanel } from '@/tour/TrafficFlowDebugPanel'
+import { AirplaneDebugPanel } from '@/tour/AirplaneDebugPanel'
 import { ChartsPanel } from '@/charts/ChartsPanel'
 import { StartScreen } from '@/tour/StartScreen'
 import { AppSidebar } from '@/components/AppSidebar'
@@ -51,6 +52,7 @@ function Overlays() {
       {started && <ChartsPanel />}
       {started && import.meta.env.DEV && <DebugPanel />}
       {started && import.meta.env.DEV && <TrafficFlowDebugPanel />}
+      {started && import.meta.env.DEV && <AirplaneDebugPanel />}
       {!started && <StartScreen />}
       {started && (
         <div className="absolute bottom-4 left-4" style={{ zIndex: 100100 }}>

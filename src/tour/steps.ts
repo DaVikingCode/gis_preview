@@ -3,6 +3,7 @@ import type { BasemapId } from '@/map/basemaps'
 import { addBuildings3D, removeBuildings3D } from '@/map/layers/buildings3d'
 import { addTrafficFlow, removeTrafficFlow } from '@/map/layers/trafficFlow'
 import { addHikingTerrain, type HikingHandle } from '@/map/layers/hikingTerrain'
+import { addAirplane3D, type AirplaneHandle } from '@/map/layers/airplane3d'
 import { STATIC_LADEFENSE_HEIGHTS } from '@/data/sample-buildings'
 import { addVectorStyled, removeVectorStyled } from '@/map/layers/vectorStyled'
 import { addMeasureTool, MEASURE_DEMO_BLOCK, type MeasureHandle } from '@/map/layers/measureLayer'
@@ -34,6 +35,7 @@ export type ChartKind =
   | 'swipe'
   | 'realtime'
   | 'hiking'
+  | 'airplane'
   | 'ecosystem'
   | 'techstack'
 
@@ -102,6 +104,7 @@ export type TourStep = {
 let measureHandle: MeasureHandle | null = null
 let realtimeHandle: RealtimeHandle | null = null
 let hikingHandle: HikingHandle | null = null
+let airplaneHandle: AirplaneHandle | null = null
 
 // Séquence HTA (supervision live → surcharge → réparation → rétablissement).
 // Poste incident = poste source P-4521 (id 1) : flambe sur cue puis se rétablit.
@@ -266,6 +269,38 @@ export const STEPS: TourStep[] = [
       hikingHandle?.detach()
       hikingHandle = null
       useMapDataStore.getState().setHikeProgress(0)
+    },
+  },
+  {
+    id: 'flyover-3d',
+    title: 'Survol 3D · globe',
+    description:
+      'La carte bascule en projection globe puis un modèle 3D glTF, rendu via three.js dans le contexte WebGL de la carte, suit un grand cercle Paris ↔ New York en altitude — la caméra l’accompagnant autour de la Terre.',
+    basemap: 'satellite',
+    // Départ : gros plan incliné sur Paris–Charles de Gaulle. Le tour pose la caméra
+    // ici (pan depuis Chamonix), puis onEnter (enterOnSettle) lance l'avion + le
+    // dézoom vers la vue orbitale (cf. addAirplane3D).
+    // Gros plan incliné sur Paris–Charles de Gaulle : on démarre cadré sur l'avion
+    // au sol pour le voir décoller en suivant le tracé, avant que la boucle ne
+    // pull-out vers la vue orbitale (cf. ZOOM_NEAR/PITCH_NEAR dans addAirplane3D).
+    camera: {
+      center: [2.5479, 49.0097],
+      zoom: 5.2,
+      mobileZoom: 4.4,
+      pitch: 66,
+      bearing: 21,
+    },
+    chart: 'airplane',
+    pan: { duration: 3200 },
+    enterOnSettle: true,
+    // Pas de `cinematic` ici : la boucle de vol (addAirplane3D) pilote entièrement
+    // la caméra par-frame ; la rotation idle de CinematicCamera entrerait en conflit.
+    onEnter(map) {
+      airplaneHandle = addAirplane3D(map)
+    },
+    onLeave() {
+      airplaneHandle?.detach()
+      airplaneHandle = null
     },
   },
   {

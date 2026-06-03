@@ -16,6 +16,7 @@ import { IsochroneChart } from './IsochroneChart'
 import { SwipeChart } from './SwipeChart'
 import { RealtimeChart } from './RealtimeChart'
 import { HikingChart } from './HikingChart'
+import { AirplaneCard } from './AirplaneCard'
 import { EcosystemBridge } from './EcosystemBridge'
 import { TechStackDiagram } from './TechStackDiagram'
 
@@ -29,6 +30,7 @@ const META: Record<string, { title: string; description: string }> = {
   swipe: { title: 'Avant / après', description: 'Comparer deux états d’un territoire' },
   realtime: { title: 'Supervision en direct', description: 'Mise à jour en continu' },
   hiking: { title: 'Profil d’élévation', description: 'Altitude et progression, en direct' },
+  airplane: { title: 'Télémétrie de vol', description: 'Altitude, vitesse et cap, en direct' },
 }
 
 export function ChartsPanel() {
@@ -102,6 +104,7 @@ export function ChartsPanel() {
               {chart === 'swipe' && <SwipeChart />}
               {chart === 'realtime' && <RealtimeChart />}
               {chart === 'hiking' && <HikingChart />}
+              {chart === 'airplane' && <AirplaneCard />}
             </CardContent>
           </Card>
         </div>
