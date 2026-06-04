@@ -278,35 +278,57 @@ export const STEPS: TourStep[] = [
     id: 'pointcloud-lidar',
     title: 'Nuage de points · LiDAR',
     description:
-      'Nuage de points LiDAR (près d’un million de points colorisés issus d’un fichier .laz), rendu en 3D via three.js dans le contexte WebGL de la carte, posé sur le fond de plan.',
+      'Scan LiDAR d’Auxonne (~9,5 millions de points, vraie couleur RGB + classification), rendu en 3D via three.js dans le contexte WebGL de la carte, posé sur le fond de plan. Le scan bascule entre colorisation par altitude, vraie couleur et classification.',
     basemap: 'satellite',
-    // Cadrage sur le VRAI emplacement du scan (Pałac w Mosznej, Pologne — cf.
-    // POINTCLOUD_ANCHOR). Le scan fait ~280 m : zoom ~17,3, incliné pour révéler le
-    // relief 3D du château.
+    // Cadrage sur le VRAI emplacement du scan (Auxonne, France — cf. POINTCLOUD_ANCHOR).
+    // Bande de ~496 × 176 m, plate : cadrage large incliné pour voir tout le nuage.
     camera: {
       center: POINTCLOUD_ANCHOR,
-      zoom: 17.3,
-      mobileZoom: 16.2,
-      pitch: 55,
-      bearing: -20,
+      zoom: 16,
+      mobileZoom: 15.2,
+      pitch: 45,
+      bearing: 0,
     },
     chart: 'pointcloud',
-    // Vol Chamonix → Moszna (Pologne).
-    pan: { duration: 3600 },
+    // Vol Chamonix → Auxonne (France).
+    pan: { duration: 3200 },
     // Rendu posé une fois la caméra arrivée (cf. hiking) : au retour arrière, le nuage
     // réapparaît au bon endroit après le vol pané plutôt qu'hors champ.
     enterOnSettle: true,
     // Le step précédent (rando) a un pan : on nettoie sa couche AVANT le vol retour.
     leaveBeforePan: true,
-    // Légère orbite cinématique → repaints continus de la couche (nuage statique).
-    cinematic: true,
+    // Pas d'orbite plate auto : la timeline GSAP (usePointCloudChoreography) possède
+    // TOUT le mouvement (survol + scans de colorisation), puis réactive l'orbite calme
+    // (setCinematic(true)) une fois posée.
+    cinematic: false,
     onEnter(map) {
+      // La timeline GSAP vit dans usePointCloudChoreography (monté par
+      // PointCloudDirector) ; ici on ne fait que poser la couche dans le store et
+      // incrémenter le jeton de lecture (le hook (re)joue alors la séquence).
+      const ds = useMapDataStore.getState()
+      ds.setPointCloudColorMode('altitude')
+      useTourStore.getState().setCinematic(false)
+
       pointCloudHandle = addPointCloud(map)
+      const handle = pointCloudHandle
+      ds.setPointCloudHandle(handle)
+      ds.setPointCloudReplay(() => useMapDataStore.getState().bumpPointCloudRun())
+
+      // Démarre une fois la géométrie chargée, si on est toujours sur ce step.
+      void handle.ready.then(() => {
+        if (pointCloudHandle !== handle) return
+        useMapDataStore.getState().bumpPointCloudRun()
+      })
     },
     onLeave() {
+      const ds = useMapDataStore.getState()
+      ds.resetPointCloudRun() // tue la timeline via le hook (revertOnUpdate)
       pointCloudHandle?.detach()
       pointCloudHandle = null
-      useMapDataStore.getState().setPointCloudStats(null)
+      ds.setPointCloudHandle(null)
+      ds.setPointCloudStats(null)
+      ds.setPointCloudReplay(null)
+      ds.setPointCloudColorMode('altitude')
     },
   },
   {

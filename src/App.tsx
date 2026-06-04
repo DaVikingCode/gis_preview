@@ -2,6 +2,8 @@ import { MapCanvas } from '@/map/MapCanvas'
 import { LayersButton } from '@/map/LayersButton'
 import { CinematicCamera } from '@/map/CinematicCamera'
 import { SwipeCompare } from '@/map/SwipeCompare'
+import { PointCloudDirector } from '@/map/PointCloudDirector'
+import { PointCloudDangerPois } from '@/map/PointCloudDangerPois'
 import { TourController } from '@/tour/TourController'
 import { RtScriptedCursor } from '@/components/RtScriptedCursor'
 import { ThemeFlipCursor } from '@/components/ThemeFlipCursor'
@@ -45,6 +47,8 @@ function Overlays() {
       <Toaster position="bottom-right" style={{ zIndex: 100115 }} />
       <CinematicCamera />
       {isSwipe && <SwipeCompare />}
+      {started && <PointCloudDirector />}
+      {started && <PointCloudDangerPois />}
       {started && <LayersButton />}
       {started && <TourController />}
       {started && <TourTraceCursor />}

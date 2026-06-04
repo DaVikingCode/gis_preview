@@ -32,7 +32,10 @@ const META: Record<string, { title: string; description: string }> = {
   realtime: { title: 'Supervision en direct', description: 'Mise à jour en continu' },
   hiking: { title: 'Profil d’élévation', description: 'Altitude et progression, en direct' },
   airplane: { title: 'Télémétrie de vol', description: 'Altitude, vitesse et cap, en direct' },
-  pointcloud: { title: 'Nuage de points', description: 'Scan LiDAR · colorisé par altitude' },
+  pointcloud: {
+    title: 'Nuage de points',
+    description: 'Scan LiDAR · Auxonne · RGB + classification (ligne & urgence)',
+  },
 }
 
 export function ChartsPanel() {

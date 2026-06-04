@@ -1,18 +1,19 @@
 // Pré-cuisson du nuage de points LiDAR (one-shot, dev only).
 //
-// Décode `Palac_Moszna.laz` (LAS 1.2, format 3 = XYZ + RGB, ~5,7 M points,
-// CRS EPSG:2178, mètres) une fois, le décime et le réécrit en un binaire compact
-// committé que l'app charge instantanément au runtime — pas de laz-perf/WASM côté
-// client (cf. src/map/layers/pointCloud.ts).
+// Décode `auxonne.las` (LAS 1.2, format 3 = XYZ + RGB 16 bits + classification,
+// ~9,5 M points, CRS UTM zone 31N / EPSG:32631, mètres — Auxonne, France) une fois
+// et le réécrit en un binaire compact committé que l'app charge au runtime — pas de
+// laz-perf/WASM côté client (cf. src/map/layers/pointCloud.ts).
 //
 // Usage : `node scripts/prebake-pointcloud.mjs`
-// À relancer si on change la décimation (TARGET_POINTS) ou la source .laz.
+// À relancer si on change la décimation (TARGET_POINTS) ou la source .las.
 //
 // Sorties (dans src/assets/pointcloud/) :
-//   palac_moszna.points.bin  — Int16 positions (count·3, cm, recentré sur le
-//                              centroïde XY et posé au sol minZ) puis Uint8 RGB (count·3)
-//   palac_moszna.points.json — { count, footprintM:[w,h], zRangeM:[0,maxUp], posScale,
-//                              anchorLngLat:[lng,lat] (centroïde EPSG:2178 → WGS84) }
+//   auxonne.points.bin  — [Int16 positions ·3 (cm, recentré sur le centre de l'emprise
+//                          XY, sol à minZ)] ‖ [Uint8 RGB ·3] ‖ [Uint8 classification ·1]
+//   auxonne.points.json — { count, footprintM:[w,h], zRangeM:[0,maxUp], posScale,
+//                          anchorLngLat:[lng,lat] (centre UTM31N → WGS84), crs,
+//                          classes:[{code,count}] (histogramme trié) }
 
 import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -22,14 +23,15 @@ import { LASLoader } from '@loaders.gl/las'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ASSET_DIR = join(HERE, '..', 'src', 'assets', 'pointcloud')
-const SRC = join(ASSET_DIR, 'Palac_Moszna.laz')
-const OUT_BIN = join(ASSET_DIR, 'palac_moszna.points.bin')
-const OUT_JSON = join(ASSET_DIR, 'palac_moszna.points.json')
+const SRC = join(ASSET_DIR, 'auxonne.las')
+const OUT_BIN = join(ASSET_DIR, 'auxonne.points.bin')
+const OUT_JSON = join(ASSET_DIR, 'auxonne.points.json')
 
-// Cible de décimation : Infinity = TOUS les points du scan (nuage complet, ~5,7 M).
+// Cible de décimation : Infinity = TOUS les points (~9,5 M).
 const TARGET_POINTS = Infinity
 // Précision de quantification des positions : 1 cm (value = mètres · 100).
 const POS_SCALE = 0.01
+const CRS = 'EPSG:32631'
 
 console.log('Décodage', SRC, '…')
 const buf = await readFile(SRC)
@@ -37,66 +39,54 @@ const data = await parse(
   buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
   LASLoader,
 )
+console.log('Attributs décodés :', Object.keys(data.attributes).join(', '))
 
 const pos = data.attributes.POSITION?.value
 if (!pos) throw new Error('Pas d’attribut POSITION dans le LAS décodé')
 const total = pos.length / 3
 console.log('Points décodés :', total.toLocaleString('fr-FR'))
 
-// Couleurs : ce scan est en LAS format 3 mais les champs RGB sont vides (0,0,0) —
-// seule l'INTENSITÉ (réflectance, 16 bits) porte de l'information. On colorise donc
-// par ALTITUDE (rampe « turbo ») modulée par l'intensité normalisée pour révéler le
-// détail des surfaces. Si un jour la source porte un vrai RGB, on le réutilise tel quel.
-const colorAttr = data.attributes.COLOR_0
-const rawColors = colorAttr?.value
-const colorSize = colorAttr?.size ?? 3
-// Détection d'un vrai RGB : on échantillonne les canaux R/G/B (en sautant l'alpha,
-// qui vaut 255 quand size==4) — sinon l'alpha ferait croire à tort à une couleur.
-let hasRGB = false
-if (rawColors) {
-  const n = Math.min(total, 2000)
-  for (let i = 0; i < n && !hasRGB; i++) {
-    const c = i * colorSize
-    if (rawColors[c] > 0 || rawColors[c + 1] > 0 || rawColors[c + 2] > 0) hasRGB = true
-  }
-}
-const intensity = data.attributes.intensity?.value
+// ⚠️ loaders.gl décode MAL le RGB de ce fichier (COLOR_0 ressort à [0,0,0]). On lit
+// donc le RGB ET la classification DIRECTEMENT dans les enregistrements bruts du .las.
+// loaders.gl conserve l'ordre des points → l'index i = l'enregistrement i du fichier.
+// LAS 1.2 format 3 ; longueur d'enregistrement variable (champs « extra bytes »).
+const PT_LEN = buf.readUInt16LE(105)
+const DATA_OFFSET = buf.readUInt32LE(96)
+const REC_CLASS = 15 // classification (1 octet) dans l'enregistrement
+const REC_R = 28 // R/G/B (uint16 chacun) ; octet de poids fort = valeur 8 bits → >>8
 
-// Centroïde XY + minZ + plage d'intensité (sur l'ensemble, avant décimation).
-let cx = 0
-let cy = 0
+// Centre de l'emprise XY + minZ (sur l'ensemble). On recentre sur le CENTRE de la
+// bbox (et non la moyenne) pour garantir que les offsets tiennent en Int16 (±327 m).
+let minX = Infinity
+let maxX = -Infinity
+let minY = Infinity
+let maxY = -Infinity
 let minZ = Infinity
 let maxZ = -Infinity
-let minI = Infinity
-let maxI = -Infinity
 for (let i = 0; i < total; i++) {
-  cx += pos[i * 3]
-  cy += pos[i * 3 + 1]
+  const x = pos[i * 3]
+  const y = pos[i * 3 + 1]
   const z = pos[i * 3 + 2]
+  if (x < minX) minX = x
+  if (x > maxX) maxX = x
+  if (y < minY) minY = y
+  if (y > maxY) maxY = y
   if (z < minZ) minZ = z
   if (z > maxZ) maxZ = z
-  if (intensity) {
-    const it = intensity[i]
-    if (it < minI) minI = it
-    if (it > maxI) maxI = it
-  }
 }
-cx /= total
-cy /= total
-const iSpan = maxI - minI || 1
-const zSpan = maxZ - minZ || 1
+const cx = (minX + maxX) / 2
+const cy = (minY + maxY) / 2
 
-// Centroïde EPSG:2178 (ETRS89 / Poland CS2000 zone 6) → WGS84, par Transverse
-// Mercator inverse (GRS80, lon0=18°, k0=0.999923, faux est x0=6 500 000). Sert à
-// poser le nuage à son VRAI emplacement (Pałac w Mosznej) sur la carte ; émis dans
-// le manifest et reporté en dur dans POINTCLOUD_ANCHOR (src/map/layers/pointCloud.ts).
-function epsg2178ToWgs84(X, Y) {
+// UTM zone 31N (EPSG:32631, WGS84) → WGS84 lng/lat, par Transverse Mercator inverse
+// (lon0=3°E, k0=0,9996, faux est 500 000, faux nord 0, ellipsoïde GRS80/WGS84). Sert
+// à poser le nuage à son VRAI emplacement (Auxonne) ; reporté dans POINTCLOUD_ANCHOR.
+function utm31nToWgs84(X, Y) {
   const a = 6378137
-  const f = 1 / 298.257222101
+  const f = 1 / 298.257223563
   const e2 = f * (2 - f)
-  const k0 = 0.999923
-  const lon0 = (18 * Math.PI) / 180
-  const x0 = 6_500_000
+  const k0 = 0.9996
+  const lon0 = (3 * Math.PI) / 180
+  const x0 = 500000
   const E = X - x0
   const M = Y / k0
   const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2))
@@ -127,33 +117,28 @@ function epsg2178ToWgs84(X, Y) {
       Math.cos(phi1)
   return [(lon * 180) / Math.PI, (lat * 180) / Math.PI]
 }
-const anchorLngLat = epsg2178ToWgs84(cx, cy).map((v) => Number(v.toFixed(6)))
-console.log('Ancrage WGS84 (centroïde → vrai emplacement) :', anchorLngLat)
-
-// Rampe « turbo » compacte (5 arrêts) : bleu → cyan → vert → orange → rouge clair.
-const RAMP = [
-  [48, 18, 130],
-  [29, 158, 195],
-  [93, 201, 99],
-  [240, 170, 47],
-  [232, 90, 70],
-]
-function ramp(t) {
-  const x = Math.min(0.999, Math.max(0, t)) * (RAMP.length - 1)
-  const i = Math.floor(x)
-  const f = x - i
-  const a = RAMP[i]
-  const b = RAMP[i + 1]
-  return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f]
-}
-console.log(hasRGB ? 'Couleurs : RGB source' : 'Couleurs : altitude × intensité (pas de RGB)')
+const anchorLngLat = utm31nToWgs84(cx, cy).map((v) => Number(v.toFixed(6)))
+console.log('Ancrage WGS84 (centre emprise → Auxonne) :', anchorLngLat)
 
 const stride = Math.max(1, Math.round(total / TARGET_POINTS))
 const count = Math.floor((total - 1) / stride) + 1
 console.log('Décimation stride', stride, '→', count.toLocaleString('fr-FR'), 'points')
 
 const outPos = new Int16Array(count * 3)
-const outCol = new Uint8Array(count * 3)
+const outRgb = new Uint8Array(count * 3) // vraie couleur RGB du scan
+const outCls = new Uint8Array(count) // classification ASPRS (5 bits)
+const classHist = {}
+// Points de la ligne électrique (classe 24, UTM XYZ) → polyligne centrale + POI danger.
+const LINE_CLASS = 24
+const lineXs = []
+const lineYs = []
+const lineZs = []
+// Végétation U4 (classe 29, la plus présente, UTM XYZ) → POI de danger reliant la
+// végétation à la ligne.
+const URGENT_CLASSES = new Set([29])
+const vegX = []
+const vegY = []
+const vegZ = []
 let maxUp = 0
 let j = 0
 for (let i = 0; i < total; i += stride) {
@@ -164,41 +149,141 @@ for (let i = 0; i < total; i += stride) {
   outPos[j * 3] = Math.round(east / POS_SCALE)
   outPos[j * 3 + 1] = Math.round(north / POS_SCALE)
   outPos[j * 3 + 2] = Math.round(up / POS_SCALE)
-  if (hasRGB) {
-    const c = i * colorSize
-    const big = rawColors[c] > 255 || rawColors[c + 1] > 255 || rawColors[c + 2] > 255
-    outCol[j * 3] = big ? rawColors[c] >> 8 : rawColors[c]
-    outCol[j * 3 + 1] = big ? rawColors[c + 1] >> 8 : rawColors[c + 1]
-    outCol[j * 3 + 2] = big ? rawColors[c + 2] >> 8 : rawColors[c + 2]
-  } else {
-    // Couleur dérivée : teinte par altitude (rampe turbo), luminosité modulée par
-    // l'intensité normalisée (0.55 → 1.0) pour faire ressortir les surfaces.
-    const [r, g, b] = ramp(up / zSpan)
-    const inorm = intensity ? (intensity[i] - minI) / iSpan : 0.7
-    const lum = 0.55 + 0.45 * Math.min(1, Math.max(0, inorm))
-    outCol[j * 3] = Math.round(r * lum)
-    outCol[j * 3 + 1] = Math.round(g * lum)
-    outCol[j * 3 + 2] = Math.round(b * lum)
+  // RGB + classification lus dans l'enregistrement brut i (cf. note ci-dessus).
+  const rec = DATA_OFFSET + i * PT_LEN
+  outRgb[j * 3] = buf.readUInt16LE(rec + REC_R) >> 8
+  outRgb[j * 3 + 1] = buf.readUInt16LE(rec + REC_R + 2) >> 8
+  outRgb[j * 3 + 2] = buf.readUInt16LE(rec + REC_R + 4) >> 8
+  const cls = buf.readUInt8(rec + REC_CLASS) & 0x1f
+  outCls[j] = cls
+  classHist[cls] = (classHist[cls] || 0) + 1
+  if (cls === LINE_CLASS) {
+    lineXs.push(pos[i * 3])
+    lineYs.push(pos[i * 3 + 1])
+    lineZs.push(pos[i * 3 + 2])
+  } else if (URGENT_CLASSES.has(cls)) {
+    vegX.push(pos[i * 3])
+    vegY.push(pos[i * 3 + 1])
+    vegZ.push(pos[i * 3 + 2])
   }
   j++
 }
 
-// Mélange de l'ordre des points (Fisher-Yates) : le runtime révèle le nuage
-// progressivement via setDrawRange(0, n) ; un ordre aléatoire donne une
-// matérialisation DISPERSÉE (points qui apparaissent partout) plutôt qu'un balayage
-// par ligne de scan.
+// Polyligne centrale de la ligne électrique : on binne les points classe 24 le long de
+// leur axe principal (le plus étendu) et on moyenne l'autre coord par bin → waypoints
+// UTM, convertis en [lng,lat]. Sert à faire suivre la ligne par la caméra (plan rapproché).
+let linePath = []
+if (lineXs.length > 500) {
+  let lnX = Infinity,
+    lxX = -Infinity,
+    lnY = Infinity,
+    lxY = -Infinity
+  for (let i = 0; i < lineXs.length; i++) {
+    if (lineXs[i] < lnX) lnX = lineXs[i]
+    if (lineXs[i] > lxX) lxX = lineXs[i]
+    if (lineYs[i] < lnY) lnY = lineYs[i]
+    if (lineYs[i] > lxY) lxY = lineYs[i]
+  }
+  const alongY = lxY - lnY >= lxX - lnX // axe principal de la ligne
+  const lo = alongY ? lnY : lnX
+  const hi = alongY ? lxY : lxX
+  const K = 24
+  const span = hi - lo || 1
+  const bins = Array.from({ length: K }, () => ({ sx: 0, sy: 0, n: 0 }))
+  for (let i = 0; i < lineXs.length; i++) {
+    const a = alongY ? lineYs[i] : lineXs[i]
+    const bi = Math.min(K - 1, Math.max(0, Math.floor(((a - lo) / span) * K)))
+    bins[bi].sx += lineXs[i]
+    bins[bi].sy += lineYs[i]
+    bins[bi].n++
+  }
+  const minPer = lineXs.length / K / 6 // ignore les bins quasi vides
+  const wp = bins
+    .filter((b) => b.n > minPer)
+    .map((b) => [b.sx / b.n, b.sy / b.n])
+    .sort((p, q) => (alongY ? p[1] - q[1] : p[0] - q[0]))
+  linePath = wp.map(([X, Y]) => utm31nToWgs84(X, Y).map((v) => Number(v.toFixed(6))))
+  console.log('Ligne électrique :', lineXs.length, 'points →', linePath.length, 'waypoints')
+} else {
+  console.log('Ligne électrique : pas assez de points (', lineXs.length, ') → pas de polyligne')
+}
+
+// POI de danger : pour chaque point végétation urgente (U0/U1), on cherche le conducteur
+// (classe 24) le plus proche en 3D → vrai écart végétation↔ligne. On retient les 2-3 plus
+// dangereux, espacés horizontalement, et on émet leurs coords LOCALES (m, repère du bin).
+let dangerPois = []
+if (vegX.length > 0 && lineXs.length > 0) {
+  // U4 est très peuplé (~700k pts) : on sous-échantillonne les candidats (≤3000) pour
+  // garder la recherche du conducteur le plus proche rapide (on ne veut que 3 POI).
+  const VEG_CAP = 3000
+  const vegStride = Math.max(1, Math.ceil(vegX.length / VEG_CAP))
+  const cand = []
+  for (let a = 0; a < vegX.length; a += vegStride) {
+    let best = Infinity
+    let bk = -1
+    for (let k = 0; k < lineXs.length; k++) {
+      const dx = vegX[a] - lineXs[k]
+      const dy = vegY[a] - lineYs[k]
+      const dz = vegZ[a] - lineZs[k]
+      const d2 = dx * dx + dy * dy + dz * dz
+      if (d2 < best) {
+        best = d2
+        bk = k
+      }
+    }
+    cand.push({ a, k: bk, d: Math.sqrt(best) })
+  }
+  // On veut un écart VISIBLE et dangereux : un segment assez long pour bien relier la
+  // végétation à la ligne à l'écran (on écarte les points coïncidents et les trop loin).
+  const MIN_GAP = 1.5
+  const MAX_GAP = 12.0
+  const usable = cand.filter((c) => c.d >= MIN_GAP && c.d <= MAX_GAP).sort((p, q) => p.d - q.d)
+  const pool = usable.length >= 2 ? usable : cand.sort((p, q) => p.d - q.d)
+  const SEP = 50 // m : écart horizontal mini entre POI retenus
+  const sel = []
+  for (const c of pool) {
+    if (sel.every((s) => Math.hypot(vegX[c.a] - vegX[s.a], vegY[c.a] - vegY[s.a]) >= SEP)) {
+      sel.push(c)
+      if (sel.length >= 3) break
+    }
+  }
+  const loc = (x, y, z) => [
+    Number((x - cx).toFixed(2)),
+    Number((y - cy).toFixed(2)),
+    Number((z - minZ).toFixed(2)),
+  ]
+  dangerPois = sel.map((c) => ({
+    veg: loc(vegX[c.a], vegY[c.a], vegZ[c.a]),
+    cond: loc(lineXs[c.k], lineYs[c.k], lineZs[c.k]),
+    clearanceM: Number(c.d.toFixed(1)),
+  }))
+  console.log(
+    'POI danger :',
+    dangerPois.length,
+    '→',
+    dangerPois.map((p) => p.clearanceM + ' m').join(', '),
+  )
+} else {
+  console.log('POI danger : pas de végétation U0/U1 ou pas de conducteur')
+}
+
+// Mélange Fisher-Yates aligné (positions ‖ RGB ‖ classe) : la révélation
+// progressive (setDrawRange) se fait alors de façon dispersée.
 for (let i = count - 1; i > 0; i--) {
   const k = Math.floor(Math.random() * (i + 1))
   for (let d = 0; d < 3; d++) {
     const pa = i * 3 + d
     const pb = k * 3 + d
-    const tp = outPos[pa]
+    let t = outPos[pa]
     outPos[pa] = outPos[pb]
-    outPos[pb] = tp
-    const tc = outCol[pa]
-    outCol[pa] = outCol[pb]
-    outCol[pb] = tc
+    outPos[pb] = t
+    t = outRgb[pa]
+    outRgb[pa] = outRgb[pb]
+    outRgb[pb] = t
   }
+  const tc = outCls[i]
+  outCls[i] = outCls[k]
+  outCls[k] = tc
 }
 
 // Emprise réelle (m) pour la carte de stats.
@@ -215,16 +300,28 @@ for (let i = 0; i < count; i++) {
   if (n > maxN) maxN = n
 }
 
-const out = Buffer.concat([Buffer.from(outPos.buffer), Buffer.from(outCol.buffer)])
+// Layout du binaire : positions (Int16·3) ‖ RGB (Uint8·3) ‖ classification (Uint8·1).
+const out = Buffer.concat([
+  Buffer.from(outPos.buffer),
+  Buffer.from(outRgb.buffer),
+  Buffer.from(outCls.buffer),
+])
 await writeFile(OUT_BIN, out)
+const classes = Object.entries(classHist)
+  .map(([code, n]) => ({ code: Number(code), count: n }))
+  .sort((a, b) => b.count - a.count)
 const meta = {
   count,
   footprintM: [Math.round(maxE - minE), Math.round(maxN - minN)],
   zRangeM: [0, Math.round(maxUp)],
   posScale: POS_SCALE,
   anchorLngLat,
+  crs: CRS,
+  classes,
+  linePath,
+  dangerPois,
 }
 await writeFile(OUT_JSON, JSON.stringify(meta, null, 2))
 
 console.log('Écrit', OUT_BIN, '—', (out.length / 1_048_576).toFixed(1), 'Mo')
-console.log('Meta', meta)
+console.log('Meta', JSON.stringify(meta))
