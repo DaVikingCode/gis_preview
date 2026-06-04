@@ -25,3 +25,8 @@ dist-ssr
 
 # Large point cloud binaries
 *.las
+
+# Source brute du nuage de points (~95 Mo) : non versionnée. Les chunks servables
+# dérivés (public/pointcloud/, < 25 Mio) sont committés ; cette source n'est requise
+# que pour les régénérer via scripts/split-pointcloud.mjs.
+src/assets/pointcloud/auxonne.points.bin

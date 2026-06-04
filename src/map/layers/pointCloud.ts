@@ -43,7 +43,11 @@ const LAYER_ID = 'gp-pointcloud'
 // Émis par le prebake (champ anchorLngLat) ; partagé avec le step (caméra centrée ici).
 export const POINTCLOUD_ANCHOR: [number, number] = [5.392126, 47.202674]
 
-const BIN_URL = new URL('../../assets/pointcloud/auxonne.points.bin', import.meta.url).href
+// Le binaire (~95 Mo) dépasse la limite de 25 Mio/fichier de Cloudflare Pages : il
+// est pré-tranché en chunks committés dans `public/pointcloud/` (cf.
+// scripts/split-pointcloud.mjs) et ré-assemblé ici (concat byte-exact). Le `.json`
+// (~2 Ko) reste bundlé normalement.
+const MANIFEST_URL = `${import.meta.env.BASE_URL}pointcloud/manifest.json`
 const META_URL = new URL('../../assets/pointcloud/auxonne.points.json', import.meta.url).href
 
 const DEG2RAD = Math.PI / 180
@@ -165,7 +169,7 @@ class PointCloudLayer implements CustomLayerInterface {
 
   private async load() {
     try {
-      const [metaRes, binRes] = await Promise.all([fetch(META_URL), fetch(BIN_URL)])
+      const [metaRes, manifestRes] = await Promise.all([fetch(META_URL), fetch(MANIFEST_URL)])
       const meta = (await metaRes.json()) as PointCloudStats & {
         posScale: number
         classes: { code: number; count: number }[]
@@ -176,8 +180,20 @@ class PointCloudLayer implements CustomLayerInterface {
           clearanceM: number
         }[]
       }
-      const buf = await binRes.arrayBuffer()
+      // Ré-assemblage des chunks (cf. scripts/split-pointcloud.mjs) en un buffer unique.
+      const manifest = (await manifestRes.json()) as { bytes: number; chunks: string[] }
+      const base = `${import.meta.env.BASE_URL}pointcloud/`
+      const parts = await Promise.all(
+        manifest.chunks.map((name) => fetch(base + name).then((r) => r.arrayBuffer())),
+      )
       if (this.cancelled) return
+      const u8 = new Uint8Array(manifest.bytes)
+      let off = 0
+      for (const part of parts) {
+        u8.set(new Uint8Array(part), off)
+        off += part.byteLength
+      }
+      const buf = u8.buffer
 
       const count = meta.count
       const posI16 = new Int16Array(buf, 0, count * 3)
