@@ -2,6 +2,12 @@ import type { StyleSpecification } from 'maplibre-gl'
 
 export type BasemapId = 'positron' | 'liberty' | 'bright' | 'satellite' | 'darkmatter'
 
+// Source d'imagerie satellite (Esri World Imagery), partagée par le style `satellite` et
+// par le calque HD de surzoom (`satelliteHd.ts`).
+export const ESRI_WORLD_IMAGERY_TILES =
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+export const ESRI_ATTRIBUTION = 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics'
+
 export const BASEMAPS: Record<BasemapId, { label: string; style: string | StyleSpecification }> = {
   positron: {
     label: 'Positron',
@@ -28,11 +34,9 @@ export const BASEMAPS: Record<BasemapId, { label: string; style: string | StyleS
       sources: {
         sat: {
           type: 'raster',
-          tiles: [
-            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-          ],
+          tiles: [ESRI_WORLD_IMAGERY_TILES],
           tileSize: 256,
-          attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics',
+          attribution: ESRI_ATTRIBUTION,
         },
       },
       layers: [{ id: 'sat', type: 'raster', source: 'sat' }],

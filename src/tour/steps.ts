@@ -5,6 +5,7 @@ import { addTrafficFlow, removeTrafficFlow } from '@/map/layers/trafficFlow'
 import { addHikingTerrain, type HikingHandle } from '@/map/layers/hikingTerrain'
 import { addAirplane3D, type AirplaneHandle } from '@/map/layers/airplane3d'
 import { addPointCloud, POINTCLOUD_ANCHOR, type PointCloudHandle } from '@/map/layers/pointCloud'
+import { addSatelliteHd, removeSatelliteHd } from '@/map/layers/satelliteHd'
 import { STATIC_LADEFENSE_HEIGHTS } from '@/data/sample-buildings'
 import { addVectorStyled, removeVectorStyled } from '@/map/layers/vectorStyled'
 import { addMeasureTool, MEASURE_DEMO_BLOCK, type MeasureHandle } from '@/map/layers/measureLayer'
@@ -309,6 +310,11 @@ export const STEPS: TourStep[] = [
       ds.setPointCloudColorMode('altitude')
       useTourStore.getState().setCinematic(false)
 
+      // Calque satellite surzoomable SOUS le nuage : au survol de la ligne (zoom ~20)
+      // l'imagerie reste visible au lieu de blanchir (cf. satelliteHd.ts). Ajouté avant
+      // le nuage → les points restent au-dessus.
+      addSatelliteHd(map)
+
       pointCloudHandle = addPointCloud(map)
       const handle = pointCloudHandle
       ds.setPointCloudHandle(handle)
@@ -320,8 +326,17 @@ export const STEPS: TourStep[] = [
         useMapDataStore.getState().bumpPointCloudRun()
       })
     },
-    onLeave() {
+    onLeave(map) {
+      removeSatelliteHd(map)
       const ds = useMapDataStore.getState()
+      // STOP SYNCHRONE de l'orbite caméra : en fin de chorégraphie, makeOrbit() relance
+      // une orbite infinie qui pilote la caméra (map.jumpTo) chaque frame, tuée seulement
+      // à la 1re interaction SUR LA CARTE (clic « Suivant » = bouton DOM → ne la libère
+      // pas). Le cleanup useGSAP de resetPointCloudRun() est asynchrone et arriverait
+      // APRÈS le flyTo de la transition → l'orbite l'annulerait (« Suivant » sans effet).
+      // On la pause donc tout de suite, avant le vol (onLeave précède le flyTo via
+      // leaveBeforePan). Le cleanup useGSAP finira de tout tuer ensuite.
+      ds.pointCloudStopCamera?.()
       ds.resetPointCloudRun() // tue la timeline via le hook (revertOnUpdate)
       pointCloudHandle?.detach()
       pointCloudHandle = null
@@ -353,6 +368,11 @@ export const STEPS: TourStep[] = [
     chart: 'airplane',
     pan: { duration: 3200 },
     enterOnSettle: true,
+    // La boucle de vol pilote la caméra par-frame (map.jumpTo) et bascule en projection
+    // globe : on doit la démonter (kill timelines + retour mercator) AVANT tout vol pané,
+    // sinon au retour arrière (Prev → nuage) elle se bat contre le flyTo et le globe ne
+    // se replat qu'à l'atterrissage. Symétrique de `pointcloud-lidar`.
+    leaveBeforePan: true,
     // Pas de `cinematic` ici : la boucle de vol (addAirplane3D) pilote entièrement
     // la caméra par-frame ; la rotation idle de CinematicCamera entrerait en conflit.
     onEnter(map) {

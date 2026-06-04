@@ -49,10 +49,12 @@ export function PointCloudCard() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-3xl font-semibold tabular-nums text-foreground">{pts}</span>
+            <span className="text-2xl font-semibold tabular-nums text-foreground sm:text-3xl">
+              {pts}
+            </span>
             <span className="text-sm font-medium text-muted-foreground">points</span>
           </div>
-          <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+          <div className="hidden text-[11px] uppercase tracking-wide text-muted-foreground sm:block">
             Points affichés
           </div>
         </div>
@@ -64,12 +66,12 @@ export function PointCloudCard() {
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4">
         <Stat label="Emprise" value={footprint} />
         <Stat label="Élévation" value={height} />
       </div>
 
-      <div className="mt-4">
+      <div className="mt-3 sm:mt-4">
         <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
           Colorisation
         </div>
@@ -112,9 +114,10 @@ export function PointCloudCard() {
         )}
 
         {mode === 'classification' && (
-          <ul className="mt-2 flex flex-col gap-1">
+          // Légende masquée sur mobile (gain de place) ; visible dès sm.
+          <ul className="mt-2 hidden flex-col gap-1 text-xs sm:flex">
             {legend.map((c) => (
-              <li key={c.label} className="flex items-center gap-2 text-xs">
+              <li key={c.label} className="flex items-center gap-2">
                 <span
                   className="h-2.5 w-2.5 shrink-0 rounded-[3px]"
                   style={{ background: rgb01(c.color) }}
@@ -129,8 +132,10 @@ export function PointCloudCard() {
         )}
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3">
-        <span className="text-[11px] text-muted-foreground">Scan LiDAR · Auxonne (UTM 31N)</span>
+      <div className="mt-3 flex items-center justify-end border-t border-border/60 pt-2 sm:mt-4 sm:justify-between sm:pt-3">
+        <span className="hidden text-[11px] text-muted-foreground sm:inline">
+          Scan LiDAR · Auxonne (UTM 31N)
+        </span>
         <button
           type="button"
           onClick={() => replay?.()}
