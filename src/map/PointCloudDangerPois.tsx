@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useMap } from './MapContext'
 import { useMapDataStore } from '@/store/map-data-store'
 
-// POI de danger « élagage » : 2-3 segments fixes VÉGÉTATION ↔ CONDUCTEUR aux vrais points
+// POI de danger « élagage » : segments fixes VÉGÉTATION ↔ CONDUCTEUR aux vrais points
 // chauds (calculés au prebake, cf. meta.dangerPois). Affichés en mode Classification,
 // persistants (la caméra passe devant pendant l'orbite/le survol). Chaque POI = un trait
 // rouge entre la végétation et la ligne, une pastille à chaque bout, et une étiquette

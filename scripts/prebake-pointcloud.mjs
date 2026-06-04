@@ -209,12 +209,12 @@ if (lineXs.length > 500) {
 }
 
 // POI de danger : pour chaque point végétation urgente (U0/U1), on cherche le conducteur
-// (classe 24) le plus proche en 3D → vrai écart végétation↔ligne. On retient les 2-3 plus
+// (classe 24) le plus proche en 3D → vrai écart végétation↔ligne. On retient les 4 plus
 // dangereux, espacés horizontalement, et on émet leurs coords LOCALES (m, repère du bin).
 let dangerPois = []
 if (vegX.length > 0 && lineXs.length > 0) {
   // U4 est très peuplé (~700k pts) : on sous-échantillonne les candidats (≤3000) pour
-  // garder la recherche du conducteur le plus proche rapide (on ne veut que 3 POI).
+  // garder la recherche du conducteur le plus proche rapide (on ne veut que 4 POI).
   const VEG_CAP = 3000
   const vegStride = Math.max(1, Math.ceil(vegX.length / VEG_CAP))
   const cand = []
@@ -244,7 +244,7 @@ if (vegX.length > 0 && lineXs.length > 0) {
   for (const c of pool) {
     if (sel.every((s) => Math.hypot(vegX[c.a] - vegX[s.a], vegY[c.a] - vegY[s.a]) >= SEP)) {
       sel.push(c)
-      if (sel.length >= 3) break
+      if (sel.length >= 4) break
     }
   }
   const loc = (x, y, z) => [

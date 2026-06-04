@@ -26,6 +26,7 @@ function isStepLocked(
     swipeDone: boolean
     themeFlipDone: boolean
     tableLinkDone: boolean
+    pointcloudFollowDone: boolean
     flying: boolean
   },
 ): boolean {
@@ -47,6 +48,8 @@ function isStepLocked(
   if (id === 'swipe') return !st.swipeDone
   // Bloque tant que le faux curseur n'a pas fini de survoler les lignes (table ↔ carte).
   if (id === 'data-table') return !st.tableLinkDone
+  // Bloque tant que le survol de la ligne électrique (nuage LiDAR) n'est pas terminé.
+  if (id === 'pointcloud-lidar') return !st.pointcloudFollowDone
   return false
 }
 
@@ -227,6 +230,9 @@ export function TourController() {
         if (STEPS[idx]?.id === 'swipe') useTourStore.getState().setSwipeDone(false)
         // Re-verrouille la liaison table ↔ carte pour rejouer le balayage du curseur.
         if (STEPS[idx]?.id === 'data-table') useTourStore.getState().setTableLinkDone(false)
+        // Re-verrouille tant que le survol de la ligne (nuage LiDAR) n'est pas rejoué.
+        if (STEPS[idx]?.id === 'pointcloud-lidar')
+          useTourStore.getState().setPointcloudFollowDone(false)
       },
       onHighlighted: (_el, _step, opts) => {
         // Backup: ensure Zustand step stays in sync even on same-element transitions
@@ -305,6 +311,7 @@ export function TourController() {
         swipeDone: boolean
         themeFlipDone: boolean
         tableLinkDone: boolean
+        pointcloudFollowDone: boolean
         flying: boolean
       },
       step: number,
@@ -317,6 +324,7 @@ export function TourController() {
         id === 'rt-surcharge' ||
         id === 'swipe' ||
         id === 'data-table' ||
+        id === 'pointcloud-lidar' ||
         id === THEME_FLIP_STEP_ID
       const locked = isStepLocked(step, st)
       const btn = document.querySelector<HTMLButtonElement>('.driver-popover-next-btn')

@@ -81,6 +81,9 @@ export const pointCloudView = {
   scan: SCAN_MAX,
   scanWidth: 45,
   scanGlow: 0,
+  // reveal : >0.5 = apparition par scan active (les points devant le front sont masqués —
+  // « matérialisation » directionnelle du nuage). 0 = nuage entièrement visible.
+  reveal: 0,
 }
 
 // Schéma de classification Enedis « élagage » (repris de enedis-sky-elag) : sol +
@@ -120,6 +123,7 @@ type MaterialUniforms = {
   uScan: { value: number }
   uScanWidth: { value: number }
   uScanGlow: { value: number }
+  uReveal: { value: number }
 }
 
 class PointCloudLayer implements CustomLayerInterface {
@@ -205,6 +209,7 @@ class PointCloudLayer implements CustomLayerInterface {
         shader.uniforms.uScan = { value: pointCloudView.scan }
         shader.uniforms.uScanWidth = { value: pointCloudView.scanWidth }
         shader.uniforms.uScanGlow = { value: pointCloudView.scanGlow }
+        shader.uniforms.uReveal = { value: pointCloudView.reveal }
         shader.vertexShader = shader.vertexShader
           .replace(
             '#include <common>',
@@ -227,6 +232,7 @@ class PointCloudLayer implements CustomLayerInterface {
             uniform float uScan;
             uniform float uScanWidth;
             uniform float uScanGlow;
+            uniform float uReveal;
             vec3 pcTurbo(float t){
               t = clamp(t, 0.0, 1.0);
               vec3 c0 = vec3(0.188,0.071,0.510);
@@ -264,9 +270,18 @@ class PointCloudLayer implements CustomLayerInterface {
             '#include <color_fragment>',
             `#include <color_fragment>
             float pcT = clamp((uScan - vScanCoord) / uScanWidth + 0.5, 0.0, 1.0);
+            // Apparition par scan : les points devant le front (pcT < 0.5) ne sont pas
+            // encore « matérialisés » → on les jette tant que reveal est actif.
+            if (uReveal > 0.5 && pcT < 0.5) discard;
             diffuseColor.rgb = mix(pcColorFor(uModeFrom, diffuseColor.rgb), pcColorFor(uModeTo, diffuseColor.rgb), pcT);
-            float pcBand = (1.0 - smoothstep(0.0, uScanWidth * 0.6, abs(vScanCoord - uScan))) * uScanGlow;
-            diffuseColor.rgb += pcBand * vec3(0.35, 0.9, 1.0);`,
+            // Glow du front, en deux couches additives pilotées par uScanGlow :
+            //   • halo doux et large (subtil) ;
+            //   • crête fine et nette au front exact (effet WOW qui file devant le balayage).
+            float pcDist = abs(vScanCoord - uScan);
+            float pcHalo = (1.0 - smoothstep(0.0, uScanWidth * 0.9, pcDist)) * uScanGlow;
+            float pcCrest = (1.0 - smoothstep(0.0, uScanWidth * 0.12, pcDist)) * uScanGlow;
+            diffuseColor.rgb += pcHalo * 0.45 * vec3(0.30, 0.70, 0.85);
+            diffuseColor.rgb += pcCrest * 0.60 * vec3(0.70, 0.95, 1.0);`,
           )
         this.uniforms = shader.uniforms as unknown as MaterialUniforms
       }
@@ -342,6 +357,7 @@ class PointCloudLayer implements CustomLayerInterface {
       this.uniforms.uScan.value = v.scan
       this.uniforms.uScanWidth.value = v.scanWidth
       this.uniforms.uScanGlow.value = v.scanGlow
+      this.uniforms.uReveal.value = v.reveal
     }
 
     this.renderer.resetState()
@@ -370,6 +386,7 @@ export function addPointCloud(map: MLMap): PointCloudHandle {
   pointCloudView.scan = SCAN_MAX
   pointCloudView.scanWidth = 45
   pointCloudView.scanGlow = 0
+  pointCloudView.reveal = 0
   pointCloudTuning.pointSizePx = 0.5
 
   if (map.getLayer(LAYER_ID)) map.removeLayer(LAYER_ID)

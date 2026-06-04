@@ -10,6 +10,7 @@ import {
   SCAN_MIN,
 } from '@/map/layers/pointCloud'
 import { useMapDataStore, type PointCloudColorMode } from '@/store/map-data-store'
+import { useTourStore } from '@/store/tour-store'
 
 gsap.registerPlugin(useGSAP)
 
@@ -67,6 +68,28 @@ const azimuth = (a: [number, number], b: [number, number]): number => {
   return (Math.atan2((b[0] - a[0]) * Math.cos(lat), b[1] - a[1]) * 180) / Math.PI
 }
 
+// Point [lng,lat] où DÉMARRER le survol : le bout sud de la ligne est dans le feuillage, on
+// commence un peu plus loin (Tilt 77°, cap = tangente ligne).
+const FOLLOW_START_LL: [number, number] = [5.392204, 47.201678]
+// t∈[0,1] sur la spline le plus proche de `target` (échantillonnage fin). Sert à démarrer le
+// survol au bon endroit le long de la polyligne. 0 si la ligne n'a pas assez de points.
+const nearestT = (path: [number, number][], target: [number, number]): number => {
+  if (path.length < 2) return 0
+  let bestT = 0
+  let bestD = Infinity
+  for (let t = 0; t <= 1; t += 0.002) {
+    const p = splineAt(path, t)
+    const dx = p[0] - target[0]
+    const dy = p[1] - target[1]
+    const d = dx * dx + dy * dy
+    if (d < bestD) {
+      bestD = d
+      bestT = t
+    }
+  }
+  return bestT
+}
+
 export function usePointCloudChoreography(map: MLMap | null) {
   const handle = useMapDataStore((s) => s.pointCloudHandle)
   const run = useMapDataStore((s) => s.pointCloudRun)
@@ -84,6 +107,7 @@ export function usePointCloudChoreography(map: MLMap | null) {
       pointCloudView.modeTo = MODE.altitude
       pointCloudView.scan = SCAN_MAX
       pointCloudView.scanGlow = 0
+      pointCloudView.reveal = 0
       pointCloudTuning.pointSizePx = 0.5
       handle.setReveal(0)
       setMode(MODE.altitude)
@@ -108,12 +132,15 @@ export function usePointCloudChoreography(map: MLMap | null) {
           pointCloudView.modeFrom = MODE.classification
           pointCloudView.modeTo = MODE.classification
           pointCloudView.scan = SCAN_MAX
+          pointCloudView.reveal = 0
           pointCloudTuning.pointSizePx = 1.4
-          cam.zoom = 15.8
-          cam.pitch = 55
+          cam.zoom = 16.4
+          cam.pitch = 64
           cam.bearing = 0
           applyCam()
           setMode(MODE.classification)
+          // Pas d'animation en reduced-motion → on déverrouille « Suivant » d'emblée.
+          useTourStore.getState().setPointcloudFollowDone(true)
         })
         return () => {
           cancelled = true
@@ -131,8 +158,16 @@ export function usePointCloudChoreography(map: MLMap | null) {
           onUpdate: applyCam,
         })
       let orbit = makeOrbit()
+      // Détache les écouteurs « rendre la main » posés en fin d'anim (cf. dernière tl.call).
+      let detachRelease: (() => void) | null = null
 
       const tl = gsap.timeline({ paused: true })
+      // Vitesse globale de TOUTE la séquence guidée (révélation, scans, survol, suivi de
+      // ligne, envol) — compresse proportionnellement, le timing relatif est préservé. Seul
+      // curseur à régler. (L'orbite douce ambiante `makeOrbit`, hors timeline, n'est pas
+      // affectée.)
+      const ANIM_SPEED = 1.4
+      tl.timeScale(ANIM_SPEED)
       useMapDataStore.getState().setPointCloudStopCamera(() => {
         cancelled = true
         orbit.pause()
@@ -169,12 +204,25 @@ export function usePointCloudChoreography(map: MLMap | null) {
         })
       }
 
-      // ── 1. Révélation PROGRESSIVE (altitude) + cadrage d'orbite ──────────
+      // ── 1. APPARITION par SCAN (altitude) + cadrage d'orbite ─────────────
+      // Le nuage se matérialise via un front de scan qui balaie l'axe nord (sud→nord),
+      // même langage visuel que les scans de changement de mode. Tous les points sont
+      // dessinés, mais le shader masque ceux que le front n'a pas atteints (uReveal).
       const REVEAL_S = 5.5
-      const reveal = { n: 0 }
+      tl.call(
+        () => {
+          handle.setReveal(count)
+          v.reveal = 1
+          v.scan = SCAN_MIN - v.scanWidth // front hors-champ → nuage invisible au départ
+          v.scanGlow = 1
+          map.triggerRepaint()
+        },
+        undefined,
+        0,
+      )
       tl.to(
         cam,
-        { zoom: 15.8, pitch: 58, duration: 3.4, ease: 'power2.inOut', onUpdate: applyCam },
+        { zoom: 16.4, pitch: 64, duration: 3.4, ease: 'power2.inOut', onUpdate: applyCam },
         0,
       )
       tl.fromTo(
@@ -183,17 +231,20 @@ export function usePointCloudChoreography(map: MLMap | null) {
         { pointSizePx: 1.2, duration: REVEAL_S, ease: 'power2.out' },
         0,
       )
-      tl.fromTo(
-        reveal,
-        { n: 0 },
+      tl.to(
+        v,
         {
-          n: 1,
+          scan: SCAN_MAX,
           duration: REVEAL_S,
-          ease: 'power1.inOut',
-          onUpdate: () => handle.setReveal(reveal.n * count),
+          ease: 'sine.inOut',
+          onUpdate: () => map.triggerRepaint(),
         },
         0,
       )
+      tl.call(() => {
+        v.reveal = 0 // tout est matérialisé : le gating ne masque plus rien
+      })
+      tl.to(v, { scanGlow: 0, duration: 0.5, ease: 'power1.out' })
       tl.to({}, { duration: 0.6 })
 
       // ── 2. Scan Altitude → RGB ───────────────────────────────────────────
@@ -216,9 +267,13 @@ export function usePointCloudChoreography(map: MLMap | null) {
       let entryBearing0 = 0
       let entryZoom0 = 0
       let entryPitch0 = 0
+      let followStartT = 0 // t de départ du survol (point hors feuillage)
+      const follow = { t: 0 }
       tl.call(() => {
         orbit.kill() // l'orbite ne pilote plus la caméra pendant l'entrée + le suivi
         followPath = useMapDataStore.getState().pointCloudLinePath
+        followStartT = nearestT(followPath, FOLLOW_START_LL)
+        follow.t = followStartT // le survol démarre à ce t (pas au bout sud, dans le feuillage)
         entryStart[0] = cam.center[0]
         entryStart[1] = cam.center[1]
         entryBearing0 = cam.bearing
@@ -243,13 +298,13 @@ export function usePointCloudChoreography(map: MLMap | null) {
           onUpdate: () => {
             if (followPath.length < 2) return applyCam()
             const p = entry.p
-            const s0 = splineAt(followPath, 0)
+            const s0 = splineAt(followPath, followStartT)
             cam.center[0] = entryStart[0] + (s0[0] - entryStart[0]) * p
             cam.center[1] = entryStart[1] + (s0[1] - entryStart[1]) * p
             cam.zoom = entryZoom0 + (20 - entryZoom0) * p
             cam.pitch = entryPitch0 + (77 - entryPitch0) * p
             // Cap : alignement (chemin le plus court) sur la direction de la ligne.
-            const delta = ((headingSpline(0) - entryBearing0 + 540) % 360) - 180
+            const delta = ((headingSpline(followStartT) - entryBearing0 + 540) % 360) - 180
             cam.bearing = entryBearing0 + delta * p
             applyCam()
           },
@@ -263,21 +318,68 @@ export function usePointCloudChoreography(map: MLMap | null) {
       // (overlay) restent visibles en mode classification et la caméra passe devant.
       // Ease `power1.in` : on accélère le long de la ligne et on FINIT à pleine vitesse
       // → l'élan se prolonge dans l'envol final (pas de ralenti au bout de la ligne).
-      const follow = { t: 0 }
-      tl.to(follow, {
-        t: 1,
-        duration: 12,
-        ease: 'power1.in',
-        onUpdate: () => {
-          if (followPath.length >= 2) {
-            const c = splineAt(followPath, follow.t)
-            cam.center[0] = c[0]
-            cam.center[1] = c[1]
-            dampBearing(headingSpline(follow.t))
-          }
-          applyCam()
+      const FOLLOW_S = 12
+      tl.addLabel('survol')
+      tl.to(
+        follow,
+        {
+          t: 1,
+          duration: FOLLOW_S,
+          ease: 'power1.in',
+          onUpdate: () => {
+            if (followPath.length >= 2) {
+              const c = splineAt(followPath, follow.t)
+              cam.center[0] = c[0]
+              cam.center[1] = c[1]
+              dampBearing(headingSpline(follow.t))
+            }
+            applyCam()
+          },
         },
-      })
+        'survol',
+      )
+
+      // ── Scan « rattrape-caméra » classif → RGB ───────────────────────────
+      // Démarre tôt dans le survol et balaie le nuage du sud vers le nord (sens de fuite de
+      // la caméra) en le repeignant classif → RGB. Durée courte = front rapide qui DÉPASSE
+      // la caméra. Doit se terminer AVANT le demi-tour de l'envol (`survol+FOLLOW_S`) →
+      // un seul passage vu, pas de repaint lourd pendant le whip.
+      const SCAN_S = 8 // durée du balayage : plus petit = plus rapide ET démarre plus tard
+      const scanAt = `survol+=${FOLLOW_S - SCAN_S}` // survol+4
+      const scanEnd = `survol+=${FOLLOW_S}` // survol+12 (fin du survol)
+      tl.call(
+        () => {
+          v.modeFrom = MODE.classification
+          v.modeTo = MODE.rgb
+          v.scan = SCAN_MIN
+          v.scanGlow = 1
+          map.triggerRepaint()
+        },
+        undefined,
+        scanAt,
+      )
+      tl.to(
+        v,
+        {
+          scan: SCAN_MAX,
+          // `power1.out` = front rapide au départ (dépasse la caméra lente du début) mais moins
+          // agressif que power2.out → dépassement un peu plus tardif/doux.
+          duration: SCAN_S,
+          ease: 'power1.out',
+          onUpdate: () => map.triggerRepaint(),
+        },
+        scanAt,
+      )
+      // Verrouille la colorisation en RGB (le libellé store masque la fiche POI danger).
+      tl.call(
+        () => {
+          v.modeFrom = MODE.rgb
+          setMode(MODE.rgb)
+        },
+        undefined,
+        scanEnd,
+      )
+      tl.to(v, { scanGlow: 0, duration: 0.6, ease: 'power1.out' }, scanEnd)
 
       // ── 5. Envol au bout de la ligne, puis demi-tour vers le nuage (CONTINU) ──
       // Au lieu de revenir EN ARRIÈRE vers le centre, la caméra CONTINUE TOUT DROIT
@@ -287,49 +389,78 @@ export function usePointCloudChoreography(map: MLMap | null) {
       const exitE = [0, 0] // bout de la ligne
       const exitC = [0, 0] // point de contrôle = dépassement vers l'avant
       let exitBearing0 = 0
-      tl.call(() => {
-        exitE[0] = cam.center[0]
-        exitE[1] = cam.center[1]
-        exitBearing0 = cam.bearing
-        if (followPath.length >= 2) {
-          const back = splineAt(followPath, 0.9)
-          const fx = exitE[0] - back[0]
-          const fy = exitE[1] - back[1]
-          const len = Math.hypot(fx, fy) || 1
-          const OVER = 0.0011 // ~120 m de dépassement (en degrés)
-          exitC[0] = exitE[0] + (fx / len) * OVER
-          exitC[1] = exitE[1] + (fy / len) * OVER
-        } else {
-          exitC[0] = exitE[0]
-          exitC[1] = exitE[1]
-        }
-      })
-      const exit = { p: 0 }
-      tl.to(exit, {
-        p: 1,
-        duration: 4.4,
-        ease: 'power2.out',
-        onUpdate: () => {
-          const p = exit.p
-          const q = 1 - p
-          // Bézier quad : départ vers l'AVANT (exitC) puis arc vers l'ancrage.
-          cam.center[0] = q * q * exitE[0] + 2 * q * p * exitC[0] + p * p * POINTCLOUD_ANCHOR[0]
-          cam.center[1] = q * q * exitE[1] + 2 * q * p * exitC[1] + p * p * POINTCLOUD_ANCHOR[1]
-          cam.zoom = 20 + (15.8 - 20) * p // s'envole (prend de l'altitude)
-          cam.pitch = 77 + (54 - 77) * p
-          cam.bearing = exitBearing0 + 200 * p // se retourne vers le nuage
-          applyCam()
+      // L'envol démarre à la FIN du survol (le scan, plus long, déborde sur le début de
+      // l'envol — d'où le placement explicite à `survol+=FOLLOW_S` plutôt qu'en append).
+      const envolAt = `survol+=${FOLLOW_S}`
+      tl.call(
+        () => {
+          // Survol de la ligne terminé → déverrouille « Suivant ».
+          useTourStore.getState().setPointcloudFollowDone(true)
+          exitE[0] = cam.center[0]
+          exitE[1] = cam.center[1]
+          exitBearing0 = cam.bearing
+          if (followPath.length >= 2) {
+            const back = splineAt(followPath, 0.9)
+            const fx = exitE[0] - back[0]
+            const fy = exitE[1] - back[1]
+            const len = Math.hypot(fx, fy) || 1
+            const OVER = 0.0011 // ~120 m de dépassement (en degrés)
+            exitC[0] = exitE[0] + (fx / len) * OVER
+            exitC[1] = exitE[1] + (fy / len) * OVER
+          } else {
+            exitC[0] = exitE[0]
+            exitC[1] = exitE[1]
+          }
         },
-      })
-      tl.to(pointCloudTuning, { pointSizePx: 1.0, duration: 4.4, ease: 'power2.out' }, '<')
-      // L'orbite reprend depuis le cap final, même sens → enchaînement sans couture.
+        undefined,
+        envolAt,
+      )
+      const exit = { p: 0 }
+      tl.to(
+        exit,
+        {
+          p: 1,
+          duration: 4.4,
+          ease: 'power2.out',
+          onUpdate: () => {
+            const p = exit.p
+            const q = 1 - p
+            // Bézier quad : départ vers l'AVANT (exitC) puis arc vers l'ancrage.
+            cam.center[0] = q * q * exitE[0] + 2 * q * p * exitC[0] + p * p * POINTCLOUD_ANCHOR[0]
+            cam.center[1] = q * q * exitE[1] + 2 * q * p * exitC[1] + p * p * POINTCLOUD_ANCHOR[1]
+            cam.zoom = 20 + (16.4 - 20) * p // s'envole (prend de l'altitude)
+            cam.pitch = 77 + (64 - 77) * p
+            cam.bearing = exitBearing0 + 200 * p // se retourne vers le nuage
+            applyCam()
+          },
+        },
+        envolAt,
+      )
+      tl.to(pointCloudTuning, { pointSizePx: 1.0, duration: 4.4, ease: 'power2.out' }, envolAt)
+      // L'orbite reprend depuis le cap final, même sens → enchaînement sans couture (en RGB).
+      // Une fois l'anim terminée, on rend la main : à la 1re interaction (clic/tap/molette),
+      // on tue l'orbite pour que l'utilisateur puisse se déplacer librement sur la carte.
       tl.call(() => {
         orbit = makeOrbit()
+        const release = () => {
+          orbit.kill()
+          detachRelease?.()
+        }
+        map.on('mousedown', release)
+        map.on('touchstart', release)
+        map.on('wheel', release)
+        detachRelease = () => {
+          map.off('mousedown', release)
+          map.off('touchstart', release)
+          map.off('wheel', release)
+          detachRelease = null
+        }
       })
 
       return () => {
         cancelled = true
         orbit.kill()
+        detachRelease?.()
         useMapDataStore.getState().setPointCloudStopCamera(null)
       }
     },
