@@ -51,6 +51,36 @@ export const POINTCLOUD_ANCHOR: [number, number] = [5.392126, 47.202674]
 const MANIFEST_URL = `${import.meta.env.BASE_URL}pointcloud/manifest.json`
 const META_URL = `${import.meta.env.BASE_URL}pointcloud/auxonne.points.json`
 
+// Préchargement du nuage (~95 Mo) dès l'écran d'accueil : on réchauffe le cache HTTP
+// du navigateur pendant que l'utilisateur lit le splash, pour qu'au step LiDAR le
+// `load()` ci-dessous (mêmes URLs) tape un cache HIT → rendu quasi instantané. Échecs
+// silencieux : `load()` refera le vrai fetch au besoin.
+let prefetched = false
+export function prefetchPointCloud() {
+  if (prefetched) return
+  prefetched = true
+  const base = `${import.meta.env.BASE_URL}pointcloud/`
+  const run = async () => {
+    try {
+      const opt: RequestInit = { cache: 'force-cache' }
+      await fetch(META_URL, opt).catch(() => {})
+      const m = (await fetch(MANIFEST_URL, opt).then((r) => r.json())) as { chunks: string[] }
+      await Promise.all(
+        m.chunks.map((n) =>
+          fetch(base + n, opt)
+            .then((r) => r.arrayBuffer())
+            .catch(() => {}),
+        ),
+      )
+    } catch {
+      /* silencieux : le prefetch est best-effort */
+    }
+  }
+  if ('requestIdleCallback' in window)
+    window.requestIdleCallback(() => void run(), { timeout: 1500 })
+  else setTimeout(() => void run(), 300)
+}
+
 const DEG2RAD = Math.PI / 180
 
 // Modes de colorisation (valeurs numériques lues par le shader).

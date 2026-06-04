@@ -4,6 +4,7 @@ import { useTourStore } from '@/store/tour-store'
 import { useMapMaybe } from '@/map/MapContext'
 import { STEPS } from './steps'
 import { addBuildings3D } from '@/map/layers/buildings3d'
+import { prefetchPointCloud } from '@/map/layers/pointCloud'
 import { Play, Boxes, Ruler, Flame, MapPin, MonitorPlay } from 'lucide-react'
 import dvcWordmark from '@/assets/dvc-wordmark.svg?inline'
 
@@ -24,6 +25,9 @@ export function StartScreen() {
   useEffect(() => {
     if (!map || addedRef.current) return
     addedRef.current = true
+    // Réchauffe le cache du nuage LiDAR (~95 Mo) pendant que l'utilisateur lit le
+    // splash, pour masquer la latence réseau avant le step « Nuage de points ».
+    prefetchPointCloud()
     // Drop the 3D buildings in so the idle cinematic rotation has something to chew on.
     if (map.isStyleLoaded()) addBuildings3D(map)
     else map.once('idle', () => addBuildings3D(map))
