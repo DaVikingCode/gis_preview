@@ -46,9 +46,10 @@ export const POINTCLOUD_ANCHOR: [number, number] = [5.392126, 47.202674]
 // Le binaire (~95 Mo) dépasse la limite de 25 Mio/fichier de Cloudflare Pages : il
 // est pré-tranché en chunks committés dans `public/pointcloud/` (cf.
 // scripts/split-pointcloud.mjs) et ré-assemblé ici (concat byte-exact). Le `.json`
-// (~2 Ko) reste bundlé normalement.
+// (~2 Ko) est servi depuis `public/` lui aussi : `new URL(import.meta.url)` sur un
+// `.json` n'était pas émis dans le build de prod (404 → nuage vide en ligne).
 const MANIFEST_URL = `${import.meta.env.BASE_URL}pointcloud/manifest.json`
-const META_URL = new URL('../../assets/pointcloud/auxonne.points.json', import.meta.url).href
+const META_URL = `${import.meta.env.BASE_URL}pointcloud/auxonne.points.json`
 
 const DEG2RAD = Math.PI / 180
 
