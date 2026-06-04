@@ -17,6 +17,7 @@ import { SwipeChart } from './SwipeChart'
 import { RealtimeChart } from './RealtimeChart'
 import { HikingChart } from './HikingChart'
 import { AirplaneCard } from './AirplaneCard'
+import { PointCloudCard } from './PointCloudCard'
 import { EcosystemBridge } from './EcosystemBridge'
 import { TechStackDiagram } from './TechStackDiagram'
 
@@ -31,6 +32,7 @@ const META: Record<string, { title: string; description: string }> = {
   realtime: { title: 'Supervision en direct', description: 'Mise à jour en continu' },
   hiking: { title: 'Profil d’élévation', description: 'Altitude et progression, en direct' },
   airplane: { title: 'Télémétrie de vol', description: 'Altitude, vitesse et cap, en direct' },
+  pointcloud: { title: 'Nuage de points', description: 'Scan LiDAR · colorisé par altitude' },
 }
 
 export function ChartsPanel() {
@@ -105,6 +107,7 @@ export function ChartsPanel() {
               {chart === 'realtime' && <RealtimeChart />}
               {chart === 'hiking' && <HikingChart />}
               {chart === 'airplane' && <AirplaneCard />}
+              {chart === 'pointcloud' && <PointCloudCard />}
             </CardContent>
           </Card>
         </div>

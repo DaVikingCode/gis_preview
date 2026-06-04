@@ -4,6 +4,7 @@ import { addBuildings3D, removeBuildings3D } from '@/map/layers/buildings3d'
 import { addTrafficFlow, removeTrafficFlow } from '@/map/layers/trafficFlow'
 import { addHikingTerrain, type HikingHandle } from '@/map/layers/hikingTerrain'
 import { addAirplane3D, type AirplaneHandle } from '@/map/layers/airplane3d'
+import { addPointCloud, POINTCLOUD_ANCHOR, type PointCloudHandle } from '@/map/layers/pointCloud'
 import { STATIC_LADEFENSE_HEIGHTS } from '@/data/sample-buildings'
 import { addVectorStyled, removeVectorStyled } from '@/map/layers/vectorStyled'
 import { addMeasureTool, MEASURE_DEMO_BLOCK, type MeasureHandle } from '@/map/layers/measureLayer'
@@ -35,6 +36,7 @@ export type ChartKind =
   | 'swipe'
   | 'realtime'
   | 'hiking'
+  | 'pointcloud'
   | 'airplane'
   | 'ecosystem'
   | 'techstack'
@@ -105,6 +107,7 @@ let measureHandle: MeasureHandle | null = null
 let realtimeHandle: RealtimeHandle | null = null
 let hikingHandle: HikingHandle | null = null
 let airplaneHandle: AirplaneHandle | null = null
+let pointCloudHandle: PointCloudHandle | null = null
 
 // Séquence HTA (supervision live → surcharge → réparation → rétablissement).
 // Poste incident = poste source P-4521 (id 1) : flambe sur cue puis se rétablit.
@@ -269,6 +272,41 @@ export const STEPS: TourStep[] = [
       hikingHandle?.detach()
       hikingHandle = null
       useMapDataStore.getState().setHikeProgress(0)
+    },
+  },
+  {
+    id: 'pointcloud-lidar',
+    title: 'Nuage de points · LiDAR',
+    description:
+      'Nuage de points LiDAR (près d’un million de points colorisés issus d’un fichier .laz), rendu en 3D via three.js dans le contexte WebGL de la carte, posé sur le fond de plan.',
+    basemap: 'satellite',
+    // Cadrage sur le VRAI emplacement du scan (Pałac w Mosznej, Pologne — cf.
+    // POINTCLOUD_ANCHOR). Le scan fait ~280 m : zoom ~17,3, incliné pour révéler le
+    // relief 3D du château.
+    camera: {
+      center: POINTCLOUD_ANCHOR,
+      zoom: 17.3,
+      mobileZoom: 16.2,
+      pitch: 55,
+      bearing: -20,
+    },
+    chart: 'pointcloud',
+    // Vol Chamonix → Moszna (Pologne).
+    pan: { duration: 3600 },
+    // Rendu posé une fois la caméra arrivée (cf. hiking) : au retour arrière, le nuage
+    // réapparaît au bon endroit après le vol pané plutôt qu'hors champ.
+    enterOnSettle: true,
+    // Le step précédent (rando) a un pan : on nettoie sa couche AVANT le vol retour.
+    leaveBeforePan: true,
+    // Légère orbite cinématique → repaints continus de la couche (nuage statique).
+    cinematic: true,
+    onEnter(map) {
+      pointCloudHandle = addPointCloud(map)
+    },
+    onLeave() {
+      pointCloudHandle?.detach()
+      pointCloudHandle = null
+      useMapDataStore.getState().setPointCloudStats(null)
     },
   },
   {

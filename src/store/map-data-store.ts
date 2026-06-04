@@ -5,6 +5,11 @@ import type { RealtimeFeed } from '@/map/layers/realtime'
 export type MeasurePoint = { lng: number; lat: number }
 export type POIStatus = 'todo' | 'in_progress' | 'done'
 export type FlightStats = { altitudeM: number; speedKmh: number; headingDeg: number }
+export type PointCloudStats = {
+  count: number
+  footprintM: [number, number]
+  zRangeM: [number, number]
+}
 
 type State = {
   buildingHeights: number[]
@@ -18,6 +23,7 @@ type State = {
   hikeProgress: number
   activeHikePoi: number | null
   flightStats: FlightStats | null
+  pointCloudStats: PointCloudStats | null
 }
 type Actions = {
   setBuildingHeights: (v: number[]) => void
@@ -32,6 +38,7 @@ type Actions = {
   setHikeProgress: (v: number) => void
   setActiveHikePoi: (v: number | null) => void
   setFlightStats: (v: FlightStats | null) => void
+  setPointCloudStats: (v: PointCloudStats | null) => void
 }
 
 const NEXT_STATUS: Record<POIStatus, POIStatus> = {
@@ -52,6 +59,7 @@ export const useMapDataStore = create<State & Actions>((set) => ({
   hikeProgress: 0,
   activeHikePoi: null,
   flightStats: null,
+  pointCloudStats: null,
   setBuildingHeights: (v) => set({ buildingHeights: v }),
   setMeasure: (pts, lengthKm) => set({ measurePoints: pts, measureLengthKm: lengthKm }),
   setHeatmapTopZones: (v) => set({ heatmapTopZones: v }),
@@ -71,6 +79,7 @@ export const useMapDataStore = create<State & Actions>((set) => ({
   setHikeProgress: (v) => set({ hikeProgress: v }),
   setActiveHikePoi: (v) => set({ activeHikePoi: v }),
   setFlightStats: (v) => set({ flightStats: v }),
+  setPointCloudStats: (v) => set({ pointCloudStats: v }),
 }))
 
 export const hasCompletedAnyPOI = (s: State) => Object.values(s.poiStatus).some((v) => v === 'done')
