@@ -61,20 +61,25 @@ export function prefetchPointCloud() {
   prefetched = true
   const base = `${import.meta.env.BASE_URL}pointcloud/`
   const run = async () => {
-    try {
-      const opt: RequestInit = { cache: 'force-cache' }
-      await fetch(META_URL, opt).catch(() => {})
-      const m = (await fetch(MANIFEST_URL, opt).then((r) => r.json())) as { chunks: string[] }
-      await Promise.all(
-        m.chunks.map((n) =>
-          fetch(base + n, opt)
-            .then((r) => r.arrayBuffer())
-            .catch(() => {}),
+    const opt: RequestInit = { cache: 'force-cache' }
+    // meta (~2 Ko) hors du chemin critique : lancé en parallèle, jamais attendu par
+    // les chunks. La chaîne manifest→chunks démarre les 4 gros téléchargements en
+    // parallèle (Promise.all) dès que le manifest (~100 o) est lu.
+    fetch(META_URL, opt).catch(() => {})
+    fetch(MANIFEST_URL, opt)
+      .then((r) => r.json() as Promise<{ chunks: string[] }>)
+      .then((m) =>
+        Promise.all(
+          m.chunks.map((n) =>
+            fetch(base + n, opt)
+              .then((r) => r.arrayBuffer())
+              .catch(() => {}),
+          ),
         ),
       )
-    } catch {
-      /* silencieux : le prefetch est best-effort */
-    }
+      .catch(() => {
+        /* silencieux : le prefetch est best-effort */
+      })
   }
   if ('requestIdleCallback' in window)
     window.requestIdleCallback(() => void run(), { timeout: 1500 })
