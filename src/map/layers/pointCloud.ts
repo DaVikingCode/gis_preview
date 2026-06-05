@@ -210,6 +210,12 @@ class PointCloudLayer implements CustomLayerInterface {
   private points: THREE.Points | null = null
   private uniforms: MaterialUniforms | null = null
   private lastMatrix: THREE.Matrix4 | null = null // matrice composée de la dernière frame (project)
+  // Matrices/vecteur de travail réutilisés à chaque frame (évite la pression GC sur
+  // l'orbit continu) : composition de la matrice et projection des POI.
+  private mMain = new THREE.Matrix4()
+  private mLocal = new THREE.Matrix4()
+  private mScratch = new THREE.Matrix4()
+  private vProject = new THREE.Vector4()
   private cancelled = false
   // Streaming : points effectivement uploadés (étendu à chaque chunk) vs nombre que la
   // chorégraphie demande à révéler. Le draw range dessiné = min des deux → « reveal suit
@@ -228,10 +234,11 @@ class PointCloudLayer implements CustomLayerInterface {
 
   onAdd(map: MLMap, gl: WebGLRenderingContext | WebGL2RenderingContext) {
     this.map = map
+    // Pas d'`antialias` : le flag n'agit qu'à la création du contexte WebGL, or on
+    // réutilise ici celui de MapLibre (déjà créé) → il serait ignoré.
     this.renderer = new THREE.WebGLRenderer({
       canvas: map.getCanvas(),
       context: gl,
-      antialias: true,
     })
     this.renderer.autoClear = false
     // Nos couleurs (RGB, rampe, palette) sont déjà en sRGB : on écrit les octets tels
@@ -273,14 +280,16 @@ class PointCloudLayer implements CustomLayerInterface {
 
       // Géométrie pré-allouée pour TOUT le nuage, remplie au fil des chunks. Les vues
       // typées restent référencées par les BufferAttribute → on écrit dedans + upload
-      // GPU partiel (addUpdateRange) à chaque chunk. La dé-quant cm→m (boucle ci-dessous)
-      // tourne pendant la préchauffe du step 6 → coût masqué, réparti par chunk.
-      const positions = new Float32Array(count * 3)
+      // GPU partiel (addUpdateRange) à chaque chunk.
+      // Positions gardées en Int16 BRUT (cm) côté GPU — moitié moins de mémoire qu'un
+      // Float32 (~57 Mo vs ~114 Mo pour 9,5 M pts) ET aucune boucle de dé-quant JS sur
+      // le main-thread : le shader multiplie par `uPosScale` (cm→m) au vertex.
+      const positions = new Int16Array(count * 3)
       const rgbU8 = new Uint8Array(count * 3)
       const clsU8 = new Uint8Array(count)
 
       const geometry = new THREE.BufferGeometry()
-      const posAttr = new THREE.BufferAttribute(positions, 3)
+      const posAttr = new THREE.BufferAttribute(positions, 3) // Int16 non normalisé → float brut au shader
       const colAttr = new THREE.BufferAttribute(rgbU8, 3, true)
       const clsAttr = new THREE.BufferAttribute(clsU8, 1, false)
       geometry.setAttribute('position', posAttr)
@@ -294,6 +303,7 @@ class PointCloudLayer implements CustomLayerInterface {
       })
       const maxZ = meta.zRangeM[1] || 1
       material.onBeforeCompile = (shader) => {
+        shader.uniforms.uPosScale = { value: s } // cm (Int16 brut) → mètres
         shader.uniforms.uMaxZ = { value: maxZ }
         shader.uniforms.uModeFrom = { value: pointCloudView.modeFrom }
         shader.uniforms.uModeTo = { value: pointCloudView.modeTo }
@@ -304,11 +314,14 @@ class PointCloudLayer implements CustomLayerInterface {
         shader.vertexShader = shader.vertexShader
           .replace(
             '#include <common>',
-            '#include <common>\nattribute float aClass;\nvarying float vClass;\nvarying float vUp;\nvarying float vScanCoord;',
+            '#include <common>\nattribute float aClass;\nuniform float uPosScale;\nvarying float vClass;\nvarying float vUp;\nvarying float vScanCoord;',
           )
           .replace(
+            // `position` est en cm (Int16 brut) → on remet `transformed` à l'échelle
+            // mètres pour la projection, et on exporte les varyings en mètres (vUp et
+            // vScanCoord sont comparés à uMaxZ / uScan, exprimés en mètres).
             '#include <begin_vertex>',
-            '#include <begin_vertex>\n  vClass = aClass;\n  vUp = position.z;\n  vScanCoord = position.y;',
+            '#include <begin_vertex>\n  transformed *= uPosScale;\n  vClass = aClass;\n  vUp = position.z * uPosScale;\n  vScanCoord = position.y * uPosScale;',
           )
         shader.fragmentShader = shader.fragmentShader
           .replace(
@@ -404,8 +417,9 @@ class PointCloudLayer implements CustomLayerInterface {
         const cRgb = new Uint8Array(cBuf, cN * 6, cN * 3)
         const cCls = new Uint8Array(cBuf, cN * 6 + cN * 3, cN)
         const base = this.loadedCount
-        // Dé-quantification (cm → m) à l'offset du chunk (boucle répartie par chunk).
-        for (let k = 0; k < cN * 3; k++) positions[base * 3 + k] = cPos[k] * s
+        // Copie directe des Int16 bruts (cm) — plus de boucle de dé-quant : le shader
+        // applique `uPosScale` (cm→m) au vertex.
+        positions.set(cPos, base * 3)
         rgbU8.set(cRgb, base * 3)
         clsU8.set(cCls, base)
         // Upload GPU partiel : seule la région ajoutée (évite de ré-uploader tout).
@@ -445,7 +459,7 @@ class PointCloudLayer implements CustomLayerInterface {
 
   project(p: [number, number, number]): { x: number; y: number; visible: boolean } | null {
     if (!this.lastMatrix || !this.map) return null
-    const v = new THREE.Vector4(p[0], p[1], p[2], 1).applyMatrix4(this.lastMatrix)
+    const v = this.vProject.set(p[0], p[1], p[2], 1).applyMatrix4(this.lastMatrix)
     const canvas = this.map.getCanvas()
     const w = canvas.clientWidth
     const h = canvas.clientHeight
@@ -461,18 +475,19 @@ class PointCloudLayer implements CustomLayerInterface {
   render(_gl: WebGLRenderingContext | WebGL2RenderingContext, args: CustomRenderMethodInput) {
     if (!this.renderer || !this.map || !this.points) return
 
-    const mainMatrix = new THREE.Matrix4().fromArray(args.defaultProjectionData.mainMatrix)
+    const mainMatrix = this.mMain.fromArray(args.defaultProjectionData.mainMatrix)
     const transform = (this.map as unknown as { transform: ModelTransform }).transform
     const t = pointCloudTuning
     const s = t.scale
-    const l = new THREE.Matrix4()
+    const sc = this.mScratch
+    const l = this.mLocal
       .fromArray(transform.getMatrixForModel(POINTCLOUD_ANCHOR, t.altitudeM))
       // Décalage horizontal dans le repère ENU (X est, Y nord) avant rotations.
-      .multiply(new THREE.Matrix4().makeTranslation(t.offsetEast, t.offsetNorth, 0))
-      .multiply(new THREE.Matrix4().makeRotationZ(t.bearingDeg * DEG2RAD))
-      .multiply(new THREE.Matrix4().makeRotationX(t.pitchDeg * DEG2RAD))
-      .multiply(new THREE.Matrix4().makeRotationY(t.rollDeg * DEG2RAD))
-      .multiply(new THREE.Matrix4().makeScale(s, s, s))
+      .multiply(sc.makeTranslation(t.offsetEast, t.offsetNorth, 0))
+      .multiply(sc.makeRotationZ(t.bearingDeg * DEG2RAD))
+      .multiply(sc.makeRotationX(t.pitchDeg * DEG2RAD))
+      .multiply(sc.makeRotationY(t.rollDeg * DEG2RAD))
+      .multiply(sc.makeScale(s, s, s))
     const composed = mainMatrix.multiply(l)
     this.camera.projectionMatrix = composed
     this.lastMatrix = composed // mémorisée pour project() (overlay POI)
@@ -545,6 +560,14 @@ export function prewarmPointCloud(map: MLMap): PointCloudHandle {
 // Adopte la couche préchauffée si elle existe (step 7), sinon la crée à la volée.
 export function addPointCloud(map: MLMap): PointCloudHandle {
   return prewarmPointCloud(map)
+}
+
+// Remet le nuage au sommet de la pile de couches. Nécessaire car la préchauffe ajoute
+// le nuage AVANT le step LiDAR ; addSatelliteHd (au step) s'insère alors par-dessus et
+// masque les points. moveLayer sans beforeId = tout en haut. No-op si le nuage est absent
+// ou déjà au sommet (cas sans préchauffe).
+export function bringPointCloudToFront(map: MLMap) {
+  if (map.getLayer(LAYER_ID)) map.moveLayer(LAYER_ID)
 }
 
 export function removePointCloud(map: MLMap) {

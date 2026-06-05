@@ -10,7 +10,8 @@
     "fmt": "vp fmt --write",
     "format": "vp fmt --write",
     "check": "vp check",
-    "preview": "vp preview"
+    "preview": "vp preview",
+    "build:plane": "gltf-transform optimize model-src/plane/11803_Airplane_v1_l1.gltf public/models/plane/plane.glb --compress meshopt --texture-compress webp"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
+    "@gltf-transform/cli": "^4.3.0",
     "@loaders.gl/core": "^4.4.2",
     "@loaders.gl/las": "^4.4.2",
     "@math.gl/types": "^4.1.0",
@@ -58,5 +60,8 @@
     "vite": "npm:@voidzero-dev/vite-plus-core@latest",
     "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
   },
-  "packageManager": "npm@11.16.0"
+  "packageManager": "npm@11.16.0",
+  "allowScripts": {
+    "sharp@0.34.5": true
+  }
 }

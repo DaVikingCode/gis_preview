@@ -7,6 +7,7 @@ import { addAirplane3D, type AirplaneHandle } from '@/map/layers/airplane3d'
 import {
   addPointCloud,
   prewarmPointCloud,
+  bringPointCloudToFront,
   POINTCLOUD_ANCHOR,
   type PointCloudHandle,
 } from '@/map/layers/pointCloud'
@@ -326,6 +327,9 @@ export const STEPS: TourStep[] = [
       addSatelliteHd(map)
 
       pointCloudHandle = addPointCloud(map)
+      // La préchauffe (step 6) a posé le nuage AVANT addSatelliteHd → le satellite se
+      // retrouve par-dessus et masque les points. On remet le nuage au sommet.
+      bringPointCloudToFront(map)
       const handle = pointCloudHandle
       ds.setPointCloudHandle(handle)
       ds.setPointCloudReplay(() => useMapDataStore.getState().bumpPointCloudRun())

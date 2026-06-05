@@ -6,6 +6,7 @@ import type {
 } from 'maplibre-gl'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import { Line2 } from 'three/examples/jsm/lines/Line2.js'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
@@ -34,7 +35,10 @@ import { useMapDataStore } from '@/store/map-data-store'
 export type AirplaneHandle = { detach: () => void }
 
 const LAYER_ID = 'gp-airplane-3d'
-const MODEL_URL = '/models/plane/11803_Airplane_v1_l1.gltf'
+// GLB optimisé hors-ligne (cf. script `build:plane` : gltf-transform optimize +
+// compression meshopt + textures WebP) — 17,5 Mo → ~0,77 Mo. Décodé via MeshoptDecoder
+// (bundlé avec three, aucun fichier décodeur à héberger).
+const MODEL_URL = '/models/plane/plane.glb'
 
 const NIGHT_SOURCE_ID = 'gp-airplane-night'
 const NIGHT_FILL_ID = 'gp-airplane-night-fill'
@@ -357,6 +361,11 @@ class AirplaneLayer implements CustomLayerInterface {
   private line: Line2 | null = null
   private lineMaterial: LineMaterial | null = null
   private lineSegments = 0
+  // Matrices de travail réutilisées par frame (la boucle de vol tourne en continu) :
+  // matrice de projection principale, matrice de pose, et scratch de rotation.
+  private mMain = new THREE.Matrix4()
+  private mPose = new THREE.Matrix4()
+  private mScratch = new THREE.Matrix4()
 
   constructor(state: FlightState) {
     this.state = state
@@ -370,16 +379,20 @@ class AirplaneLayer implements CustomLayerInterface {
     sun.position.set(0, -70, 100)
     this.scene.add(sun)
 
+    // Pas d'`antialias` : le flag n'agit qu'à la création du contexte WebGL, or on
+    // réutilise ici celui de MapLibre (déjà créé) → il serait ignoré. L'AA du tracé
+    // vient de `alphaToCoverage` sur la Line2.
     this.renderer = new THREE.WebGLRenderer({
       canvas: map.getCanvas(),
       context: gl,
-      antialias: true,
     })
     this.renderer.autoClear = false
 
     this.buildRouteLine(map)
 
-    new GLTFLoader().load(MODEL_URL, (gltf) => {
+    const loader = new GLTFLoader()
+    loader.setMeshoptDecoder(MeshoptDecoder)
+    loader.load(MODEL_URL, (gltf) => {
       const model = gltf.scene
       // Centrer le modèle sur son origine, pour que les rotations pivotent autour de
       // son centre (pas d'un coin du DCC). L'échelle est appliquée live dans render()
@@ -448,7 +461,7 @@ class AirplaneLayer implements CustomLayerInterface {
 
     // mainMatrix pristine (réutilisée pour projeter le tracé) — calculée tôt car le
     // tracé peut être rendu seul (pendant l'animation de dessin, avion encore caché).
-    const mainMatrix = new THREE.Matrix4().fromArray(args.defaultProjectionData.mainMatrix)
+    const mainMatrix = this.mMain.fromArray(args.defaultProjectionData.mainMatrix)
 
     // Tracé 3D (fat line) : dessin progressif via instanceCount (chaque segment = une
     // instance). Pendant l'intro, lineProgress monte de 0 → 1 et « trace » le grand
@@ -491,14 +504,16 @@ class AirplaneLayer implements CustomLayerInterface {
 
     // Orientation : cap (autour de l'up local) · tangage · roulis.
     const heading = this.state.bearingRad + this.state.headingOffsetDeg * DEG2RAD
-    const l = new THREE.Matrix4()
+    const sc = this.mScratch
+    const l = this.mPose
       .fromArray(modelMatrix)
-      .multiply(new THREE.Matrix4().makeRotationZ(heading))
-      .multiply(new THREE.Matrix4().makeRotationX(this.state.pitchDeg * DEG2RAD))
-      .multiply(new THREE.Matrix4().makeRotationY(this.state.rollDeg * DEG2RAD))
+      .multiply(sc.makeRotationZ(heading))
+      .multiply(sc.makeRotationX(this.state.pitchDeg * DEG2RAD))
+      .multiply(sc.makeRotationY(this.state.rollDeg * DEG2RAD))
 
-    // Projection de l'avion : mainMatrix (clonée) composée avec la matrice de pose.
-    this.camera.projectionMatrix = mainMatrix.clone().multiply(l)
+    // Projection de l'avion : mainMatrix composée avec la matrice de pose, écrite
+    // directement dans la matrice de la caméra (pas de clone → pas d'alloc/frame).
+    this.camera.projectionMatrix.copy(mainMatrix).multiply(l)
 
     this.renderer.resetState()
     this.renderer.render(this.scene, this.camera)

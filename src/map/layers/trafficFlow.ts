@@ -605,6 +605,14 @@ class TrafficFlowLayer implements CustomLayerInterface {
     }
     gl.depthMask(true)
 
+    // On désactive nos attributs : le contexte GL est partagé avec MapLibre, et
+    // laisser des vertexAttribArray activés (indices que MapLibre n'attend pas)
+    // peut corrompre ses draws suivants selon l'ordre des couches.
+    gl.disableVertexAttribArray(this.aPos)
+    gl.disableVertexAttribArray(this.aFlow)
+    gl.disableVertexAttribArray(this.aSide)
+    gl.disableVertexAttribArray(this.aT)
+
     // Boucle d'animation : tant que visible et mouvement autorisé, on redemande
     // une frame (MapLibre n'anime pas les couches custom tout seul).
     if (!flowState.reduced) this.map?.triggerRepaint()
