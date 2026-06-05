@@ -7,8 +7,6 @@ import { addBuildings3D } from '@/map/layers/buildings3d'
 import { prefetchPointCloud } from '@/map/layers/pointCloud'
 import { prefetchAirplaneModel } from '@/map/layers/airplane3d'
 import { preloadImages } from '@/map/preloadImages'
-import { usePreloadStore, selectFraction } from '@/store/preload-store'
-import { PreloadBar } from './PreloadBar'
 import { Play, Boxes, Ruler, Flame, MapPin, MonitorPlay } from 'lucide-react'
 import dvcWordmark from '@/assets/dvc-wordmark.svg?inline'
 
@@ -25,16 +23,15 @@ export function StartScreen() {
   const startAuto = useTourStore((s) => s.startAuto)
   const map = useMapMaybe()
   const addedRef = useRef(false)
-  // Gate : tant que le préchargement n'est pas à 100 %, les boutons restent verrouillés.
-  const ready = usePreloadStore((s) => s.done)
-  const fraction = usePreloadStore(selectFraction)
 
   useEffect(() => {
     if (!map || addedRef.current) return
     addedRef.current = true
-    // Précharge dès le splash (pendant la lecture), en alimentant le loader :
-    // nuage LiDAR (~95 Mo), glb avion, images d'interface. Les tuiles, elles, sont
-    // réchauffées en fond par TourController au démarrage (hors loader).
+    // Préchargement EN TÂCHE DE FOND dès le splash, NON bloquant : on lance le
+    // téléchargement du nuage LiDAR (~95 Mo), du glb avion et des images d'interface
+    // pour que les steps correspondants arrivent sans latence, mais les boutons
+    // « Démarrer » restent actifs immédiatement (aucun gate sur la fin du préchargement).
+    // Les tuiles sont réchauffées en fond par TourController au démarrage.
     prefetchPointCloud()
     prefetchAirplaneModel()
     preloadImages()
@@ -42,8 +39,6 @@ export function StartScreen() {
     if (map.isStyleLoaded()) addBuildings3D(map)
     else map.once('idle', () => addBuildings3D(map))
   }, [map])
-
-  const pct = Math.round(fraction * 100)
 
   return (
     <div
@@ -119,17 +114,10 @@ export function StartScreen() {
           <Button
             size="lg"
             onClick={start}
-            disabled={!ready}
-            className="mt-1 h-11 w-full gap-2 rounded-xl text-[15px] font-semibold fill-mode-both transition-transform duration-700 animate-in fade-in slide-in-from-bottom-2 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+            className="mt-1 h-11 w-full gap-2 rounded-xl text-[15px] font-semibold fill-mode-both transition-transform duration-700 animate-in fade-in slide-in-from-bottom-2 hover:-translate-y-0.5"
             style={{ animationDelay: '300ms' }}
           >
-            {ready ? (
-              <>
-                <Play className="size-4 fill-current" /> Démarrer la visite
-              </>
-            ) : (
-              <>Préchargement… {pct}%</>
-            )}
+            <Play className="size-4 fill-current" /> Démarrer la visite
           </Button>
 
           {/* Lecture automatique : enchaîne les étapes seule, sans piloter. */}
@@ -137,15 +125,12 @@ export function StartScreen() {
             variant="outline"
             size="lg"
             onClick={startAuto}
-            disabled={!ready}
-            className="h-11 w-full gap-2 rounded-xl text-[15px] font-semibold fill-mode-both transition-transform duration-700 animate-in fade-in slide-in-from-bottom-2 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+            className="h-11 w-full gap-2 rounded-xl text-[15px] font-semibold fill-mode-both transition-transform duration-700 animate-in fade-in slide-in-from-bottom-2 hover:-translate-y-0.5"
             style={{ animationDelay: '360ms' }}
           >
             <MonitorPlay className="size-4" /> Lecture automatique
           </Button>
         </div>
-
-        <PreloadBar />
       </div>
     </div>
   )
