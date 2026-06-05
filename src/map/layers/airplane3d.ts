@@ -13,6 +13,7 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import * as turf from '@turf/turf'
 import gsap from 'gsap'
 import { useMapDataStore } from '@/store/map-data-store'
+import { usePreloadStore } from '@/store/preload-store'
 
 // -----------------------------------------------------------------------------
 // Avion 3D sur le globe — couche WebGL personnalisée (three.js dans le contexte
@@ -39,6 +40,33 @@ const LAYER_ID = 'gp-airplane-3d'
 // compression meshopt + textures WebP) — 17,5 Mo → ~0,77 Mo. Décodé via MeshoptDecoder
 // (bundlé avec three, aucun fichier décodeur à héberger).
 const MODEL_URL = '/models/plane/plane.glb'
+
+// Budget de repli si le serveur n'expose pas Content-Length (le glb fait ~0,77 Mo).
+const PLANE_BYTES_FALLBACK = 800_000
+
+// Préchargement du glb dès le splash : réchauffe le cache HTTP pour que le GLTFLoader du
+// step « Survol 3D » le serve sans latence, et alimente le loader. Best-effort.
+let planePrefetched = false
+export function prefetchAirplaneModel(): void {
+  if (planePrefetched) return
+  planePrefetched = true
+  const pl = usePreloadStore.getState()
+  void (async () => {
+    try {
+      const res = await fetch(MODEL_URL, { cache: 'force-cache' })
+      const len = Number(res.headers.get('content-length')) || PLANE_BYTES_FALLBACK
+      pl.addTotal(len)
+      pl.markReady()
+      const buf = await res.arrayBuffer()
+      pl.addLoaded(buf.byteLength || len)
+    } catch {
+      // injoignable : on crédite quand même le budget de repli pour ne pas bloquer le gate.
+      pl.addTotal(PLANE_BYTES_FALLBACK)
+      pl.markReady()
+      pl.addLoaded(PLANE_BYTES_FALLBACK)
+    }
+  })()
+}
 
 const NIGHT_SOURCE_ID = 'gp-airplane-night'
 const NIGHT_FILL_ID = 'gp-airplane-night-fill'

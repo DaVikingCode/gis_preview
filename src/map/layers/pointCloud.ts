@@ -6,6 +6,7 @@ import type {
 } from 'maplibre-gl'
 import * as THREE from 'three'
 import { useMapDataStore, type PointCloudStats } from '@/store/map-data-store'
+import { usePreloadStore } from '@/store/preload-store'
 
 // -----------------------------------------------------------------------------
 // Nuage de points LiDAR — couche WebGL personnalisée (three.js dans le contexte GL
@@ -97,20 +98,34 @@ async function fetchPersistent(url: string, cache: Cache | null): Promise<ArrayB
 // fond pendant que l'utilisateur lit le splash, stocké en Cache Storage. Au step LiDAR
 // `load()` (mêmes URLs, même helper) tape le cache → rendu quasi instantané.
 // Best-effort : tout échec est silencieux.
+// Octets par point dans le binaire : Int16×3 (positions) + Uint8×3 (RGB) + Uint8 (classe).
+const PC_BYTES_PER_POINT = 10
+
 let prefetched = false
 export function prefetchPointCloud() {
   if (prefetched) return
   prefetched = true
+  const pl = usePreloadStore.getState()
   const run = async () => {
     const cache = await openPcCache()
     try {
       const manifest = await fetchJson<{ chunks: { name: string; count: number }[] }>(MANIFEST_URL)
-      // Tous les chunks démarrent ensemble (Promise.all) dès que le manifest est lu.
+      // Poids total exact connu via le manifest → alimente le dénominateur du loader.
+      for (const c of manifest.chunks) pl.addTotal(c.count * PC_BYTES_PER_POINT)
+      pl.markReady()
+      // Tous les chunks démarrent ensemble (Promise.all) dès que le manifest est lu ;
+      // chaque chunk terminé (succès OU échec) crédite sa part au loader.
       await Promise.all(
-        manifest.chunks.map((c) => fetchPersistent(PC_BASE + c.name, cache).catch(() => {})),
+        manifest.chunks.map((c) =>
+          fetchPersistent(PC_BASE + c.name, cache)
+            .catch(() => {})
+            .finally(() => pl.addLoaded(c.count * PC_BYTES_PER_POINT)),
+        ),
       )
     } catch {
-      /* silencieux : le prefetch est best-effort */
+      // silencieux : le prefetch est best-effort. markReady ici aussi pour que le gate
+      // ne reste pas bloqué si le manifest est injoignable.
+      pl.markReady()
     }
   }
   if ('requestIdleCallback' in window)
