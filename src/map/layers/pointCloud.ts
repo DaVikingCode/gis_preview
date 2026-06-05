@@ -48,38 +48,70 @@ export const POINTCLOUD_ANCHOR: [number, number] = [5.392126, 47.202674]
 // scripts/split-pointcloud.mjs) et ré-assemblé ici (concat byte-exact). Le `.json`
 // (~2 Ko) est servi depuis `public/` lui aussi : `new URL(import.meta.url)` sur un
 // `.json` n'était pas émis dans le build de prod (404 → nuage vide en ligne).
-const MANIFEST_URL = `${import.meta.env.BASE_URL}pointcloud/manifest.json`
-const META_URL = `${import.meta.env.BASE_URL}pointcloud/auxonne.points.json`
+// Version du jeu de données : sert à la fois de préfixe de chunks (c2-*.bin) et de
+// cache-buster sur les JSON. Un ancien `manifest.json` (forme `chunks:string[]`) traîne
+// dans le cache HTTP des navigateurs ayant déjà visité → le `?v=` force une URL neuve,
+// jamais servie depuis ce cache périmé. Bumper à chaque changement de layout.
+const PC_VERSION = 2
+const MANIFEST_URL = `${import.meta.env.BASE_URL}pointcloud/manifest.json?v=${PC_VERSION}`
+const META_URL = `${import.meta.env.BASE_URL}pointcloud/auxonne.points.json?v=${PC_VERSION}`
 
-// Préchargement du nuage (~95 Mo) dès l'écran d'accueil : on réchauffe le cache HTTP
-// du navigateur pendant que l'utilisateur lit le splash, pour qu'au step LiDAR le
-// `load()` ci-dessous (mêmes URLs) tape un cache HIT → rendu quasi instantané. Échecs
-// silencieux : `load()` refera le vrai fetch au besoin.
+const PC_BASE = `${import.meta.env.BASE_URL}pointcloud/`
+
+// Cache Storage persistant (survit aux sessions, plus robuste à l'éviction que le
+// disk cache HTTP). Bumper la version si le nuage est re-cuit avec les MÊMES noms de
+// fichiers (sinon les anciens chunks resteraient servis). Couplé à _headers
+// (Cache-Control immutable) côté Cloudflare : ceinture + bretelles.
+const PC_CACHE = 'gp-pointcloud-v2'
+
+async function openPcCache(): Promise<Cache | null> {
+  try {
+    if (typeof caches === 'undefined') return null
+    return await caches.open(PC_CACHE)
+  } catch {
+    return null
+  }
+}
+
+// JSON (manifest/meta, ~2 Ko) : on NE met PAS en Cache Storage et on revalide
+// (`no-cache`) — ces fichiers doivent rester frais (un manifest périmé casserait le
+// décodage des chunks). Le poids est négligeable.
+async function fetchJson<T>(url: string): Promise<T> {
+  const res = await fetch(url, { cache: 'no-cache' })
+  return res.json() as Promise<T>
+}
+
+// Récupère une URL en privilégiant le Cache Storage (persistant entre visites). La
+// réponse réseau est stockée pour les fois suivantes ; échec de mise en cache silencieux.
+async function fetchPersistent(url: string, cache: Cache | null): Promise<ArrayBuffer> {
+  const hit = cache ? await cache.match(url).catch(() => undefined) : undefined
+  if (hit) return hit.arrayBuffer()
+  const res = await fetch(url, { cache: 'force-cache' })
+  // Cloner AVANT de lire le corps : on stocke la réponse réseau telle quelle (en-têtes
+  // Content-Length/Type préservés → taille correcte en DevTools) et on lit l'autre moitié.
+  if (cache) await cache.put(url, res.clone()).catch(() => {})
+  return res.arrayBuffer()
+}
+
+// Préchargement du nuage (~95 Mo) dès l'écran d'accueil : téléchargement en tâche de
+// fond pendant que l'utilisateur lit le splash, stocké en Cache Storage. Au step LiDAR
+// `load()` (mêmes URLs, même helper) tape le cache → rendu quasi instantané.
+// Best-effort : tout échec est silencieux.
 let prefetched = false
 export function prefetchPointCloud() {
   if (prefetched) return
   prefetched = true
-  const base = `${import.meta.env.BASE_URL}pointcloud/`
   const run = async () => {
-    const opt: RequestInit = { cache: 'force-cache' }
-    // meta (~2 Ko) hors du chemin critique : lancé en parallèle, jamais attendu par
-    // les chunks. La chaîne manifest→chunks démarre les 4 gros téléchargements en
-    // parallèle (Promise.all) dès que le manifest (~100 o) est lu.
-    fetch(META_URL, opt).catch(() => {})
-    fetch(MANIFEST_URL, opt)
-      .then((r) => r.json() as Promise<{ chunks: string[] }>)
-      .then((m) =>
-        Promise.all(
-          m.chunks.map((n) =>
-            fetch(base + n, opt)
-              .then((r) => r.arrayBuffer())
-              .catch(() => {}),
-          ),
-        ),
+    const cache = await openPcCache()
+    try {
+      const manifest = await fetchJson<{ chunks: { name: string; count: number }[] }>(MANIFEST_URL)
+      // Tous les chunks démarrent ensemble (Promise.all) dès que le manifest est lu.
+      await Promise.all(
+        manifest.chunks.map((c) => fetchPersistent(PC_BASE + c.name, cache).catch(() => {})),
       )
-      .catch(() => {
-        /* silencieux : le prefetch est best-effort */
-      })
+    } catch {
+      /* silencieux : le prefetch est best-effort */
+    }
   }
   if ('requestIdleCallback' in window)
     window.requestIdleCallback(() => void run(), { timeout: 1500 })
@@ -179,6 +211,11 @@ class PointCloudLayer implements CustomLayerInterface {
   private uniforms: MaterialUniforms | null = null
   private lastMatrix: THREE.Matrix4 | null = null // matrice composée de la dernière frame (project)
   private cancelled = false
+  // Streaming : points effectivement uploadés (étendu à chaque chunk) vs nombre que la
+  // chorégraphie demande à révéler. Le draw range dessiné = min des deux → « reveal suit
+  // le chargement » : les chunks tardifs se densifient derrière le front de scan.
+  private loadedCount = 0
+  private revealRequested = 0
 
   readonly ready: Promise<{ count: number }>
   private resolveReady!: (v: { count: number }) => void
@@ -205,48 +242,50 @@ class PointCloudLayer implements CustomLayerInterface {
 
   private async load() {
     try {
-      const [metaRes, manifestRes] = await Promise.all([fetch(META_URL), fetch(MANIFEST_URL)])
-      const meta = (await metaRes.json()) as PointCloudStats & {
-        posScale: number
-        classes: { code: number; count: number }[]
-        linePath?: [number, number][]
-        dangerPois?: {
-          veg: [number, number, number]
-          cond: [number, number, number]
-          clearanceM: number
-        }[]
-      }
-      // Ré-assemblage des chunks (cf. scripts/split-pointcloud.mjs) en un buffer unique.
-      const manifest = (await manifestRes.json()) as { bytes: number; chunks: string[] }
-      const base = `${import.meta.env.BASE_URL}pointcloud/`
-      const parts = await Promise.all(
-        manifest.chunks.map((name) => fetch(base + name).then((r) => r.arrayBuffer())),
-      )
-      if (this.cancelled) return
-      const u8 = new Uint8Array(manifest.bytes)
-      let off = 0
-      for (const part of parts) {
-        u8.set(new Uint8Array(part), off)
-        off += part.byteLength
-      }
-      const buf = u8.buffer
+      // Cache Storage seulement pour les gros chunks (.bin). meta/manifest via fetchJson
+      // (revalidés, jamais périmés). Si le prefetch du StartScreen a peuplé le cache, les
+      // chunks sont instantanés.
+      const cache = await openPcCache()
+      const [meta, manifest] = await Promise.all([
+        fetchJson<
+          PointCloudStats & {
+            posScale: number
+            classes: { code: number; count: number }[]
+            linePath?: [number, number][]
+            dangerPois?: {
+              veg: [number, number, number]
+              cond: [number, number, number]
+              clearanceM: number
+            }[]
+          }
+        >(META_URL),
+        // Chunks SELF-CONTAINED point-alignés (cf. scripts/split-pointcloud.mjs) : chacun
+        // décodable et rendu seul. Manifest : { version, count, chunks:[{name,count}] }.
+        fetchJson<{
+          version: number
+          count: number
+          chunks: { name: string; count: number }[]
+        }>(MANIFEST_URL),
+      ])
 
       const count = meta.count
-      const posI16 = new Int16Array(buf, 0, count * 3)
-      const rgbU8 = new Uint8Array(buf, count * 3 * 2, count * 3)
-      const clsU8 = new Uint8Array(buf, count * 3 * 2 + count * 3, count)
-
-      // Dé-quantification des positions (cm → mètres) en Float32 pour le GPU.
-      const positions = new Float32Array(count * 3)
       const s = meta.posScale
-      for (let i = 0; i < positions.length; i++) positions[i] = posI16[i] * s
+
+      // Géométrie pré-allouée pour TOUT le nuage, remplie au fil des chunks. Les vues
+      // typées restent référencées par les BufferAttribute → on écrit dedans + upload
+      // GPU partiel (addUpdateRange) à chaque chunk. La dé-quant cm→m (boucle ci-dessous)
+      // tourne pendant la préchauffe du step 6 → coût masqué, réparti par chunk.
+      const positions = new Float32Array(count * 3)
+      const rgbU8 = new Uint8Array(count * 3)
+      const clsU8 = new Uint8Array(count)
 
       const geometry = new THREE.BufferGeometry()
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-      // RGB (vraie couleur) via vertexColors → vColor dans le shader.
-      geometry.setAttribute('color', new THREE.BufferAttribute(rgbU8, 3, true))
-      // Classification : octet brut → float (non normalisé) lu par le shader.
-      geometry.setAttribute('aClass', new THREE.BufferAttribute(clsU8, 1, false))
+      const posAttr = new THREE.BufferAttribute(positions, 3)
+      const colAttr = new THREE.BufferAttribute(rgbU8, 3, true)
+      const clsAttr = new THREE.BufferAttribute(clsU8, 1, false)
+      geometry.setAttribute('position', posAttr)
+      geometry.setAttribute('color', colAttr) // RGB vraie couleur → vColor
+      geometry.setAttribute('aClass', clsAttr) // octet brut → float (non normalisé)
 
       const material = new THREE.PointsMaterial({
         size: pointCloudTuning.pointSizePx,
@@ -342,6 +381,7 @@ class PointCloudLayer implements CustomLayerInterface {
       points.frustumCulled = false
       this.points = points
       this.scene.add(points)
+      geometry.setDrawRange(0, 0)
 
       useMapDataStore.getState().setPointCloudStats({
         count: meta.count,
@@ -352,9 +392,36 @@ class PointCloudLayer implements CustomLayerInterface {
       useMapDataStore.getState().setPointCloudLinePath(meta.linePath ?? [])
       useMapDataStore.getState().setPointCloudDangerPois(meta.dangerPois ?? [])
 
-      geometry.setDrawRange(0, 0)
-      this.map?.triggerRepaint()
-      this.resolveReady({ count })
+      // Téléchargement parallèle, application ORDONNÉE : tous les fetch partent ensemble
+      // (réchauffe/sature le tuyau), mais on applique chunk i dans l'ordre pour étendre
+      // un draw range contigu. Premier chunk → resolveReady (la chorégraphie démarre).
+      const promises = manifest.chunks.map((c) => fetchPersistent(PC_BASE + c.name, cache))
+      for (let i = 0; i < manifest.chunks.length; i++) {
+        const cBuf = await promises[i]
+        if (this.cancelled) return
+        const cN = manifest.chunks[i].count
+        const cPos = new Int16Array(cBuf, 0, cN * 3)
+        const cRgb = new Uint8Array(cBuf, cN * 6, cN * 3)
+        const cCls = new Uint8Array(cBuf, cN * 6 + cN * 3, cN)
+        const base = this.loadedCount
+        // Dé-quantification (cm → m) à l'offset du chunk (boucle répartie par chunk).
+        for (let k = 0; k < cN * 3; k++) positions[base * 3 + k] = cPos[k] * s
+        rgbU8.set(cRgb, base * 3)
+        clsU8.set(cCls, base)
+        // Upload GPU partiel : seule la région ajoutée (évite de ré-uploader tout).
+        posAttr.addUpdateRange(base * 3, cN * 3)
+        posAttr.needsUpdate = true
+        colAttr.addUpdateRange(base * 3, cN * 3)
+        colAttr.needsUpdate = true
+        clsAttr.addUpdateRange(base, cN)
+        clsAttr.needsUpdate = true
+
+        this.loadedCount = base + cN
+        this.applyDraw()
+        if (i === 0) this.resolveReady({ count })
+      }
+      // Sécurité : si 0 chunk (manifest vide), résoudre tout de même.
+      if (manifest.chunks.length === 0) this.resolveReady({ count })
     } catch (err) {
       console.error('[pointCloud] échec du chargement', err)
       this.resolveReady({ count: 0 })
@@ -362,8 +429,17 @@ class PointCloudLayer implements CustomLayerInterface {
   }
 
   setReveal(n: number) {
+    this.revealRequested = Math.max(0, n)
+    this.applyDraw()
+  }
+
+  // Draw range effectif = min(demandé par la chorégraphie, réellement chargé). Appelé
+  // par setReveal ET à chaque chunk → les points tardifs étendent automatiquement le
+  // rendu derrière le front de scan.
+  private applyDraw() {
     if (!this.points) return
-    this.points.geometry.setDrawRange(0, Math.max(0, Math.round(n)))
+    const n = Math.min(Math.round(this.revealRequested), this.loadedCount)
+    this.points.geometry.setDrawRange(0, n)
     this.map?.triggerRepaint()
   }
 
@@ -431,7 +507,19 @@ class PointCloudLayer implements CustomLayerInterface {
   }
 }
 
-export function addPointCloud(map: MLMap): PointCloudHandle {
+// Couche préchauffée (créée au step PRÉCÉDENT pour que load() — lecture cache, décodage,
+// upload GPU, compile shader — tourne avant le step LiDAR → arrivée sans freeze).
+let prewarmed: { map: MLMap; handle: PointCloudHandle } | null = null
+
+// Crée la couche (déclenche onAdd → load()) sans rien pousser dans le store : la
+// chorégraphie ne démarre QU'avec pointCloudHandle + pointCloudRun (cf. step 7), donc
+// la couche reste invisible (drawRange 0) jusqu'à son adoption. Singleton : réappels
+// (re-entrée step, 5↔6) renvoient la même instance.
+export function prewarmPointCloud(map: MLMap): PointCloudHandle {
+  // Réutilise SEULEMENT si la couche existe encore : un setStyle (changement de basemap)
+  // détruit les custom layers → un handle survivant pointerait une couche morte.
+  if (prewarmed && prewarmed.map === map && map.getLayer(LAYER_ID)) return prewarmed.handle
+  prewarmed = null
   // Reset de l'état animé (re-entrée du step / navigation arrière).
   pointCloudView.modeFrom = MODE.altitude
   pointCloudView.modeTo = MODE.altitude
@@ -444,15 +532,23 @@ export function addPointCloud(map: MLMap): PointCloudHandle {
   if (map.getLayer(LAYER_ID)) map.removeLayer(LAYER_ID)
   const l = new PointCloudLayer()
   map.addLayer(l as unknown as CustomLayerInterface)
-  return {
+  const handle: PointCloudHandle = {
     detach: () => removePointCloud(map),
     ready: l.ready,
     setReveal: (n) => l.setReveal(n),
     project: (p) => l.project(p),
   }
+  prewarmed = { map, handle }
+  return handle
+}
+
+// Adopte la couche préchauffée si elle existe (step 7), sinon la crée à la volée.
+export function addPointCloud(map: MLMap): PointCloudHandle {
+  return prewarmPointCloud(map)
 }
 
 export function removePointCloud(map: MLMap) {
+  prewarmed = null
   if (map.getLayer(LAYER_ID)) map.removeLayer(LAYER_ID) // déclenche onRemove → libère le GL
   useMapDataStore.getState().setPointCloudStats(null)
 }

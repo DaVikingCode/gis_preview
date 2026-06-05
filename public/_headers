@@ -1,0 +1,9 @@
+# Cloudflare Pages : assets du nuage LiDAR (cf. scripts/split-pointcloud.mjs).
+# Les .bin ont des noms VERSIONNÉS (c2-*.bin) → on peut les figer en immutable sans
+# risque de stale : changer de layout ⇒ changer le préfixe ⇒ nouvelles URLs.
+# Les .json (manifest/meta) restent en revalidation courte pour qu'un visiteur récupère
+# vite un nouveau manifest (sinon il pointerait éternellement sur l'ancien jeu de chunks).
+/pointcloud/*.bin
+  Cache-Control: public, max-age=31536000, immutable
+/pointcloud/*.json
+  Cache-Control: public, max-age=60, must-revalidate

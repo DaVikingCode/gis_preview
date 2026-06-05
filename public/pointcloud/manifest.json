@@ -1,4 +1,18 @@
 {
-  "bytes": 94759590,
-  "chunks": ["chunk-000.bin", "chunk-001.bin", "chunk-002.bin", "chunk-003.bin"]
+  "version": 2,
+  "count": 9475959,
+  "chunks": [
+    { "name": "c2-000.bin", "count": 838860 },
+    { "name": "c2-001.bin", "count": 838860 },
+    { "name": "c2-002.bin", "count": 838860 },
+    { "name": "c2-003.bin", "count": 838860 },
+    { "name": "c2-004.bin", "count": 838860 },
+    { "name": "c2-005.bin", "count": 838860 },
+    { "name": "c2-006.bin", "count": 838860 },
+    { "name": "c2-007.bin", "count": 838860 },
+    { "name": "c2-008.bin", "count": 838860 },
+    { "name": "c2-009.bin", "count": 838860 },
+    { "name": "c2-010.bin", "count": 838860 },
+    { "name": "c2-011.bin", "count": 248499 }
+  ]
 }

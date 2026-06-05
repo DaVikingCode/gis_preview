@@ -4,7 +4,12 @@ import { addBuildings3D, removeBuildings3D } from '@/map/layers/buildings3d'
 import { addTrafficFlow, removeTrafficFlow } from '@/map/layers/trafficFlow'
 import { addHikingTerrain, type HikingHandle } from '@/map/layers/hikingTerrain'
 import { addAirplane3D, type AirplaneHandle } from '@/map/layers/airplane3d'
-import { addPointCloud, POINTCLOUD_ANCHOR, type PointCloudHandle } from '@/map/layers/pointCloud'
+import {
+  addPointCloud,
+  prewarmPointCloud,
+  POINTCLOUD_ANCHOR,
+  type PointCloudHandle,
+} from '@/map/layers/pointCloud'
 import { addSatelliteHd, removeSatelliteHd } from '@/map/layers/satelliteHd'
 import { STATIC_LADEFENSE_HEIGHTS } from '@/data/sample-buildings'
 import { addVectorStyled, removeVectorStyled } from '@/map/layers/vectorStyled'
@@ -268,6 +273,11 @@ export const STEPS: TourStep[] = [
       hikingHandle = addHikingTerrain(map, (frac) =>
         useMapDataStore.getState().setHikeProgress(frac),
       )
+      // Préchauffe le nuage LiDAR (step suivant) : load() — lecture cache, décodage,
+      // upload GPU, compile shader — tourne pendant qu'on regarde le terrain → arrivée
+      // au step sans freeze. N'écrit rien dans le store → pas d'animation ici. NE PAS
+      // le détacher dans onLeave (déclenché aussi sur 6→7, ça tuerait le préchauffe).
+      prewarmPointCloud(map)
     },
     onLeave() {
       hikingHandle?.detach()
