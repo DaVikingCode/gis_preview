@@ -25,6 +25,9 @@ export interface SmoothCursorProps {
   // Fixed tilt (deg) used when `rotate` is false — e.g. -35 to point up-left like a
   // real OS pointer instead of straight up (the SVG's default orientation).
   restAngle?: number
+  // Suit la cible dispatchée sans ressort (jump) au lieu de la lisser : le curseur colle
+  // pile à sa cible scriptée → un élément glissé reste rigide dessous (drag « franc »).
+  tightTracking?: boolean
   springConfig?: {
     damping: number
     stiffness: number
@@ -102,6 +105,7 @@ export function SmoothCursor({
   hidden = false,
   rotate = true,
   restAngle = 0,
+  tightTracking = false,
   springConfig = {
     damping: 45,
     stiffness: 400,
@@ -189,27 +193,39 @@ export function SmoothCursor({
         return
       }
 
-      setIsVisible(true)
-
       const currentPos = { x: e.clientX, y: e.clientY }
 
       // Premier positionnement : téléportation (jump, sans ressort) pour éviter le
-      // glissement visible depuis le coin (0,0) jusqu'au point d'apparition.
+      // glissement visible depuis le coin (0,0) jusqu'au point d'apparition. On n'affiche
+      // le curseur qu'à la frame SUIVANTE, une fois le jump appliqué au DOM : sinon
+      // l'opacité (React/motion) peut monter avant la position (MotionValue) → flash d'une
+      // frame au coin (0,0).
       if (!positioned.current) {
         positioned.current = true
         cursorX.jump(currentPos.x)
         cursorY.jump(currentPos.y)
         lastMousePos.current = currentPos
         lastUpdateTime.current = Date.now()
+        requestAnimationFrame(() => setIsVisible(true))
         return
       }
+
+      setIsVisible(true)
 
       updateVelocity(currentPos)
 
       const speed = Math.sqrt(Math.pow(velocity.current.x, 2) + Math.pow(velocity.current.y, 2))
 
-      cursorX.set(currentPos.x)
-      cursorY.set(currentPos.y)
+      // `tightTracking` : le curseur colle EXACTEMENT à la cible dispatchée (jump, sans
+      // ressort) — pour un drag scripté « franc » où un élément glissé doit rester rigide
+      // sous le curseur. Le chemin étant déjà lissé par GSAP, on ne perd pas de fluidité.
+      if (tightTracking) {
+        cursorX.jump(currentPos.x)
+        cursorY.jump(currentPos.y)
+      } else {
+        cursorX.set(currentPos.x)
+        cursorY.set(currentPos.y)
+      }
 
       // Rotation pilotée par la timeline GSAP : l'angle de trajectoire est dispatché
       // (gpAngle) et suivi par le ressort, par plus-court-chemin. Au 1er angle on PART de
@@ -289,7 +305,17 @@ export function SmoothCursor({
         clearTimeout(timeout)
       }
     }
-  }, [cursorX, cursorY, rotation, scale, isEnabled, scripted, hideSystemCursor, rotate])
+  }, [
+    cursorX,
+    cursorY,
+    rotation,
+    scale,
+    isEnabled,
+    scripted,
+    hideSystemCursor,
+    rotate,
+    tightTracking,
+  ])
 
   // Fin d'animation scriptée (`hidden`) : on « oublie » la position courante. La
   // prochaine animation se téléportera (jump) à son point de départ au lieu de

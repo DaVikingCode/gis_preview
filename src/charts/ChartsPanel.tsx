@@ -12,6 +12,7 @@ import { HighlightChart } from './HighlightChart'
 import { LayersPresentationModal } from './LayersPresentationModal'
 import { LayersAppliedCard } from './LayersAppliedCard'
 import { DataTablePanel } from './DataTablePanel'
+import { KanbanPanel } from './KanbanPanel'
 import { IsochroneChart } from './IsochroneChart'
 import { SwipeChart } from './SwipeChart'
 import { RealtimeChart } from './RealtimeChart'
@@ -83,6 +84,7 @@ export function ChartsPanel() {
   if (chart && chart !== 'none' && chart !== 'layers-presentation' && !hideForPopup) {
     if (chart === 'layers-applied') content = <LayersAppliedCard key={step.id} />
     else if (chart === 'table') content = <DataTablePanel />
+    else if (chart === 'kanban') content = <KanbanPanel />
     else if (chart === 'ecosystem') content = <EcosystemBridge key={step.id} />
     else if (chart === 'techstack') content = <TechStackDiagram key={step.id} />
     else {

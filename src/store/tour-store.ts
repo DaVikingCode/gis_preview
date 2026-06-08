@@ -27,6 +27,8 @@ type State = {
   tableLinkDone: boolean
   // Verrouille « Suivant » jusqu'à la fin du survol de la ligne électrique (nuage LiDAR).
   pointcloudFollowDone: boolean
+  // Verrouille « Suivant » jusqu'à la fin de la démo Kanban (glissé de carte + bascule planning).
+  kanbanDone: boolean
   // Lecture automatique : la visite enchaîne les étapes seule, sans clic « Suivant ».
   autoPlay: boolean
   jumpToStep: ((i: number) => void) | null
@@ -49,6 +51,7 @@ type Actions = {
   setThemeFlipDone: (v: boolean) => void
   setTableLinkDone: (v: boolean) => void
   setPointcloudFollowDone: (v: boolean) => void
+  setKanbanDone: (v: boolean) => void
   setJumpToStep: (fn: ((i: number) => void) | null) => void
 }
 
@@ -68,6 +71,7 @@ export const useTourStore = create<State & Actions>((set) => ({
   themeFlipDone: false,
   tableLinkDone: false,
   pointcloudFollowDone: false,
+  kanbanDone: false,
   autoPlay: false,
   jumpToStep: null,
   start: () => set({ started: true, currentStep: 0 }),
@@ -90,6 +94,7 @@ export const useTourStore = create<State & Actions>((set) => ({
       themeFlipDone: false,
       tableLinkDone: false,
       pointcloudFollowDone: false,
+      kanbanDone: false,
       autoPlay: false,
     }),
   setCinematic: (v) => set({ cinematicActive: v }),
@@ -104,5 +109,6 @@ export const useTourStore = create<State & Actions>((set) => ({
   setThemeFlipDone: (v) => set({ themeFlipDone: v }),
   setTableLinkDone: (v) => set({ tableLinkDone: v }),
   setPointcloudFollowDone: (v) => set({ pointcloudFollowDone: v }),
+  setKanbanDone: (v) => set({ kanbanDone: v }),
   setJumpToStep: (fn) => set({ jumpToStep: fn }),
 }))

@@ -34,6 +34,7 @@ export type ChartKind =
   | 'buildings'
   | 'basemap'
   | 'table'
+  | 'kanban'
   | 'measure'
   | 'heatmap'
   | 'highlight'
@@ -449,6 +450,21 @@ export const STEPS: TourStep[] = [
     onLeave(map) {
       removeVectorStyled(map)
     },
+  },
+  {
+    id: 'kanban',
+    title: 'Planning & suivi d’équipe',
+    description:
+      'Organisez le travail de l’équipe : tâches, statuts et échéances, en tableau Kanban ou en planning hebdomadaire.',
+    element: '#kanban-panel',
+    basemap: 'positron',
+    // Vue large « tout le territoire » : le panneau (overlay bas) est la vedette, la
+    // carte ne sert que d'ambiance — pas de couche. Bottom padding pour relever la
+    // scène au-dessus de l'overlay, comme la vue tabulaire.
+    camera: { center: [2.5, 46.5], zoom: 5.4, pitch: 0, bearing: 0, padding: { bottom: 380 } },
+    // Vol smooth depuis la vue tabulaire (même basemap) plutôt qu'un jumpTo.
+    pan: { duration: 3500 },
+    chart: 'kanban',
   },
   {
     id: 'measure',

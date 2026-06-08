@@ -27,6 +27,7 @@ function isStepLocked(
     themeFlipDone: boolean
     tableLinkDone: boolean
     pointcloudFollowDone: boolean
+    kanbanDone: boolean
     flying: boolean
   },
 ): boolean {
@@ -48,6 +49,8 @@ function isStepLocked(
   if (id === 'swipe') return !st.swipeDone
   // Bloque tant que le faux curseur n'a pas fini de survoler les lignes (table ↔ carte).
   if (id === 'data-table') return !st.tableLinkDone
+  // Bloque tant que la démo Kanban (glissé de carte + bascule planning) n'est pas finie.
+  if (id === 'kanban') return !st.kanbanDone
   // Bloque tant que le survol de la ligne électrique (nuage LiDAR) n'est pas terminé.
   if (id === 'pointcloud-lidar') return !st.pointcloudFollowDone
   return false
@@ -142,7 +145,7 @@ export function TourController() {
           // the popover just above it, flush left.
           ...(s.id === 'layers-import' || s.id === 'ecosystem' || s.id === 'techstack'
             ? { popoverClass: 'gp-tour gp-tour-bottom' }
-            : s.id === 'data-table'
+            : s.id === 'data-table' || s.id === 'kanban'
               ? { popoverClass: 'gp-tour gp-tour-above-table' }
               : {}),
         },
@@ -178,10 +181,11 @@ export function TourController() {
         // `style.left` APRÈS ce hook, ce qui effacerait un inline ; le `!important`
         // CSS, lui, gagne). Le panneau peut ne pas être encore monté à ce render —
         // on réessaie sur quelques frames jusqu'à le trouver.
-        if (STEPS[active]?.id === 'data-table') {
+        if (STEPS[active]?.id === 'data-table' || STEPS[active]?.id === 'kanban') {
+          const panelId = STEPS[active]?.id === 'kanban' ? 'kanban-panel' : 'data-table-panel'
           let tries = 12
           const alignToTable = () => {
-            const panel = document.getElementById('data-table-panel')
+            const panel = document.getElementById(panelId)
             if (panel) {
               document.documentElement.style.setProperty(
                 '--gp-tour-table-left',
@@ -230,6 +234,8 @@ export function TourController() {
         if (STEPS[idx]?.id === 'swipe') useTourStore.getState().setSwipeDone(false)
         // Re-verrouille la liaison table ↔ carte pour rejouer le balayage du curseur.
         if (STEPS[idx]?.id === 'data-table') useTourStore.getState().setTableLinkDone(false)
+        // Re-verrouille la démo Kanban au (re)passage pour rejouer le faux curseur.
+        if (STEPS[idx]?.id === 'kanban') useTourStore.getState().setKanbanDone(false)
         // Re-verrouille tant que le survol de la ligne (nuage LiDAR) n'est pas rejoué.
         if (STEPS[idx]?.id === 'pointcloud-lidar')
           useTourStore.getState().setPointcloudFollowDone(false)
@@ -312,6 +318,7 @@ export function TourController() {
         themeFlipDone: boolean
         tableLinkDone: boolean
         pointcloudFollowDone: boolean
+        kanbanDone: boolean
         flying: boolean
       },
       step: number,
@@ -324,6 +331,7 @@ export function TourController() {
         id === 'rt-surcharge' ||
         id === 'swipe' ||
         id === 'data-table' ||
+        id === 'kanban' ||
         id === 'pointcloud-lidar' ||
         id === THEME_FLIP_STEP_ID
       const locked = isStepLocked(step, st)
