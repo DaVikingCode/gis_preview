@@ -12,12 +12,16 @@ import { usePreloadStore } from '@/store/preload-store'
 // Nuage de points LiDAR — couche WebGL personnalisée (three.js dans le contexte GL
 // de MapLibre), même mécanique que `airplane3d.ts`.
 //
-// Step « Nuage de points · LiDAR » : scan LiDAR d'Auxonne (France, ~9,5 M points,
+// Step « Nuage de points · LiDAR » : scan LiDAR d'Auxonne (France, ~4,7 M points,
 // CRS UTM 31N) rendu PAR-DESSUS le fond de plan, posé au sol à son emplacement réel.
 // Le binaire est pré-cuit hors-ligne (cf. scripts/prebake-pointcloud.mjs →
 // auxonne.points.bin/.json) :
 //   layout = [Int16 positions·3 (cm, recentré sur le centre de l'emprise, sol à 0)]
 //            ‖ [Uint8 RGB·3 (vraie couleur)] ‖ [Uint8 classification·1 (classe ASPRS)]
+// Les points sont TRIÉS PAR CELLULE spatiale (~60 m, sud→nord) et mélangés À L'INTÉRIEUR
+// de chaque cellule (meta.cells = ranges contigus + bbox) → un THREE.Points par cellule :
+// frustum culling par cellule + budget de densité par zoom (tout préfixe du drawRange
+// d'une cellule est un sous-échantillon spatialement uniforme de la cellule).
 //
 // Repère des positions (coords brutes, mètres) : X est, Y nord, Z hauteur.
 //
@@ -44,16 +48,16 @@ const LAYER_ID = 'gp-pointcloud'
 // Émis par le prebake (champ anchorLngLat) ; partagé avec le step (caméra centrée ici).
 export const POINTCLOUD_ANCHOR: [number, number] = [5.392126, 47.202674]
 
-// Le binaire (~95 Mo) dépasse la limite de 25 Mio/fichier de Cloudflare Pages : il
+// Le binaire (~45 Mo bruts) dépasse la limite de 25 Mio/fichier de Cloudflare Pages : il
 // est pré-tranché en chunks committés dans `public/pointcloud/` (cf.
-// scripts/split-pointcloud.mjs) et ré-assemblé ici (concat byte-exact). Le `.json`
+// scripts/split-pointcloud.mjs, chunks gzippés) et ré-assemblé ici. Le `.json`
 // (~2 Ko) est servi depuis `public/` lui aussi : `new URL(import.meta.url)` sur un
 // `.json` n'était pas émis dans le build de prod (404 → nuage vide en ligne).
-// Version du jeu de données : sert à la fois de préfixe de chunks (c2-*.bin) et de
+// Version du jeu de données : sert à la fois de préfixe de chunks (c3-*.bin) et de
 // cache-buster sur les JSON. Un ancien `manifest.json` (forme `chunks:string[]`) traîne
 // dans le cache HTTP des navigateurs ayant déjà visité → le `?v=` force une URL neuve,
 // jamais servie depuis ce cache périmé. Bumper à chaque changement de layout.
-const PC_VERSION = 2
+const PC_VERSION = 3
 const MANIFEST_URL = `${import.meta.env.BASE_URL}pointcloud/manifest.json?v=${PC_VERSION}`
 const META_URL = `${import.meta.env.BASE_URL}pointcloud/auxonne.points.json?v=${PC_VERSION}`
 
@@ -63,7 +67,7 @@ const PC_BASE = `${import.meta.env.BASE_URL}pointcloud/`
 // disk cache HTTP). Bumper la version si le nuage est re-cuit avec les MÊMES noms de
 // fichiers (sinon les anciens chunks resteraient servis). Couplé à _headers
 // (Cache-Control immutable) côté Cloudflare : ceinture + bretelles.
-const PC_CACHE = 'gp-pointcloud-v2'
+const PC_CACHE = 'gp-pointcloud-v3'
 
 async function openPcCache(): Promise<Cache | null> {
   try {
@@ -82,23 +86,46 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
+// Fetchs en cours, partagés entre prefetchPointCloud et load() : arriver au step LiDAR
+// PENDANT le prefetch réutilise les promesses en vol au lieu de re-télécharger les mêmes
+// chunks en double. Entrée retirée une fois réglée (succès → Cache Storage peuplé ;
+// échec → un appel ultérieur retente à neuf).
+const inflight = new Map<string, Promise<ArrayBuffer>>()
+
 // Récupère une URL en privilégiant le Cache Storage (persistant entre visites). La
 // réponse réseau est stockée pour les fois suivantes ; échec de mise en cache silencieux.
-async function fetchPersistent(url: string, cache: Cache | null): Promise<ArrayBuffer> {
-  const hit = cache ? await cache.match(url).catch(() => undefined) : undefined
-  if (hit) return hit.arrayBuffer()
-  const res = await fetch(url, { cache: 'force-cache' })
-  // Cloner AVANT de lire le corps : on stocke la réponse réseau telle quelle (en-têtes
-  // Content-Length/Type préservés → taille correcte en DevTools) et on lit l'autre moitié.
-  if (cache) await cache.put(url, res.clone()).catch(() => {})
-  return res.arrayBuffer()
+// `priority: 'low'` sur le prefetch : ne concurrence pas le prewarm des tuiles.
+function fetchPersistent(url: string, cache: Cache | null, priority?: 'low'): Promise<ArrayBuffer> {
+  const pending = inflight.get(url)
+  if (pending) return pending
+  const p = (async () => {
+    const hit = cache ? await cache.match(url).catch(() => undefined) : undefined
+    if (hit) return hit.arrayBuffer()
+    const res = await fetch(url, { cache: 'force-cache', priority })
+    // Cloner AVANT de lire le corps : on stocke la réponse réseau telle quelle (en-têtes
+    // Content-Length/Type préservés → taille correcte en DevTools) et on lit l'autre moitié.
+    if (cache) await cache.put(url, res.clone()).catch(() => {})
+    return res.arrayBuffer()
+  })()
+  inflight.set(url, p)
+  void p.catch(() => {}).finally(() => inflight.delete(url))
+  return p
 }
 
-// Préchargement du nuage (~95 Mo) dès l'écran d'accueil : téléchargement en tâche de
-// fond pendant que l'utilisateur lit le splash, stocké en Cache Storage. Au step LiDAR
-// `load()` (mêmes URLs, même helper) tape le cache → rendu quasi instantané.
+// Décompression gzip native (chunks pré-compressés au split, cf. split-pointcloud.mjs —
+// Cloudflare ne compresse pas l'octet-stream). Support universel depuis 2023.
+async function gunzip(buf: ArrayBuffer): Promise<ArrayBuffer> {
+  const body = new Response(buf).body
+  if (!body) throw new Error('gunzip: corps de réponse indisponible')
+  return new Response(body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()
+}
+
+// Préchargement du nuage (~32 Mo gzippés) dès l'écran d'accueil : téléchargement en
+// tâche de fond pendant que l'utilisateur lit le splash, stocké en Cache Storage. Au
+// step LiDAR `load()` (mêmes URLs, même helper) tape le cache → rendu quasi instantané.
 // Best-effort : tout échec est silencieux.
-// Octets par point dans le binaire : Int16×3 (positions) + Uint8×3 (RGB) + Uint8 (classe).
+// Octets par point DÉCOMPRESSÉS : Int16×3 (positions) + Uint8×3 (RGB) + Uint8 (classe).
+// Fallback du loader si un vieux manifest n'a pas `bytes`.
 const PC_BYTES_PER_POINT = 10
 
 let prefetched = false
@@ -109,17 +136,21 @@ export function prefetchPointCloud() {
   const run = async () => {
     const cache = await openPcCache()
     try {
-      const manifest = await fetchJson<{ chunks: { name: string; count: number }[] }>(MANIFEST_URL)
-      // Poids total exact connu via le manifest → alimente le dénominateur du loader.
-      for (const c of manifest.chunks) pl.addTotal(c.count * PC_BYTES_PER_POINT)
+      const manifest = await fetchJson<{
+        chunks: { name: string; count: number; bytes?: number }[]
+      }>(MANIFEST_URL)
+      // Poids réseau réel (gzippé) connu via le manifest → dénominateur exact du loader.
+      const weight = (c: { count: number; bytes?: number }) =>
+        c.bytes ?? c.count * PC_BYTES_PER_POINT
+      for (const c of manifest.chunks) pl.addTotal(weight(c))
       pl.markReady()
       // Tous les chunks démarrent ensemble (Promise.all) dès que le manifest est lu ;
       // chaque chunk terminé (succès OU échec) crédite sa part au loader.
       await Promise.all(
         manifest.chunks.map((c) =>
-          fetchPersistent(PC_BASE + c.name, cache)
+          fetchPersistent(PC_BASE + c.name, cache, 'low')
             .catch(() => {})
-            .finally(() => pl.addLoaded(c.count * PC_BYTES_PER_POINT)),
+            .finally(() => pl.addLoaded(weight(c))),
         ),
       )
     } catch {
@@ -156,6 +187,14 @@ export const pointCloudTuning = {
   altitudeM: 0, // surélévation (m)
   scale: 1.0, // échelle (1 = géographiquement exact)
   pointSizePx: 0.5, // taille des points (px, sizeAttenuation: false)
+  // Budget de densité (LOD) : fraction de points dessinée par cellule =
+  // clamp(4^(zoom − lodFullZoom), lodFloor, 1). Le nuage est sur-échantillonné dézoomé
+  // (dizaines de points/px en orbite) → réduire la densité y est peu visible et la
+  // charge vertex chute d'autant. 4^Δzoom suit la surface écran (m²/px ∝ 4^-zoom).
+  // Plancher à 0,35 : en dessous, la perte de densité devient perceptible en vue large
+  // (constat visuel) — on garde quand même ~3× moins de vertex qu'à pleine densité.
+  lodFullZoom: 18.2, // zoom auquel 100 % des points sont dessinés
+  lodFloor: 0.35, // plancher de densité (vue la plus large)
 }
 
 // État animé lu par render() à chaque frame (tweené par la chorégraphie / le toggle) :
@@ -222,7 +261,13 @@ class PointCloudLayer implements CustomLayerInterface {
   private renderer: THREE.WebGLRenderer | null = null
   private scene = new THREE.Scene()
   private camera = new THREE.Camera()
-  private points: THREE.Points | null = null
+  // Un THREE.Points PAR CELLULE spatiale (meta.cells) : géométries distinctes (drawRange
+  // + boundingSphere propres → frustum culling par cellule) mais BufferAttribute
+  // PARTAGÉS (un seul VBO côté GPU) et matériau partagé (un seul programme).
+  private cells: { points: THREE.Points; offset: number; count: number }[] = []
+  private material: THREE.PointsMaterial | null = null
+  private totalCount = 0
+  private densityF = 1 // facteur LOD appliqué (recalculé à chaque frame depuis le zoom)
   private uniforms: MaterialUniforms | null = null
   private lastMatrix: THREE.Matrix4 | null = null // matrice composée de la dernière frame (project)
   // Matrices/vecteur de travail réutilisés à chaque frame (évite la pression GC sur
@@ -273,6 +318,9 @@ class PointCloudLayer implements CustomLayerInterface {
           PointCloudStats & {
             posScale: number
             classes: { code: number; count: number }[]
+            // Ranges contigus par cellule spatiale (tri au prebake) ; bbox en mètres
+            // locaux [minE,minN,minZ,maxE,maxN,maxZ] → boundingSphere de culling.
+            cells?: { offset: number; count: number; bbox: number[] }[]
             linePath?: [number, number][]
             dangerPois?: {
               veg: [number, number, number]
@@ -281,35 +329,36 @@ class PointCloudLayer implements CustomLayerInterface {
             }[]
           }
         >(META_URL),
-        // Chunks SELF-CONTAINED point-alignés (cf. scripts/split-pointcloud.mjs) : chacun
-        // décodable et rendu seul. Manifest : { version, count, chunks:[{name,count}] }.
+        // Chunks SELF-CONTAINED point-alignés et gzippés (cf. scripts/split-pointcloud.mjs).
+        // Manifest : { version, count, encoding, chunks:[{name,count,bytes}] }.
         fetchJson<{
           version: number
           count: number
-          chunks: { name: string; count: number }[]
+          encoding?: string
+          chunks: { name: string; count: number; bytes?: number }[]
         }>(MANIFEST_URL),
       ])
+      if (manifest.encoding !== 'gzip-planes-v1') {
+        throw new Error(`encodage de manifest inattendu : ${manifest.encoding}`)
+      }
 
       const count = meta.count
       const s = meta.posScale
+      this.totalCount = count
 
       // Géométrie pré-allouée pour TOUT le nuage, remplie au fil des chunks. Les vues
       // typées restent référencées par les BufferAttribute → on écrit dedans + upload
       // GPU partiel (addUpdateRange) à chaque chunk.
       // Positions gardées en Int16 BRUT (cm) côté GPU — moitié moins de mémoire qu'un
-      // Float32 (~57 Mo vs ~114 Mo pour 9,5 M pts) ET aucune boucle de dé-quant JS sur
+      // Float32 (~28 Mo vs ~57 Mo pour 4,7 M pts) ET aucune boucle de dé-quant JS sur
       // le main-thread : le shader multiplie par `uPosScale` (cm→m) au vertex.
       const positions = new Int16Array(count * 3)
       const rgbU8 = new Uint8Array(count * 3)
       const clsU8 = new Uint8Array(count)
 
-      const geometry = new THREE.BufferGeometry()
       const posAttr = new THREE.BufferAttribute(positions, 3) // Int16 non normalisé → float brut au shader
       const colAttr = new THREE.BufferAttribute(rgbU8, 3, true)
       const clsAttr = new THREE.BufferAttribute(clsU8, 1, false)
-      geometry.setAttribute('position', posAttr)
-      geometry.setAttribute('color', colAttr) // RGB vraie couleur → vColor
-      geometry.setAttribute('aClass', clsAttr) // octet brut → float (non normalisé)
 
       const material = new THREE.PointsMaterial({
         size: pointCloudTuning.pointSizePx,
@@ -404,12 +453,40 @@ class PointCloudLayer implements CustomLayerInterface {
           )
         this.uniforms = shader.uniforms as unknown as MaterialUniforms
       }
+      this.material = material
 
-      const points = new THREE.Points(geometry, material)
-      points.frustumCulled = false
-      this.points = points
-      this.scene.add(points)
-      geometry.setDrawRange(0, 0)
+      // Une géométrie + un Points par cellule : drawRange = range contigu de la cellule,
+      // boundingSphere depuis la bbox du meta — en MÈTRES, l'espace que la matrice
+      // composée attend (les attributs sont en cm mais le shader rescale via uPosScale ;
+      // le culling CPU ne lit jamais les attributs quand la sphère est fournie).
+      // Fallback (meta sans `cells`) : une cellule unique non culled.
+      const cellsMeta =
+        meta.cells && meta.cells.length > 0 ? meta.cells : [{ offset: 0, count, bbox: null }]
+      for (const [ci, c] of cellsMeta.entries()) {
+        const geometry = new THREE.BufferGeometry()
+        geometry.setAttribute('position', posAttr)
+        geometry.setAttribute('color', colAttr) // RGB vraie couleur → vColor
+        geometry.setAttribute('aClass', clsAttr) // octet brut → float (non normalisé)
+        geometry.setDrawRange(c.offset, 0)
+        const points = new THREE.Points(geometry, material)
+        // La PREMIÈRE cellule n'est JAMAIS culled : three n'uploade les VBO et ne compile
+        // le programme que pour les objets qui passent le frustum test, or la couche est
+        // préchauffée depuis le step PRÉCÉDENT (caméra ailleurs → tout serait culled, et
+        // upload + compile arriveraient en un freeze à l'arrivée du step LiDAR). Les
+        // attributs étant partagés, un seul objet visible suffit à tout préchauffer ;
+        // son drawRange vaut 0 hors du step → coût nul.
+        if (c.bbox && ci > 0) {
+          const [x0, y0, z0, x1, y1, z1] = c.bbox
+          const center = new THREE.Vector3((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2)
+          const radius = Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2
+          geometry.boundingSphere = new THREE.Sphere(center, radius)
+          points.frustumCulled = true
+        } else {
+          points.frustumCulled = false
+        }
+        this.cells.push({ points, offset: c.offset, count: c.count })
+        this.scene.add(points)
+      }
 
       useMapDataStore.getState().setPointCloudStats({
         count: meta.count,
@@ -420,23 +497,32 @@ class PointCloudLayer implements CustomLayerInterface {
       useMapDataStore.getState().setPointCloudLinePath(meta.linePath ?? [])
       useMapDataStore.getState().setPointCloudDangerPois(meta.dangerPois ?? [])
 
-      // Téléchargement parallèle, application ORDONNÉE : tous les fetch partent ensemble
-      // (réchauffe/sature le tuyau), mais on applique chunk i dans l'ordre pour étendre
-      // un draw range contigu. Premier chunk → resolveReady (la chorégraphie démarre).
-      const promises = manifest.chunks.map((c) => fetchPersistent(PC_BASE + c.name, cache))
+      // Téléchargement parallèle, application ORDONNÉE : tous les fetch (+ décompression
+      // gzip, en parallèle aussi) partent ensemble, mais on applique chunk i dans l'ordre
+      // pour étendre un draw range contigu. Premier chunk → resolveReady (la chorégraphie
+      // démarre). Les cellules étant triées sud→nord, le streaming suit le front de scan.
+      const promises = manifest.chunks.map((c) =>
+        fetchPersistent(PC_BASE + c.name, cache).then(gunzip),
+      )
       for (let i = 0; i < manifest.chunks.length; i++) {
         const cBuf = await promises[i]
         if (this.cancelled) return
         const cN = manifest.chunks[i].count
-        const cPos = new Int16Array(cBuf, 0, cN * 3)
-        const cRgb = new Uint8Array(cBuf, cN * 6, cN * 3)
-        const cCls = new Uint8Array(cBuf, cN * 6 + cN * 3, cN)
+        const bytes = new Uint8Array(cBuf)
         const base = this.loadedCount
-        // Copie directe des Int16 bruts (cm) — plus de boucle de dé-quant : le shader
-        // applique `uPosScale` (cm→m) au vertex.
-        positions.set(cPos, base * 3)
-        rgbU8.set(cRgb, base * 3)
-        clsU8.set(cCls, base)
+        // Bloc positions en BYTE-PLANES [xLo·n‖xHi·n‖yLo·n‖yHi·n‖zLo·n‖zHi·n] (cf.
+        // split-pointcloud.mjs) : refusion lo|hi<<8 → Int16 (cm). L'affectation à un
+        // Int16Array applique ToInt16 (wrap signé correct). Le shader rescale via
+        // `uPosScale` (cm→m) au vertex.
+        for (let c = 0; c < 3; c++) {
+          const lo = c * 2 * cN
+          const hi = lo + cN
+          for (let p = 0; p < cN; p++) {
+            positions[(base + p) * 3 + c] = bytes[lo + p] | (bytes[hi + p] << 8)
+          }
+        }
+        rgbU8.set(bytes.subarray(cN * 6, cN * 9), base * 3)
+        clsU8.set(bytes.subarray(cN * 9, cN * 10), base)
         // Upload GPU partiel : seule la région ajoutée (évite de ré-uploader tout).
         posAttr.addUpdateRange(base * 3, cN * 3)
         posAttr.needsUpdate = true
@@ -462,14 +548,21 @@ class PointCloudLayer implements CustomLayerInterface {
     this.applyDraw()
   }
 
-  // Draw range effectif = min(demandé par la chorégraphie, réellement chargé). Appelé
-  // par setReveal ET à chaque chunk → les points tardifs étendent automatiquement le
-  // rendu derrière le front de scan.
-  private applyDraw() {
-    if (!this.points) return
-    const n = Math.min(Math.round(this.revealRequested), this.loadedCount)
-    this.points.geometry.setDrawRange(0, n)
-    this.map?.triggerRepaint()
+  // Draw range PAR CELLULE = min(part chargée de la cellule, budget) avec budget =
+  // count · reveal01 · densityF (reveal01 = part demandée par la chorégraphie, densityF
+  // = facteur LOD par zoom). Cellules contiguës dans l'ordre du binaire → la part chargée
+  // d'une cellule se déduit du loadedCount global. Appelé par setReveal, à chaque chunk
+  // (les points tardifs étendent le rendu derrière le front de scan) et quand le facteur
+  // LOD change (depuis render(), sans triggerRepaint : la frame est déjà en cours).
+  private applyDraw(repaint = true) {
+    if (this.cells.length === 0) return
+    const reveal01 = this.totalCount > 0 ? Math.min(1, this.revealRequested / this.totalCount) : 0
+    for (const c of this.cells) {
+      const loaded = Math.min(Math.max(this.loadedCount - c.offset, 0), c.count)
+      const want = Math.round(c.count * reveal01 * this.densityF)
+      c.points.geometry.setDrawRange(c.offset, Math.min(loaded, want))
+    }
+    if (repaint) this.map?.triggerRepaint()
   }
 
   project(p: [number, number, number]): { x: number; y: number; visible: boolean } | null {
@@ -488,7 +581,7 @@ class PointCloudLayer implements CustomLayerInterface {
   }
 
   render(_gl: WebGLRenderingContext | WebGL2RenderingContext, args: CustomRenderMethodInput) {
-    if (!this.renderer || !this.map || !this.points) return
+    if (!this.renderer || !this.map || this.cells.length === 0) return
 
     const mainMatrix = this.mMain.fromArray(args.defaultProjectionData.mainMatrix)
     const transform = (this.map as unknown as { transform: ModelTransform }).transform
@@ -506,7 +599,15 @@ class PointCloudLayer implements CustomLayerInterface {
     const composed = mainMatrix.multiply(l)
     this.camera.projectionMatrix = composed
     this.lastMatrix = composed // mémorisée pour project() (overlay POI)
-    ;(this.points.material as THREE.PointsMaterial).size = t.pointSizePx
+    if (this.material) this.material.size = t.pointSizePx
+
+    // Budget de densité (LOD) recalculé depuis le zoom courant — voir pointCloudTuning.
+    const zoom = this.map.getZoom()
+    const f = Math.min(1, Math.max(t.lodFloor, Math.pow(4, zoom - t.lodFullZoom)))
+    if (f !== this.densityF) {
+      this.densityF = f
+      this.applyDraw(false)
+    }
 
     if (this.uniforms) {
       const v = pointCloudView
@@ -524,11 +625,12 @@ class PointCloudLayer implements CustomLayerInterface {
 
   onRemove(_map: MLMap) {
     this.cancelled = true
-    if (this.points) {
-      this.points.geometry.dispose()
-      ;(this.points.material as THREE.Material).dispose()
-      this.points = null
-    }
+    // Attributs partagés entre les géométries de cellules : disposer chaque géométrie
+    // libère les VBO — teardown global, plus aucun rendu ensuite.
+    for (const c of this.cells) c.points.geometry.dispose()
+    this.cells = []
+    this.material?.dispose()
+    this.material = null
     this.uniforms = null
     this.lastMatrix = null
     this.renderer?.dispose()

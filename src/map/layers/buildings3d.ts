@@ -1,6 +1,22 @@
 import type { Map as MLMap } from 'maplibre-gl'
 
 const SOURCE_ID = 'openmaptiles-buildings'
+
+// Source vectorielle du BASEMAP pointant sur le « planet » d'openfreemap (positron :
+// `openmaptiles`). C'est la même donnée que notre source dédiée : en réutilisant celle
+// du style, les tuiles de la destination ne sont téléchargées/parsées qu'UNE fois
+// pendant le vol d'entrée — les extrusions 3D apparaissent en même temps que le fond
+// à l'atterrissage, au lieu de traîner derrière le temps qu'une seconde source
+// recharge et re-parse les mêmes tuiles.
+function findBasemapPlanetSource(map: MLMap): string | null {
+  const sources = map.getStyle()?.sources ?? {}
+  for (const [id, src] of Object.entries(sources)) {
+    if (src.type !== 'vector') continue
+    if (typeof src.url === 'string' && src.url.includes('openfreemap.org/planet')) return id
+    if (Array.isArray(src.tiles) && src.tiles[0]?.includes('openfreemap.org')) return id
+  }
+  return null
+}
 const LAYER_ID = 'gp-buildings-3d'
 const SOURCE_LAYER = 'building'
 
@@ -51,13 +67,6 @@ function showBasemapBuildings(map: MLMap) {
 export function addBuildings3D(map: MLMap, opts?: { colorByHeight?: boolean }) {
   hideBasemapBuildings(map)
   const colorExpr = (opts?.colorByHeight ? HEIGHT_COLOR_EXPR : BASE_COLOR_EXPR) as never
-  if (!map.getSource(SOURCE_ID)) {
-    map.addSource(SOURCE_ID, {
-      type: 'vector',
-      url: 'https://tiles.openfreemap.org/planet',
-      promoteId: 'osm_id',
-    })
-  }
   // La couche peut déjà exister (le StartScreen la pose en palette de base comme
   // décor du cinématique d'intro). Ne pas court-circuiter : ré-appliquer la
   // couleur demandée pour que `colorByHeight` gagne (sinon les bâtiments restent
@@ -66,9 +75,22 @@ export function addBuildings3D(map: MLMap, opts?: { colorByHeight?: boolean }) {
     map.setPaintProperty(LAYER_ID, 'fill-extrusion-color', colorExpr)
     return
   }
+  // Source partagée avec le basemap quand elle existe (cf. findBasemapPlanetSource) ;
+  // repli sur une source dédiée sinon (basemap sans « planet », ex. satellite).
+  let srcId = findBasemapPlanetSource(map)
+  if (!srcId) {
+    if (!map.getSource(SOURCE_ID)) {
+      map.addSource(SOURCE_ID, {
+        type: 'vector',
+        url: 'https://tiles.openfreemap.org/planet',
+        promoteId: 'osm_id',
+      })
+    }
+    srcId = SOURCE_ID
+  }
   map.addLayer({
     id: LAYER_ID,
-    source: SOURCE_ID,
+    source: srcId,
     'source-layer': SOURCE_LAYER,
     type: 'fill-extrusion',
     minzoom: 14,

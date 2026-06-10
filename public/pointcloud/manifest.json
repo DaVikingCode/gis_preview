@@ -1,18 +1,13 @@
 {
-  "version": 2,
-  "count": 9475959,
+  "version": 3,
+  "count": 4737980,
+  "encoding": "gzip-planes-v1",
   "chunks": [
-    { "name": "c2-000.bin", "count": 838860 },
-    { "name": "c2-001.bin", "count": 838860 },
-    { "name": "c2-002.bin", "count": 838860 },
-    { "name": "c2-003.bin", "count": 838860 },
-    { "name": "c2-004.bin", "count": 838860 },
-    { "name": "c2-005.bin", "count": 838860 },
-    { "name": "c2-006.bin", "count": 838860 },
-    { "name": "c2-007.bin", "count": 838860 },
-    { "name": "c2-008.bin", "count": 838860 },
-    { "name": "c2-009.bin", "count": 838860 },
-    { "name": "c2-010.bin", "count": 838860 },
-    { "name": "c2-011.bin", "count": 248499 }
+    { "name": "c3-000.bin", "count": 838860, "bytes": 6087726 },
+    { "name": "c3-001.bin", "count": 838860, "bytes": 6030867 },
+    { "name": "c3-002.bin", "count": 838860, "bytes": 5907104 },
+    { "name": "c3-003.bin", "count": 838860, "bytes": 5940302 },
+    { "name": "c3-004.bin", "count": 838860, "bytes": 5900532 },
+    { "name": "c3-005.bin", "count": 543680, "bytes": 3778771 }
   ]
 }

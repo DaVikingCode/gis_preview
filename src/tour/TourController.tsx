@@ -479,16 +479,27 @@ export function TourController() {
         // teardown is deferred to moveend below so layers stay up during the vol.
         if (prevStep?.leaveBeforePan) prevStep.onLeave?.(map)
 
+        // Pose les couches lourdes (ex. terrain DEM) maintenant — après le swap de
+        // basemap, donc elles survivent au setStyle — pour qu'elles streament
+        // pendant le vol plutôt qu'à l'atterrissage. Le step peut renvoyer un plan
+        // de vol compensé (cf. hikingFlightPlan) : on vole alors vers `flight`
+        // (même pose caméra physique que le cadrage du step, exprimée à élévation
+        // 0) et on renumérote le transform vers `land` à l'atterrissage.
+        const target = {
+          center: step.camera.center,
+          zoom: camZoom,
+          pitch: step.camera.pitch ?? 0,
+          bearing: step.camera.bearing ?? 0,
+        }
+        const flightPlan = step.onBeforePan?.(map, target) ?? null
+
         // Scripted-animation steps (enterOnSettle) must start once the camera has
         // landed, otherwise the trace plays mid-flight (off-screen) and looks like
         // it never replayed. Their onEnter runs in the moveend handler below.
         if (!step.enterOnSettle) step.onEnter?.(map, { setBasemap: setBasemapStore })
         prevStepRef.current = cur
         map.flyTo({
-          center: step.camera.center,
-          zoom: camZoom,
-          pitch: step.camera.pitch ?? 0,
-          bearing: step.camera.bearing ?? 0,
+          ...(flightPlan?.flight ?? target),
           padding,
           duration: pan.duration ?? 4200,
           curve: 1.42,
@@ -505,6 +516,11 @@ export function TourController() {
           // clean slate (e.g. the shared gp-tour-pulse layer).
           if (!prevStep?.leaveBeforePan) prevStep?.onLeave?.(map)
           if (cancelled) return
+          // Vol compensé : la caméra est physiquement posée sur le cadrage du step
+          // (exprimé à élévation 0) — ce jumpTo réécrit centre/zoom/élévation aux
+          // valeurs du step sans la déplacer d'un pixel. Avant onEnter, pour que
+          // les couches capturent le cadrage final.
+          if (flightPlan) map.jumpTo({ ...flightPlan.land, padding })
           // Atterri : déverrouille « Suivant ».
           useTourStore.getState().setFlying(false)
           if (step.enterOnSettle) step.onEnter?.(map, { setBasemap: setBasemapStore })

@@ -13,7 +13,9 @@
 //                          XY, sol à minZ)] ‖ [Uint8 RGB ·3] ‖ [Uint8 classification ·1]
 //   auxonne.points.json — { count, footprintM:[w,h], zRangeM:[0,maxUp], posScale,
 //                          anchorLngLat:[lng,lat] (centre UTM31N → WGS84), crs,
-//                          classes:[{code,count}] (histogramme trié) }
+//                          classes:[{code,count}] (histogramme trié),
+//                          cells:[{offset,count,bbox:[minE,minN,minZ,maxE,maxN,maxZ] m}]
+//                          (ranges contigus par cellule spatiale, ordre sud→nord) }
 
 import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -27,8 +29,10 @@ const SRC = join(ASSET_DIR, 'auxonne.las')
 const OUT_BIN = join(ASSET_DIR, 'auxonne.points.bin')
 const OUT_JSON = join(ASSET_DIR, 'auxonne.points.json')
 
-// Cible de décimation : Infinity = TOUS les points (~9,5 M).
-const TARGET_POINTS = Infinity
+// Cible de décimation : Infinity = TOUS les points (~9,5 M). 5 M (stride 2 → ~4,74 M)
+// divise par 2 le transfert, la VRAM et la charge vertex — indiscernable aux tailles de
+// points de la démo (0,5–5,5 px, nuage très sur-échantillonné à l'écran).
+const TARGET_POINTS = 5_000_000
 // Précision de quantification des positions : 1 cm (value = mètres · 100).
 const POS_SCALE = 0.01
 const CRS = 'EPSG:32631'
@@ -267,44 +271,124 @@ if (vegX.length > 0 && lineXs.length > 0) {
   console.log('POI danger : pas de végétation U0/U1 ou pas de conducteur')
 }
 
-// Mélange Fisher-Yates aligné (positions ‖ RGB ‖ classe) : la révélation
-// progressive (setDrawRange) se fait alors de façon dispersée.
-for (let i = count - 1; i > 0; i--) {
-  const k = Math.floor(Math.random() * (i + 1))
-  for (let d = 0; d < 3; d++) {
-    const pa = i * 3 + d
-    const pb = k * 3 + d
-    let t = outPos[pa]
-    outPos[pa] = outPos[pb]
-    outPos[pb] = t
-    t = outRgb[pa]
-    outRgb[pa] = outRgb[pb]
-    outRgb[pb] = t
-  }
-  const tc = outCls[i]
-  outCls[i] = outCls[k]
-  outCls[k] = tc
+// ── Partition en CELLULES spatiales + shuffle INTRA-cellule ─────────────────────
+// Le runtime (pointCloud.ts) rend un THREE.Points par cellule : ranges CONTIGUS dans le
+// binaire → frustum culling par cellule (gros plan = ~80 % du nuage hors-champ éliminé
+// avant le vertex shader) ET budget de densité par cellule. Le shuffle Fisher-Yates est
+// fait À L'INTÉRIEUR de chaque cellule : tout préfixe du drawRange d'une cellule est un
+// sous-échantillon spatialement uniforme de la cellule → LOD par simple drawRange.
+// Cellules ordonnées SUD → NORD (puis ouest→est) : le streaming réseau remplit le nuage
+// dans le sens du front de scan de révélation (qui balaie sud→nord).
+const CELL_M = 60 // ~60 m de côté → ~3×9 cellules sur l'emprise 176×496 m
+
+// Bornes de l'emprise (unités quantifiées, cm) — servent à la grille ET aux stats.
+let minEq = Infinity
+let maxEq = -Infinity
+let minNq = Infinity
+let maxNq = -Infinity
+for (let i = 0; i < count; i++) {
+  const e = outPos[i * 3]
+  const n = outPos[i * 3 + 1]
+  if (e < minEq) minEq = e
+  if (e > maxEq) maxEq = e
+  if (n < minNq) minNq = n
+  if (n > maxNq) maxNq = n
+}
+const cellCm = CELL_M / POS_SCALE
+const gridX = Math.max(1, Math.ceil((maxEq - minEq + 1) / cellCm))
+const gridY = Math.max(1, Math.ceil((maxNq - minNq + 1) / cellCm))
+const cellOf = (i) => {
+  const cxI = Math.min(gridX - 1, Math.floor((outPos[i * 3] - minEq) / cellCm))
+  const cyI = Math.min(gridY - 1, Math.floor((outPos[i * 3 + 1] - minNq) / cellCm))
+  return cyI * gridX + cxI // row-major, rangées sud (minN) d'abord
 }
 
-// Emprise réelle (m) pour la carte de stats.
-let minE = Infinity
-let maxE = -Infinity
-let minN = Infinity
-let maxN = -Infinity
+// Tri par cellule (counting sort, stable — l'ordre intra-cellule est re-mélangé après).
+const cellCounts = new Uint32Array(gridX * gridY)
+for (let i = 0; i < count; i++) cellCounts[cellOf(i)]++
+const cellOffsets = new Uint32Array(gridX * gridY)
+for (let c = 1; c < cellCounts.length; c++) cellOffsets[c] = cellOffsets[c - 1] + cellCounts[c - 1]
+const cursor = Uint32Array.from(cellOffsets)
+const sortedPos = new Int16Array(count * 3)
+const sortedRgb = new Uint8Array(count * 3)
+const sortedCls = new Uint8Array(count)
 for (let i = 0; i < count; i++) {
-  const e = outPos[i * 3] * POS_SCALE
-  const n = outPos[i * 3 + 1] * POS_SCALE
-  if (e < minE) minE = e
-  if (e > maxE) maxE = e
-  if (n < minN) minN = n
-  if (n > maxN) maxN = n
+  const j = cursor[cellOf(i)]++
+  sortedPos[j * 3] = outPos[i * 3]
+  sortedPos[j * 3 + 1] = outPos[i * 3 + 1]
+  sortedPos[j * 3 + 2] = outPos[i * 3 + 2]
+  sortedRgb[j * 3] = outRgb[i * 3]
+  sortedRgb[j * 3 + 1] = outRgb[i * 3 + 1]
+  sortedRgb[j * 3 + 2] = outRgb[i * 3 + 2]
+  sortedCls[j] = outCls[i]
 }
+
+// Fisher-Yates aligné (positions ‖ RGB ‖ classe) DANS chaque cellule.
+for (let c = 0; c < cellCounts.length; c++) {
+  const o = cellOffsets[c]
+  for (let r = cellCounts[c] - 1; r > 0; r--) {
+    const i = o + r
+    const k = o + Math.floor(Math.random() * (r + 1))
+    for (let d = 0; d < 3; d++) {
+      const pa = i * 3 + d
+      const pb = k * 3 + d
+      let t = sortedPos[pa]
+      sortedPos[pa] = sortedPos[pb]
+      sortedPos[pb] = t
+      t = sortedRgb[pa]
+      sortedRgb[pa] = sortedRgb[pb]
+      sortedRgb[pb] = t
+    }
+    const tc = sortedCls[i]
+    sortedCls[i] = sortedCls[k]
+    sortedCls[k] = tc
+  }
+}
+
+// Meta des cellules NON VIDES : range contigu + bbox (m, coords locales) pour la
+// boundingSphere (frustum culling) côté runtime. L'ordre des entrées = ordre du binaire.
+const cells = []
+for (let c = 0; c < cellCounts.length; c++) {
+  const n = cellCounts[c]
+  if (n === 0) continue
+  const o = cellOffsets[c]
+  let bMinE = Infinity,
+    bMaxE = -Infinity
+  let bMinN = Infinity,
+    bMaxN = -Infinity
+  let bMinZ = Infinity,
+    bMaxZ = -Infinity
+  for (let i = o; i < o + n; i++) {
+    const e = sortedPos[i * 3]
+    const nn = sortedPos[i * 3 + 1]
+    const z = sortedPos[i * 3 + 2]
+    if (e < bMinE) bMinE = e
+    if (e > bMaxE) bMaxE = e
+    if (nn < bMinN) bMinN = nn
+    if (nn > bMaxN) bMaxN = nn
+    if (z < bMinZ) bMinZ = z
+    if (z > bMaxZ) bMaxZ = z
+  }
+  const m = (v) => Number((v * POS_SCALE).toFixed(2))
+  cells.push({
+    offset: o,
+    count: n,
+    bbox: [m(bMinE), m(bMinN), m(bMinZ), m(bMaxE), m(bMaxN), m(bMaxZ)],
+  })
+}
+console.log('Cellules :', gridX, '×', gridY, '→', cells.length, 'non vides')
+
+// Emprise réelle (m) pour la carte de stats.
+const minE = minEq * POS_SCALE
+const maxE = maxEq * POS_SCALE
+const minN = minNq * POS_SCALE
+const maxN = maxNq * POS_SCALE
 
 // Layout du binaire : positions (Int16·3) ‖ RGB (Uint8·3) ‖ classification (Uint8·1).
 const out = Buffer.concat([
-  Buffer.from(outPos.buffer),
-  Buffer.from(outRgb.buffer),
-  Buffer.from(outCls.buffer),
+  Buffer.from(sortedPos.buffer),
+  Buffer.from(sortedRgb.buffer),
+  Buffer.from(sortedCls.buffer),
 ])
 await writeFile(OUT_BIN, out)
 const classes = Object.entries(classHist)
@@ -318,6 +402,7 @@ const meta = {
   anchorLngLat,
   crs: CRS,
   classes,
+  cells,
   linePath,
   dangerPois,
 }

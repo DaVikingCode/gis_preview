@@ -120,6 +120,19 @@ function setSpaceBackground(map: MLMap, on: boolean) {
   }
 }
 
+// Socle « globe » posé AVANT le flyTo du step (hook `onBeforePan`, cf. terrain) : la
+// bascule mercator→globe + le ciel espace compilent leurs shaders au départ du vol
+// (à z16 le globe se rend comme du mercator → bascule invisible), au lieu de freezer
+// à l'atterrissage. Bonus : la Terre « s'enroule » en sphère pendant le dézoom.
+// Idempotent — re-traversé par addAirplane3D à l'arrivée.
+export function prewarmGlobe(map: MLMap): void {
+  if (map.getProjection()?.type !== 'globe') map.setProjection({ type: 'globe' })
+  // Fond étoilé (conteneur) : invisible tant que le globe couvre tout l'écran,
+  // révélé à mesure que le dézoom dégage le limbe.
+  setSpaceBackground(map, true)
+  map.setSky(SPACE_SKY as unknown as Parameters<MLMap['setSky']>[0])
+}
+
 // Point subsolaire (lng, lat) à une date : là où le Soleil est au zénith. Modèle
 // simplifié (déclinaison + heure UTC, sans équation du temps) — suffisant pour un
 // terminateur jour/nuit crédible en temps réel.
@@ -575,13 +588,10 @@ class AirplaneLayer implements CustomLayerInterface {
 export function addAirplane3D(map: MLMap): AirplaneHandle {
   if (map.getLayer(LAYER_ID)) return { detach: () => removeAirplane3D(map) }
 
-  // Bascule en projection globe : l'animation de dézoom (pan du step) la fait
-  // « s'enrouler » en sphère.
-  map.setProjection({ type: 'globe' })
-
-  // Fond « espace » étoilé (conteneur) + halo d'atmosphère + terminateur jour/nuit.
-  setSpaceBackground(map, true)
-  map.setSky(SPACE_SKY as unknown as Parameters<MLMap['setSky']>[0])
+  // Projection globe + fond « espace » étoilé + halo d'atmosphère — normalement déjà
+  // posés par prewarmGlobe (onBeforePan du step) ; re-traversée idempotente au cas où
+  // l'entrée se fait sans vol pané. Puis terminateur jour/nuit.
+  prewarmGlobe(map)
   addDayNight(map)
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches

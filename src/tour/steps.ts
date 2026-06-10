@@ -2,8 +2,15 @@ import type { Map as MLMap } from 'maplibre-gl'
 import type { BasemapId } from '@/map/basemaps'
 import { addBuildings3D, removeBuildings3D } from '@/map/layers/buildings3d'
 import { addTrafficFlow, removeTrafficFlow } from '@/map/layers/trafficFlow'
-import { addHikingTerrain, type HikingHandle } from '@/map/layers/hikingTerrain'
-import { addAirplane3D, type AirplaneHandle } from '@/map/layers/airplane3d'
+import {
+  addHikingTerrain,
+  hikingFlightPlan,
+  prewarmHikingTerrain,
+  type FlightCamera,
+  type HikingHandle,
+  type PanFlightPlan,
+} from '@/map/layers/hikingTerrain'
+import { addAirplane3D, prewarmGlobe, type AirplaneHandle } from '@/map/layers/airplane3d'
 import {
   addPointCloud,
   prewarmPointCloud,
@@ -106,6 +113,13 @@ export type TourStep = {
   // flight. Required for scripted animations (measure) so the trace replays
   // at the right place when navigating back (pan flight) instead of off-screen.
   enterOnSettle?: boolean
+  // Transition pan uniquement : tourne après le swap de basemap (les sources posées ici
+  // survivent au setStyle), juste avant le flyTo. Sert à poser des couches lourdes
+  // (ex. terrain DEM) pour qu'elles streament pendant le vol au lieu d'à l'arrivée.
+  // `target` est le cadrage résolu du step (zoom mobile appliqué). Peut renvoyer un
+  // PanFlightPlan pour dérouter le flyTo vers une cible compensée puis renuméroter le
+  // transform à l'atterrissage (cf. hikingFlightPlan) — void pour un vol normal.
+  onBeforePan?: (map: MLMap, target: FlightCamera) => PanFlightPlan | void
   onEnter?: (map: MLMap, ctx: StepContext) => void | Promise<void>
   onLeave?: (map: MLMap) => void
 }
@@ -255,11 +269,11 @@ export const STEPS: TourStep[] = [
     // toute la montée (la timeline GSAP n'anime que le randonneur, pas la caméra) — aucun re-rendu
     // terrain forcé par frame, donc bien meilleurs fps. Pas de `cinematic`.
     camera: {
-      center: [6.93397, 45.906809],
-      zoom: 13.14,
+      center: [6.935078, 45.906106],
+      zoom: 13.39,
       mobileZoom: 12.4,
-      pitch: 57.3,
-      bearing: -57.1,
+      pitch: 65.8,
+      bearing: -29.2,
     },
     chart: 'hiking',
     // Vol longue distance La Défense → Chamonix (flyTo en arc).
@@ -271,6 +285,15 @@ export const STEPS: TourStep[] = [
     // qui sinon différerait le détachement jusqu'à l'atterrissage — markers (randonneur + pin),
     // popup POI et timeline GSAP de la rando traîneraient sur tout le vol. On nettoie AVANT le pan.
     leaveBeforePan: true,
+    // Socle 3D (DEM + terrain + ciel) posé avant le flyTo : les tuiles d'élévation
+    // streament pendant les 3,8 s de vol → relief déjà formé à l'atterrissage, au
+    // lieu d'apparaître plusieurs secondes après. L'animation, elle, attend moveend.
+    // Le plan de vol renvoyé compense l'élévation du centre (2 546 m) que le flyTo
+    // de MapLibre ignorerait — atterrissage pixel-exact sur le cadrage ci-dessus.
+    onBeforePan(map, target) {
+      prewarmHikingTerrain(map)
+      return hikingFlightPlan(map, target)
+    },
     onEnter(map) {
       hikingHandle = addHikingTerrain(map, (frac) =>
         useMapDataStore.getState().setHikeProgress(frac),
@@ -291,7 +314,7 @@ export const STEPS: TourStep[] = [
     id: 'pointcloud-lidar',
     title: 'Nuage de points · LiDAR',
     description:
-      'Scan LiDAR d’Auxonne (~9,5 millions de points, vraie couleur RGB + classification), rendu en 3D via three.js dans le contexte WebGL de la carte, posé sur le fond de plan. Le scan bascule entre colorisation par altitude, vraie couleur et classification.',
+      'Scan LiDAR d’Auxonne (~4,7 millions de points, vraie couleur RGB + classification), rendu en 3D via three.js dans le contexte WebGL de la carte, posé sur le fond de plan. Le scan bascule entre colorisation par altitude, vraie couleur et classification.',
     basemap: 'satellite',
     // Cadrage sur le VRAI emplacement du scan (Auxonne, France — cf. POINTCLOUD_ANCHOR).
     // Bande de ~496 × 176 m, plate : cadrage large incliné pour voir tout le nuage.
@@ -390,6 +413,13 @@ export const STEPS: TourStep[] = [
     leaveBeforePan: true,
     // Pas de `cinematic` ici : la boucle de vol (addAirplane3D) pilote entièrement
     // la caméra par-frame ; la rotation idle de CinematicCamera entrerait en conflit.
+    // Bascule mercator→globe + ciel espace posés AVANT le flyTo (cf. terrain-hiking) :
+    // les shaders globe compilent au départ du vol (invisible à z16, MapLibre rend le
+    // globe comme du mercator au-dessus de z~12) et la Terre « s'enroule » en sphère
+    // pendant le dézoom — au lieu d'un freeze à l'atterrissage.
+    onBeforePan(map) {
+      prewarmGlobe(map)
+    },
     onEnter(map) {
       airplaneHandle = addAirplane3D(map)
     },

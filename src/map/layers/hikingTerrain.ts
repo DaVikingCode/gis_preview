@@ -1,6 +1,7 @@
 import type { FeatureCollection } from 'geojson'
 import maplibregl, {
   type GeoJSONSource,
+  type LngLatLike,
   type Map as MLMap,
   type MapSourceDataEvent,
   type SkySpecification,
@@ -54,22 +55,96 @@ const HIKE_CLIMB_SEC = 10 // durée de la montée continue (0→1) — jouée un
 const POI_CARD_SEC = 2.5 // durée d'affichage d'une fiche POI (sans figer la caméra)
 const SUMMIT_HOLD_SEC = 2 // beat d'arrivée au sommet (pulse + fiche finale)
 
-export function addHikingTerrain(map: MLMap, onProgress: (frac: number) => void): HikingHandle {
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+// Élévation (exagérée ×1.15) du centre du cadrage du step — constante tant que le centre du
+// step, l'exagération et la source DEM ne changent pas (mesurée via queryTerrainElevation).
+export const HIKE_CENTER_ELEVATION = 2546.4
+
+export type FlightCamera = {
+  center: [number, number]
+  zoom: number
+  pitch: number
+  bearing: number
+}
+
+export type PanFlightPlan = {
+  // Cible du flyTo : cadrage « équivalent niveau mer » — même pose caméra physique que `land`,
+  // exprimée avec un centre au niveau de la mer (seuls centre et zoom diffèrent).
+  flight: { center: LngLatLike; zoom: number; pitch: number; bearing: number }
+  // Renumérotation à l'atterrissage : le vrai cadrage du step + l'élévation de son centre.
+  land: FlightCamera & { elevation: number }
+}
+
+// MapLibre 5.24 ne sait pas faire atterrir un flyTo sur un centre en altitude quand le terrain
+// est actif pendant le vol : le suivi d'élévation par frame est écrasé par
+// `_applyUpdatedTransform` et l'élévation effective reste celle du départ (0 m) — la caméra se
+// pose ~2500 m trop bas, dans la montagne (cf. settleCamera). Au lieu de corriger après coup,
+// on fait voler la caméra vers un cadrage qui, à élévation 0, donne EXACTEMENT la même pose
+// physique (position + orientation) que le vrai cadrage : le centre visé est le point où la
+// visée du vrai cadrage croise le niveau de la mer. À l'atterrissage, un jumpTo vers `land`
+// réécrit centre/zoom/élévation sans déplacer la caméra d'un pixel.
+export function hikingFlightPlan(map: MLMap, cam: FlightCamera): PanFlightPlan {
+  const h = HIKE_CENTER_ELEVATION
+  const pitchRad = (cam.pitch * Math.PI) / 180
+  // Distance caméra→centre du vrai cadrage (m) : cameraToCenterDistance (px — ne dépend que du
+  // fov et de la hauteur du viewport) × mètres/pixel au centre (zoom + latitude, monde 512 px).
+  const metersPerPixel =
+    (Math.cos((cam.center[1] * Math.PI) / 180) * 40075016.686) / (512 * 2 ** cam.zoom)
+  const dist = map.transform.cameraToCenterDistance * metersPerPixel
+  const camAlt = h + dist * Math.cos(pitchRad)
+  // Pose caméra : derrière le centre (azimut bearing+180°), à dist·sin(pitch) à l'horizontale.
+  const camPos = turf.destination(
+    cam.center,
+    (dist * Math.sin(pitchRad)) / 1000,
+    cam.bearing + 180,
+    {
+      units: 'kilometers',
+    },
+  ).geometry.coordinates as [number, number]
+  // Point visé au niveau de la mer : la visée descend de camAlt sur alt·tan(pitch) devant la caméra.
+  const seaPoint = turf.destination(camPos, (camAlt * Math.tan(pitchRad)) / 1000, cam.bearing, {
+    units: 'kilometers',
+  }).geometry.coordinates as [number, number]
+  const opts = map.calculateCameraOptionsFromTo(
+    maplibregl.LngLat.convert(camPos),
+    camAlt,
+    maplibregl.LngLat.convert(seaPoint),
+    0,
+  )
+  return {
+    flight: {
+      center: opts.center ?? seaPoint,
+      zoom: opts.zoom ?? cam.zoom,
+      pitch: opts.pitch ?? cam.pitch,
+      bearing: opts.bearing ?? cam.bearing,
+    },
+    land: { ...cam, elevation: h },
+  }
+}
+
+// pixelRatio d'origine, capturé au premier passage en 1× et rendu à `detach()`. Au niveau
+// module (pas dans la closure) : le prewarm avant-vol peut avoir déjà baissé le ratio quand
+// `addHikingTerrain` s'exécute — recapturer ici figerait 1× comme valeur « d'origine ».
+let savedPixelRatio: number | null = null
+
+// Pose le socle 3D (DEM + terrain + ciel + rendu 1×) sans rien animer. Idempotent. Appelé
+// avant le flyTo du step (hook `onBeforePan`) pour que le relief se charge pendant le vol,
+// puis re-appelé par `addHikingTerrain` à l'atterrissage — no-op si déjà en place.
+export function prewarmHikingTerrain(map: MLMap): void {
   // Le relief 3D (DEM + ombrage + imagerie drapée) est borné par le fragment shading : sur écran
   // HiDPI, rendre en pleine résolution native quadruple les pixels à ombrer. On force un rendu à
   // 1× le temps du step (image un peu plus douce, fps bien meilleurs), restauré dans `detach`.
-  const prevPixelRatio = map.getPixelRatio()
-  map.setPixelRatio(1)
-  const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
-  const setData = (id: string, data: FeatureCollection) =>
-    (map.getSource(id) as GeoJSONSource | undefined)?.setData(data)
-
+  if (savedPixelRatio == null) {
+    savedPixelRatio = map.getPixelRatio()
+    map.setPixelRatio(1)
+  }
   // PAS de couche hillshade : la scène 3D est re-rendue à chaque frame tant que la traînée et
   // le randonneur bougent, or un hillshade est une 2e passe DEM plein écran par frame — trop
   // coûteux ici. Le relief reste lisible via la géométrie 3D et les ombres de l'imagerie.
   if (!map.getSource(SRC_DEM)) map.addSource(SRC_DEM, { type: 'raster-dem', url: DEM_URL })
-  map.setTerrain({ source: SRC_DEM, exaggeration: 1.15 })
+  // Guard indispensable : re-setTerrain alors qu'il est déjà actif recrée l'objet Terrain
+  // et recale l'élévation caméra → recadrage visible à l'atterrissage (onBeforePan l'a
+  // déjà posé, addHikingTerrain repasse ici sur moveend).
+  if (!map.getTerrain()) map.setTerrain({ source: SRC_DEM, exaggeration: 1.15 })
   map.setSky({
     'sky-color': '#3d6fb0',
     'horizon-color': '#cfe0f0',
@@ -79,6 +154,15 @@ export function addHikingTerrain(map: MLMap, onProgress: (frac: number) => void)
     'fog-ground-blend': 0.4,
     'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 12, 0.2, 16, 0],
   })
+}
+
+export function addHikingTerrain(map: MLMap, onProgress: (frac: number) => void): HikingHandle {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
+  const setData = (id: string, data: FeatureCollection) =>
+    (map.getSource(id) as GeoJSONSource | undefined)?.setData(data)
+
+  prewarmHikingTerrain(map)
 
   // Sentier prévu : casing sombre (lisibilité sur l'imagerie) + trait pointillé.
   if (!map.getSource(SRC_TRAIL)) map.addSource(SRC_TRAIL, { type: 'geojson', data: CHAMONIX_TRAIL })
@@ -264,8 +348,53 @@ export function addHikingTerrain(map: MLMap, onProgress: (frac: number) => void)
   // à jour de la source, on ré-ancre le pin (setLngLat force le recalcul d'élévation), et on ne joue
   // sa montée qu'une seule fois. (Pas d'event 'idle' : la timeline rando rafraîchit des sources à
   // chaque frame.)
+  //
+  // Filet de sécurité pour la CAMÉRA elle-même : un flyTo avec terrain actif pose
+  // `_elevationFreeze = true` (MapLibre 5.24 ne le relâche que si `freezeElevation: true` est
+  // passé en option) et le suivi d'élévation par frame est écrasé par `_applyUpdatedTransform`
+  // (le transform « requested state » cloné garde l'élévation de départ, 0 m) — un flyTo seul
+  // poserait la caméra ~2500 m trop bas, dans la montagne, sans aucun recalage au chargement
+  // des tuiles DEM (callback de setTerrain + clamp du render, tués par le freeze). Le vol est
+  // normalement déjà compensé par hikingFlightPlan (atterrissage pixel-exact, élévation
+  // renumérotée à HIKE_CENTER_ELEVATION par le TourController) : ici on ne corrige que le
+  // résidu si le DEM réel diverge de cette constante (donnée Mapterhorn mise à jour, etc.).
+  // Un easeTo correctif subirait le même écrasement que le flyTo — le SEUL canal fiable est
+  // l'option `elevation` de jumpTo (élévation du centre, en mètres exagérés — même échelle que
+  // queryTerrainElevation), qui écrit directement sur le requested state. On capture le cadrage
+  // à l'attach (la caméra vient d'atterrir sur les valeurs du step) et, dès que le DEM du
+  // centre est connu, on fait monter l'élévation vers le sol via un tween si elle diverge.
+  const settleCam = {
+    center: map.getCenter(),
+    zoom: map.getZoom(),
+    pitch: map.getPitch(),
+    bearing: map.getBearing(),
+  }
+  let camSettled = false
+  let settleTween: gsap.core.Tween | null = null
+  const settleCamera = () => {
+    if (camSettled) return
+    const ground = map.queryTerrainElevation(settleCam.center)
+    // null = pas de terrain ; 0 = tuile du centre pas encore décodée (avec terrain actif,
+    // queryTerrainElevation ne renvoie jamais null, et le vrai sol ici est à ~2500 m) —
+    // dans les deux cas on retentera au prochain sourcedata.
+    if (!ground) return
+    camSettled = true
+    if (Math.abs(ground - map.transform.elevation) < 1) return
+    if (reduced) {
+      map.jumpTo({ ...settleCam, elevation: ground })
+      return
+    }
+    const proxy = { e: map.transform.elevation }
+    settleTween = gsap.to(proxy, {
+      e: ground,
+      duration: 0.6,
+      ease: 'power2.out',
+      onUpdate: () => map.jumpTo({ ...settleCam, elevation: proxy.e }),
+    })
+  }
   let pinPlayed = false
   const anchorPin = () => {
+    settleCamera()
     pinMarker.setLngLat(pinStart) // ré-ancre sur le relief désormais chargé (recalcul d'élévation)
     if (!pinPlayed) {
       pinPlayed = true
@@ -413,8 +542,12 @@ export function addHikingTerrain(map: MLMap, onProgress: (frac: number) => void)
       pinMarker.remove()
       // Restaurer la résolution native : le pixelRatio persiste à travers le setStyle de
       // changement de basemap, donc sans ça tout le reste du tour resterait en 1×.
-      map.setPixelRatio(prevPixelRatio)
+      if (savedPixelRatio != null) {
+        map.setPixelRatio(savedPixelRatio)
+        savedPixelRatio = null
+      }
       hikeTl?.kill()
+      settleTween?.kill()
       closeHikePoiPopup()
       useMapDataStore.getState().setActiveHikePoi(null)
       pulse.remove()

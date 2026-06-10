@@ -28,7 +28,7 @@ export function StartScreen() {
     if (!map || addedRef.current) return
     addedRef.current = true
     // Préchargement EN TÂCHE DE FOND dès le splash, NON bloquant : on lance le
-    // téléchargement du nuage LiDAR (~95 Mo), du glb avion et des images d'interface
+    // téléchargement du nuage LiDAR (~32 Mo gzippés), du glb avion et des images d'interface
     // pour que les steps correspondants arrivent sans latence, mais les boutons
     // « Démarrer » restent actifs immédiatement (aucun gate sur la fin du préchargement).
     // Les tuiles sont réchauffées en fond par TourController au démarrage.

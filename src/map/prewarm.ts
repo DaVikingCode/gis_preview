@@ -1,6 +1,6 @@
 import type { Map as MLMap, StyleSpecification } from 'maplibre-gl'
 import { BASEMAPS, type BasemapId } from './basemaps'
-import type { TourStep } from '@/tour/steps'
+import { THEME_FLIP_STEP_ID, type TourStep } from '@/tour/steps'
 
 // -----------------------------------------------------------------------------
 // Tile prewarming.
@@ -171,6 +171,7 @@ function resolveStyleTemplates(
 // add a line here so its tiles get prewarmed.
 //   cadastre  → src/map/layers/cadastre.ts
 //   ortho     → src/map/SwipeCompare.tsx
+//   dem       → src/map/layers/hikingTerrain.ts
 const GEOPF = 'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0'
 const wmts = (layer: string, format: string): string =>
   `${GEOPF}&LAYER=${layer}&STYLE=normal&TILEMATRIXSET=PM` +
@@ -197,12 +198,25 @@ const ORTHO_HISTO_TPL: TileTemplate = {
   maxzoom: 18,
 }
 
+// DEM Mapterhorn (terrain 3D) — template résolu à la main depuis le TileJSON que
+// hikingTerrain.ts (DEM_URL) passe à MapLibre. Tuiles lourdes (~370 KB) et
+// cacheables (max-age 7 j) : sans prewarm, le relief n'apparaît que plusieurs
+// secondes après l'arrivée sur le step.
+const DEM_TPL: TileTemplate = {
+  template: 'https://tiles.mapterhorn.com/{z}/{x}/{y}.webp',
+  tileSize: 512,
+  minzoom: 0,
+  maxzoom: 22,
+}
+
 function overlayTemplates(step: TourStep): TileTemplate[] {
   switch (step.id) {
     case 'layers-apply-cadastre':
       return [CADASTRE_TPL]
     case 'swipe':
       return [ORTHO_TPL, ORTHO_HISTO_TPL]
+    case 'terrain-hiking':
+      return [DEM_TPL]
     // buildings3d / building-highlight use the openfreemap `planet` vector
     // source — the very same source positron's basemap already pulls, so it's
     // warmed by the basemap pass at those steps' locations.
@@ -217,6 +231,11 @@ function buildUrl(tpl: TileTemplate, t: { z: number; x: number; y: number }): st
     .replace('{x}', String(t.x))
     .replace('{y}', String(t.y))
 }
+
+// Cadrage de la vue orbitale du step « Survol 3D · globe » : milieu de l'arc
+// CDG↔JFK rehaussé en latitude, zoom large — miroir manuel de OVERVIEW dans
+// airplane3d.ts (comme DEM_TPL ci-dessus l'est pour hikingTerrain).
+const GLOBE_OVERVIEW_CAM: Camera = { center: [-35.6, 64.6], zoom: 2.3, pitch: 38, bearing: 21 }
 
 // --- Orchestration -----------------------------------------------------------
 
@@ -310,6 +329,33 @@ export function startPrewarm(map: MLMap, steps: TourStep[]): void {
       for (const tpl of templates) {
         for (const t of tilesForView(step.camera, viewport, tpl)) {
           urls.push(buildUrl(tpl, t))
+        }
+      }
+      // Le step globe ne reste pas sur sa caméra (Paris z5.2) : l'intro dézoome vers
+      // une vue orbitale monde (cf. OVERVIEW / ZOOM_FAR dans airplane3d.ts, mi-arc
+      // CDG↔JFK à z2.3-3.0) — on chauffe aussi le basemap à ce cadrage (~quelques
+      // dizaines de tuiles z1-z2).
+      if (step.id === 'flyover-3d') {
+        for (const tpl of templates) {
+          for (const t of tilesForView(GLOBE_OVERVIEW_CAM, viewport, tpl)) {
+            urls.push(buildUrl(tpl, t))
+          }
+        }
+      }
+      // Le step « Thème » bascule le fond vers Carto dark-matter EN COURS de step (le
+      // faux curseur appelle applyBasemap('darkmatter'), hors du champ `basemap` que
+      // cette boucle suit) : on chauffe aussi ce style au cadrage du step, sinon le
+      // fond dark streame à vue après la levée du voile.
+      if (step.id === THEME_FLIP_STEP_ID) {
+        try {
+          const darkTpls = await resolveStyleTemplates(BASEMAPS.darkmatter.style, signal)
+          for (const tpl of darkTpls) {
+            for (const t of tilesForView(step.camera, viewport, tpl)) {
+              urls.push(buildUrl(tpl, t))
+            }
+          }
+        } catch {
+          /* style injoignable — MapLibre le chargera à la demande */
         }
       }
       await warmUrls(urls, signal)

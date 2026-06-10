@@ -27,6 +27,8 @@ export function MapCanvas({ children }: { children?: ReactNode }) {
     m.on('load', () => {
       mapRef.current = m
       setMap(m)
+      // Accès debug/outillage (readout caméra, scripts de vérification headless).
+      if (import.meta.env.DEV) (window as Window & { __gpMap?: MLMap }).__gpMap = m
       requestAnimationFrame(() => m.resize())
     })
     const ro = new ResizeObserver(() => m.resize())
