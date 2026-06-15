@@ -2,12 +2,143 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DaVikingCode · GIS</title>
+
+    <!-- Identité / indexation -->
+    <title>Solutions SIG · Supervision réseau électrique HTA en temps réel | DaVikingCode</title>
+    <meta
+      name="description"
+      content="Plateforme SIG de supervision du réseau électrique HTA (20 kV) en temps réel : cartographie 3D MapLibre, télémétrie SCADA, postes, charges et incidents, et nuage de points LiDAR."
+    />
+    <meta
+      name="keywords"
+      content="SIG, supervision réseau électrique, HTA, 20 kV, cartographie 3D, MapLibre, SCADA, télémétrie, jumeau numérique, LiDAR, distribution électrique"
+    />
+    <meta name="author" content="DaVikingCode" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#0b0d12" />
+    <link rel="canonical" href="https://solutions-sig.davikingcode.com/" />
+
+    <!-- Icônes / PWA -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DaVikingCode · Solutions SIG" />
+    <meta
+      property="og:title"
+      content="Solutions SIG · Supervision réseau électrique HTA en temps réel"
+    />
+    <meta
+      property="og:description"
+      content="Plateforme SIG de supervision du réseau électrique HTA en temps réel : cartographie 3D MapLibre, télémétrie SCADA, postes, charges, incidents et nuage de points LiDAR."
+    />
+    <meta property="og:url" content="https://solutions-sig.davikingcode.com/" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:image" content="https://solutions-sig.davikingcode.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Cartographie 3D de supervision du réseau électrique HTA"
+    />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@davikingcode" />
+    <meta
+      name="twitter:title"
+      content="Solutions SIG · Supervision réseau électrique HTA en temps réel"
+    />
+    <meta
+      name="twitter:description"
+      content="Cartographie 3D MapLibre, télémétrie SCADA, postes, charges, incidents et nuage de points LiDAR — supervision du réseau électrique HTA en temps réel."
+    />
+    <meta name="twitter:image" content="https://solutions-sig.davikingcode.com/og-image.png" />
+
+    <!-- Hints de performance : connexions aux fournisseurs de tuiles -->
+    <link rel="preconnect" href="https://data.geopf.fr" crossorigin />
+    <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin />
+    <link rel="dns-prefetch" href="https://basemaps.cartocdn.com" />
+    <link rel="dns-prefetch" href="https://server.arcgisonline.com" />
+
+    <!-- Préchargement des polices critiques -->
+    <link
+      rel="preload"
+      href="/fonts/aeonik/Aeonik-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/aeonik/Aeonik-Medium.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <!-- Données structurées -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://solutions-sig.davikingcode.com/#organization",
+            "name": "DaVikingCode",
+            "url": "https://solutions-sig.davikingcode.com/",
+            "logo": "https://solutions-sig.davikingcode.com/favicon.svg",
+            "sameAs": [
+              "https://www.linkedin.com/company/davikingcode/",
+              "https://x.com/davikingcode"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://solutions-sig.davikingcode.com/#website",
+            "url": "https://solutions-sig.davikingcode.com/",
+            "name": "Solutions SIG · DaVikingCode",
+            "inLanguage": "fr-FR",
+            "publisher": {
+              "@id": "https://solutions-sig.davikingcode.com/#organization"
+            }
+          },
+          {
+            "@type": "WebApplication",
+            "name": "Solutions SIG · Supervision réseau électrique HTA",
+            "url": "https://solutions-sig.davikingcode.com/",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "inLanguage": "fr-FR",
+            "description": "Plateforme SIG de supervision du réseau électrique HTA (20 kV) en temps réel : cartographie 3D MapLibre, télémétrie SCADA, postes, charges, incidents et nuage de points LiDAR.",
+            "publisher": {
+              "@id": "https://solutions-sig.davikingcode.com/#organization"
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <noscript>
+        <h1>Solutions SIG — Supervision du réseau électrique HTA en temps réel</h1>
+        <p>
+          DaVikingCode propose une plateforme SIG (système d'information géographique) dédiée à la
+          supervision du réseau électrique HTA (moyenne tension 20 kV) en temps réel. La solution
+          réunit une cartographie 3D fondée sur MapLibre GL, le suivi de la télémétrie SCADA, la
+          visualisation des postes, des charges et des incidents, ainsi qu'un nuage de points LiDAR
+          pour le jumeau numérique du terrain.
+        </p>
+        <p>
+          Cette démonstration interactive nécessite JavaScript. Pour en savoir plus, contactez
+          DaVikingCode.
+        </p>
+      </noscript>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

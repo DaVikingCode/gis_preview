@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+# Ne pas bloquer les ressources nécessaires au rendu (JS, CSS, polices, tuiles).
+
+Sitemap: https://solutions-sig.davikingcode.com/sitemap.xml

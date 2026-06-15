@@ -1,0 +1,19 @@
+{
+  "name": "Solutions SIG · Supervision réseau électrique HTA",
+  "short_name": "Solutions SIG",
+  "description": "Plateforme SIG de supervision du réseau électrique HTA en temps réel : cartographie 3D, télémétrie SCADA et nuage de points LiDAR.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b0d12",
+  "theme_color": "#0b0d12",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ]
+}
