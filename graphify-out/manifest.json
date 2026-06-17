@@ -1,0 +1,1097 @@
+{
+  "/home/popoch/Projects/gis_preview/components.json": {
+    "mtime": 1781605158.3452284,
+    "ast_hash": "1b52ae054a2c9984baa498ee2a19828b",
+    "semantic_hash": "1b52ae054a2c9984baa498ee2a19828b"
+  },
+  "/home/popoch/Projects/gis_preview/package.json": {
+    "mtime": 1781605158.4282284,
+    "ast_hash": "b90cb20e99f4b4bb345c5aa8f7d02b1c",
+    "semantic_hash": "b90cb20e99f4b4bb345c5aa8f7d02b1c"
+  },
+  "/home/popoch/Projects/gis_preview/public/pointcloud/auxonne.points.json": {
+    "mtime": 1781605158.4332283,
+    "ast_hash": "2ddf71fe0cece460bf101dfafbce1685",
+    "semantic_hash": "2ddf71fe0cece460bf101dfafbce1685"
+  },
+  "/home/popoch/Projects/gis_preview/public/pointcloud/manifest.json": {
+    "mtime": 1781605158.4742281,
+    "ast_hash": "150733bce05e110811e6739216461324",
+    "semantic_hash": "150733bce05e110811e6739216461324"
+  },
+  "/home/popoch/Projects/gis_preview/scripts/prebake-pointcloud.mjs": {
+    "mtime": 1781605158.4752283,
+    "ast_hash": "3cba12d1bcf671d0e5ff8b624805cee3",
+    "semantic_hash": "3cba12d1bcf671d0e5ff8b624805cee3"
+  },
+  "/home/popoch/Projects/gis_preview/scripts/split-pointcloud.mjs": {
+    "mtime": 1781605158.4757986,
+    "ast_hash": "09e9b4f8798cc9a20fb7d02ab7bf1a14",
+    "semantic_hash": "09e9b4f8798cc9a20fb7d02ab7bf1a14"
+  },
+  "/home/popoch/Projects/gis_preview/src/App.tsx": {
+    "mtime": 1781605158.4757986,
+    "ast_hash": "f92c2aababa717b21a91d4d0229c7db1",
+    "semantic_hash": "f92c2aababa717b21a91d4d0229c7db1"
+  },
+  "/home/popoch/Projects/gis_preview/src/animations/measureLabels.ts": {
+    "mtime": 1781605158.4759934,
+    "ast_hash": "114627ffcb043c380bf49e1e8cfd84e2",
+    "semantic_hash": "114627ffcb043c380bf49e1e8cfd84e2"
+  },
+  "/home/popoch/Projects/gis_preview/src/animations/measureReveal.ts": {
+    "mtime": 1781605158.4760764,
+    "ast_hash": "fdebca5ce94e7af2794dc325a85c8cd6",
+    "semantic_hash": "fdebca5ce94e7af2794dc325a85c8cd6"
+  },
+  "/home/popoch/Projects/gis_preview/src/animations/tourCursor.ts": {
+    "mtime": 1781605158.4760764,
+    "ast_hash": "3849d69377e758d2946e3d9d38ea09e5",
+    "semantic_hash": "3849d69377e758d2946e3d9d38ea09e5"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/pointcloud/auxonne.points.json": {
+    "mtime": 1781605158.4795902,
+    "ast_hash": "2ddf71fe0cece460bf101dfafbce1685",
+    "semantic_hash": "2ddf71fe0cece460bf101dfafbce1685"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/AirplaneCard.tsx": {
+    "mtime": 1781605158.4795902,
+    "ast_hash": "cc0d723aa34d81e1636d35f3025593fc",
+    "semantic_hash": "cc0d723aa34d81e1636d35f3025593fc"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/BasemapChart.tsx": {
+    "mtime": 1781605158.480414,
+    "ast_hash": "ae4100466717e5c86e913d3ed48bb788",
+    "semantic_hash": "ae4100466717e5c86e913d3ed48bb788"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/BuildingsHeightChart.tsx": {
+    "mtime": 1781605158.480414,
+    "ast_hash": "a09468384ee47ab674527ad95128d0c8",
+    "semantic_hash": "a09468384ee47ab674527ad95128d0c8"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/ChartsPanel.tsx": {
+    "mtime": 1781605158.480414,
+    "ast_hash": "0332d89ddd8e8bc1422f9cd18f8314c1",
+    "semantic_hash": "0332d89ddd8e8bc1422f9cd18f8314c1"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/DataTablePanel.tsx": {
+    "mtime": 1781605158.480414,
+    "ast_hash": "fc38b09ad3ce979158716cb9ff3e8a17",
+    "semantic_hash": "fc38b09ad3ce979158716cb9ff3e8a17"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/EcosystemBridge.tsx": {
+    "mtime": 1781605158.480414,
+    "ast_hash": "9a1679374e887acbdb865bbab26f1596",
+    "semantic_hash": "9a1679374e887acbdb865bbab26f1596"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/HeatmapChart.tsx": {
+    "mtime": 1781605158.480414,
+    "ast_hash": "52f0e0ebac43fbb9dd7e4d1d2f756e21",
+    "semantic_hash": "52f0e0ebac43fbb9dd7e4d1d2f756e21"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/HighlightChart.tsx": {
+    "mtime": 1781605158.480414,
+    "ast_hash": "dfe97478b57925a5b4abd2b69c3fc5c0",
+    "semantic_hash": "dfe97478b57925a5b4abd2b69c3fc5c0"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/HikingChart.tsx": {
+    "mtime": 1781605158.480414,
+    "ast_hash": "33dc37df095746b8a0d077be242de463",
+    "semantic_hash": "33dc37df095746b8a0d077be242de463"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/IsochroneChart.tsx": {
+    "mtime": 1781605158.480414,
+    "ast_hash": "b7e5d140e552c7b8e18c985f95204d34",
+    "semantic_hash": "b7e5d140e552c7b8e18c985f95204d34"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/KanbanPanel.tsx": {
+    "mtime": 1781605158.480414,
+    "ast_hash": "d4b00740afa4b2b24213e13efb31294d",
+    "semantic_hash": "d4b00740afa4b2b24213e13efb31294d"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/LayersAppliedCard.tsx": {
+    "mtime": 1781605158.480414,
+    "ast_hash": "cc985bdf05af08ea1e12643381ccdc3d",
+    "semantic_hash": "cc985bdf05af08ea1e12643381ccdc3d"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/LayersPresentationModal.tsx": {
+    "mtime": 1781605158.480414,
+    "ast_hash": "123d58123f0c954fcb7d0702336bed57",
+    "semantic_hash": "123d58123f0c954fcb7d0702336bed57"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/MeasureChart.tsx": {
+    "mtime": 1781605158.480414,
+    "ast_hash": "05c40d37428bf6a8f3cb9fca2d617ff5",
+    "semantic_hash": "05c40d37428bf6a8f3cb9fca2d617ff5"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/PointCloudCard.tsx": {
+    "mtime": 1781605158.481228,
+    "ast_hash": "1a68ab86a643d7aaffb6815cfaa10f56",
+    "semantic_hash": "1a68ab86a643d7aaffb6815cfaa10f56"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/RealtimeChart.tsx": {
+    "mtime": 1781605158.481228,
+    "ast_hash": "2a38484a535f2c7f97fd68dbe1fa38a9",
+    "semantic_hash": "2a38484a535f2c7f97fd68dbe1fa38a9"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/SwipeChart.tsx": {
+    "mtime": 1781605158.481228,
+    "ast_hash": "c99bf37d64584e9d3370529006c2533d",
+    "semantic_hash": "c99bf37d64584e9d3370529006c2533d"
+  },
+  "/home/popoch/Projects/gis_preview/src/charts/TechStackDiagram.tsx": {
+    "mtime": 1781605158.481228,
+    "ast_hash": "df69f298f80c3977a73502cac64ad6fb",
+    "semantic_hash": "df69f298f80c3977a73502cac64ad6fb"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/AppSidebar.tsx": {
+    "mtime": 1781605158.481228,
+    "ast_hash": "6b72b4e56a55e467ec6e94bc2dfe2c2d",
+    "semantic_hash": "6b72b4e56a55e467ec6e94bc2dfe2c2d"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/IncidentToast.tsx": {
+    "mtime": 1781605158.48194,
+    "ast_hash": "e6f0e8b09de5a23126f89908dc26d1cd",
+    "semantic_hash": "e6f0e8b09de5a23126f89908dc26d1cd"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/MobileSidebarTourSync.tsx": {
+    "mtime": 1781605158.48194,
+    "ast_hash": "ef111d1391eec100b1e1e5730d1a07e5",
+    "semantic_hash": "ef111d1391eec100b1e1e5730d1a07e5"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/RtScriptedCursor.tsx": {
+    "mtime": 1781605158.48194,
+    "ast_hash": "f683f16e58a4712ebad495a7329b71d4",
+    "semantic_hash": "f683f16e58a4712ebad495a7329b71d4"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ThemeFlipCursor.tsx": {
+    "mtime": 1781605158.48194,
+    "ast_hash": "4f16ee995d89f8524d35bdc46de17a33",
+    "semantic_hash": "4f16ee995d89f8524d35bdc46de17a33"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/TourThemeSync.tsx": {
+    "mtime": 1781605158.48194,
+    "ast_hash": "accb21d58018d014e160141819b6331e",
+    "semantic_hash": "accb21d58018d014e160141819b6331e"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/theme-provider.tsx": {
+    "mtime": 1781605158.48194,
+    "ast_hash": "f361565f2906ab4ddd3e68e094380e6e",
+    "semantic_hash": "f361565f2906ab4ddd3e68e094380e6e"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/animated-theme-toggler.tsx": {
+    "mtime": 1781605158.48194,
+    "ast_hash": "f546e2530bd2f5775f2335131aa8e150",
+    "semantic_hash": "f546e2530bd2f5775f2335131aa8e150"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/avatar.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "2f34dcb55a235a2f0c9497d7a44914c6",
+    "semantic_hash": "2f34dcb55a235a2f0c9497d7a44914c6"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/badge.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "9830aa4ee2d6df33673bfb6a45bc5094",
+    "semantic_hash": "9830aa4ee2d6df33673bfb6a45bc5094"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/button.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "6d039baed0a580265fa5edff8eb96e26",
+    "semantic_hash": "6d039baed0a580265fa5edff8eb96e26"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/card.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "057178e496630a245c563de3be88bf73",
+    "semantic_hash": "057178e496630a245c563de3be88bf73"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/chart.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "a5a6ba926677c273641bb1331c605990",
+    "semantic_hash": "a5a6ba926677c273641bb1331c605990"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/dialog.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "ddcda5c40cc1b766d259e0d03e209cc5",
+    "semantic_hash": "ddcda5c40cc1b766d259e0d03e209cc5"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/dropdown-menu.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "ccaebc7250de5092a2fe4d2ce0e4a8e3",
+    "semantic_hash": "ccaebc7250de5092a2fe4d2ce0e4a8e3"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/input.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "63e2e71f6ed7a8668037e0a8e9f38ff3",
+    "semantic_hash": "63e2e71f6ed7a8668037e0a8e9f38ff3"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/progress.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "5a6994ab3e6394de49725bc11f786d1f",
+    "semantic_hash": "5a6994ab3e6394de49725bc11f786d1f"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/scroll-area.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "17f6c7ea0b7cbeca19caf3bc83f75c76",
+    "semantic_hash": "17f6c7ea0b7cbeca19caf3bc83f75c76"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/separator.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "9883c65630dac83880fc947b831d0b31",
+    "semantic_hash": "9883c65630dac83880fc947b831d0b31"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/sheet.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "96b55ef2490d9cd59f0874918c553d64",
+    "semantic_hash": "96b55ef2490d9cd59f0874918c553d64"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/sidebar.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "3248b166315eb4c583b0e5b8598a69f4",
+    "semantic_hash": "3248b166315eb4c583b0e5b8598a69f4"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/skeleton.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "517cfb08ecf74686fbeb6a4bb7fcb5d8",
+    "semantic_hash": "517cfb08ecf74686fbeb6a4bb7fcb5d8"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/slider.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "4eaaeea78619e83064b6f331cb107242",
+    "semantic_hash": "4eaaeea78619e83064b6f331cb107242"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/smooth-cursor.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "2e130c01806463f209b76446fd5f1d26",
+    "semantic_hash": "2e130c01806463f209b76446fd5f1d26"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/sonner.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "aa8b6bdd6344d9b82c574a45534b8aa4",
+    "semantic_hash": "aa8b6bdd6344d9b82c574a45534b8aa4"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/stepper.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "6ead6e9cd372f571f0dc5820fa97e109",
+    "semantic_hash": "6ead6e9cd372f571f0dc5820fa97e109"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/table.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "137c38a4f2f19b1126e3f4397b6073a2",
+    "semantic_hash": "137c38a4f2f19b1126e3f4397b6073a2"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/tabs.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "1d7c3c746b5bde0014725d901083fb02",
+    "semantic_hash": "1d7c3c746b5bde0014725d901083fb02"
+  },
+  "/home/popoch/Projects/gis_preview/src/components/ui/tooltip.tsx": {
+    "mtime": 1781605158.4823594,
+    "ast_hash": "f1eb1e3ed690c0eb9ccb63a5ddba1f83",
+    "semantic_hash": "f1eb1e3ed690c0eb9ccb63a5ddba1f83"
+  },
+  "/home/popoch/Projects/gis_preview/src/data/sample-buildings.ts": {
+    "mtime": 1781605158.4832282,
+    "ast_hash": "f2432e15f5d442608e5f21100239eb18",
+    "semantic_hash": "f2432e15f5d442608e5f21100239eb18"
+  },
+  "/home/popoch/Projects/gis_preview/src/data/sample-hike-pois.ts": {
+    "mtime": 1781605158.4835486,
+    "ast_hash": "1b11ccbd6c96ccb6e95d1730b7edf83a",
+    "semantic_hash": "1b11ccbd6c96ccb6e95d1730b7edf83a"
+  },
+  "/home/popoch/Projects/gis_preview/src/data/sample-isochrones.ts": {
+    "mtime": 1781605158.4835486,
+    "ast_hash": "ec730034e55f7e5b71c4e1dce7f7d21c",
+    "semantic_hash": "ec730034e55f7e5b71c4e1dce7f7d21c"
+  },
+  "/home/popoch/Projects/gis_preview/src/data/sample-points.ts": {
+    "mtime": 1781605158.4835486,
+    "ast_hash": "1ede782e75b4cbf1c4e89fd8490c9ec3",
+    "semantic_hash": "1ede782e75b4cbf1c4e89fd8490c9ec3"
+  },
+  "/home/popoch/Projects/gis_preview/src/data/sample-pois.ts": {
+    "mtime": 1781605158.4835486,
+    "ast_hash": "62737d3ac97374487b13df5a67eab0b1",
+    "semantic_hash": "62737d3ac97374487b13df5a67eab0b1"
+  },
+  "/home/popoch/Projects/gis_preview/src/data/sample-realtime.ts": {
+    "mtime": 1781605158.4835486,
+    "ast_hash": "00defc4d4f2a3cd5a2703d5aff5153f2",
+    "semantic_hash": "00defc4d4f2a3cd5a2703d5aff5153f2"
+  },
+  "/home/popoch/Projects/gis_preview/src/data/sample-table.ts": {
+    "mtime": 1781605158.4835486,
+    "ast_hash": "704b584fef95de3aaf77f98578aef386",
+    "semantic_hash": "704b584fef95de3aaf77f98578aef386"
+  },
+  "/home/popoch/Projects/gis_preview/src/data/sample-tasks.ts": {
+    "mtime": 1781605158.4835486,
+    "ast_hash": "95c670656bdac3464917ed3a5303d7a8",
+    "semantic_hash": "95c670656bdac3464917ed3a5303d7a8"
+  },
+  "/home/popoch/Projects/gis_preview/src/data/sample-traffic.ts": {
+    "mtime": 1781605158.4835486,
+    "ast_hash": "0124f8cbec334a287f270642aa85f590",
+    "semantic_hash": "0124f8cbec334a287f270642aa85f590"
+  },
+  "/home/popoch/Projects/gis_preview/src/data/sample-trail.ts": {
+    "mtime": 1781605158.4835486,
+    "ast_hash": "c08f448e2c8893b79fcfb90959000d82",
+    "semantic_hash": "c08f448e2c8893b79fcfb90959000d82"
+  },
+  "/home/popoch/Projects/gis_preview/src/data/sample-vectors.ts": {
+    "mtime": 1781605158.4835486,
+    "ast_hash": "534d68584ab240f630ab7c2b832043f7",
+    "semantic_hash": "534d68584ab240f630ab7c2b832043f7"
+  },
+  "/home/popoch/Projects/gis_preview/src/data/sample-workspace.ts": {
+    "mtime": 1781605158.4835486,
+    "ast_hash": "21109acf95f44ad83d378968ebd61898",
+    "semantic_hash": "21109acf95f44ad83d378968ebd61898"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useAppliedCardReveal.ts": {
+    "mtime": 1781605158.4841747,
+    "ast_hash": "a8279a87c921c74bb6d4c7b905895d1a",
+    "semantic_hash": "a8279a87c921c74bb6d4c7b905895d1a"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useCursorAim.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "1dd0e913a2da849b9eee08b0dea50779",
+    "semantic_hash": "1dd0e913a2da849b9eee08b0dea50779"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useDataTableCursor.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "b84e82b8594773fa23e44dfe51fd6b5f",
+    "semantic_hash": "b84e82b8594773fa23e44dfe51fd6b5f"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useDemoCursorClick.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "4e83bfcacf866286f3fdc56c90b9e1f3",
+    "semantic_hash": "4e83bfcacf866286f3fdc56c90b9e1f3"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useDemoCursorDrop.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "9edd0a2cffe97ba76efa93572b31d080",
+    "semantic_hash": "9edd0a2cffe97ba76efa93572b31d080"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useEcosystemBeams.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "f452fb6a8e22bc9359749211e3829a2f",
+    "semantic_hash": "f452fb6a8e22bc9359749211e3829a2f"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useEcosystemReveal.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "c85a08322c1f52fc1aa43663c5f5bd0b",
+    "semantic_hash": "c85a08322c1f52fc1aa43663c5f5bd0b"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useGateUnlockNudge.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "073e158f4c78c8aa1a9785c24b6db819",
+    "semantic_hash": "073e158f4c78c8aa1a9785c24b6db819"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useImportPaneReveal.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "5fb74a950cf7179c38f3a0ac831a7a6a",
+    "semantic_hash": "5fb74a950cf7179c38f3a0ac831a7a6a"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useImportSimulation.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "3e8e84ec605636742af9dd80d7953d0c",
+    "semantic_hash": "3e8e84ec605636742af9dd80d7953d0c"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useKanbanCursor.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "93d7d7694a741e7744872ecf93f42114",
+    "semantic_hash": "93d7d7694a741e7744872ecf93f42114"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useLayerCardsStagger.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "80c7d4ca0337847e4f261b04ddca6806",
+    "semantic_hash": "80c7d4ca0337847e4f261b04ddca6806"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useLayerSpotlight.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "ad10050b818322e08407058f7ad3233f",
+    "semantic_hash": "ad10050b818322e08407058f7ad3233f"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useLayersButtonCursor.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "dfd6b09bfaaef88bc89dd42f9c7ee178",
+    "semantic_hash": "dfd6b09bfaaef88bc89dd42f9c7ee178"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useModalExit.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "818ec4cea32a48fa8a5eec29cbb61c00",
+    "semantic_hash": "818ec4cea32a48fa8a5eec29cbb61c00"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useModalHeaderReveal.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "17aa2090a1f5ea0628bfcf5379ccfd87",
+    "semantic_hash": "17aa2090a1f5ea0628bfcf5379ccfd87"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useModalReveal.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "44a7afa5273cfdd8e2206cc7e5b9c8ca",
+    "semantic_hash": "44a7afa5273cfdd8e2206cc7e5b9c8ca"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/usePoiGateNudge.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "e462b47a305f53aba14bac2ae8a8be5b",
+    "semantic_hash": "e462b47a305f53aba14bac2ae8a8be5b"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/usePoiPopupReveal.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "4a7184e8a1359d1587a173d71528776f",
+    "semantic_hash": "4a7184e8a1359d1587a173d71528776f"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/usePoiStatusTransition.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "9795cc5a1d1dac0560443cf3998d0e7e",
+    "semantic_hash": "9795cc5a1d1dac0560443cf3998d0e7e"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/usePointCloudChoreography.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "35dc0ae58b1214ea1892ba44067f642e",
+    "semantic_hash": "35dc0ae58b1214ea1892ba44067f642e"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useRtScriptedCursor.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "26e6eeab7949d3b0d2e09d83493d8a5c",
+    "semantic_hash": "26e6eeab7949d3b0d2e09d83493d8a5c"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useSidebarReveal.ts": {
+    "mtime": 1781605158.484242,
+    "ast_hash": "1f6d7b1221e5c7d3f42377076861d498",
+    "semantic_hash": "1f6d7b1221e5c7d3f42377076861d498"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useSwipeAutoDrag.ts": {
+    "mtime": 1781605158.4852283,
+    "ast_hash": "9b7893d3f823f1d504a0fef90ca49f8f",
+    "semantic_hash": "9b7893d3f823f1d504a0fef90ca49f8f"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useTechStackReveal.ts": {
+    "mtime": 1781605158.4852283,
+    "ast_hash": "1499b3cd791f82f9b57004800e06a385",
+    "semantic_hash": "1499b3cd791f82f9b57004800e06a385"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/animations/useThemeFlipCursor.ts": {
+    "mtime": 1781605158.4852283,
+    "ast_hash": "b5d278ce3b4fade146a99f77a29e71a6",
+    "semantic_hash": "b5d278ce3b4fade146a99f77a29e71a6"
+  },
+  "/home/popoch/Projects/gis_preview/src/hooks/use-mobile.ts": {
+    "mtime": 1781605158.4852283,
+    "ast_hash": "aeaddfd0234c8ad696e5bc96ad23ef25",
+    "semantic_hash": "aeaddfd0234c8ad696e5bc96ad23ef25"
+  },
+  "/home/popoch/Projects/gis_preview/src/lib/utils.ts": {
+    "mtime": 1781605158.4852283,
+    "ast_hash": "9a4cc6f9f3155ffdc1fa7c2c097f6429",
+    "semantic_hash": "9a4cc6f9f3155ffdc1fa7c2c097f6429"
+  },
+  "/home/popoch/Projects/gis_preview/src/main.tsx": {
+    "mtime": 1781605158.4852283,
+    "ast_hash": "81bd5644c72e8a83cff8aa0611ceaac6",
+    "semantic_hash": "81bd5644c72e8a83cff8aa0611ceaac6"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/CinematicCamera.tsx": {
+    "mtime": 1781605158.4852283,
+    "ast_hash": "4ecd660479a131c1fc9fcabc9c968592",
+    "semantic_hash": "4ecd660479a131c1fc9fcabc9c968592"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/HikePoiPopup.tsx": {
+    "mtime": 1781605158.48602,
+    "ast_hash": "854c36aacdd25cd01a2dada963aaf69f",
+    "semantic_hash": "854c36aacdd25cd01a2dada963aaf69f"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/LayersButton.tsx": {
+    "mtime": 1781605158.48602,
+    "ast_hash": "5b3641f5172c75f07a227b0c9e4b5978",
+    "semantic_hash": "5b3641f5172c75f07a227b0c9e4b5978"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/MapCanvas.tsx": {
+    "mtime": 1781605158.48602,
+    "ast_hash": "29e2d1ff52b73554f79df07f56cb55be",
+    "semantic_hash": "29e2d1ff52b73554f79df07f56cb55be"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/MapContext.tsx": {
+    "mtime": 1781605158.48602,
+    "ast_hash": "b75aaf886bb11eae85fc68efaa93dffd",
+    "semantic_hash": "b75aaf886bb11eae85fc68efaa93dffd"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/POIPopup.tsx": {
+    "mtime": 1781605158.48602,
+    "ast_hash": "cdce5bcc29de9127f30ff310965aab1f",
+    "semantic_hash": "cdce5bcc29de9127f30ff310965aab1f"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/POIStatusStepper.tsx": {
+    "mtime": 1781605158.48602,
+    "ast_hash": "44dcccbc43d2046c4ad8b7e6a1d4289d",
+    "semantic_hash": "44dcccbc43d2046c4ad8b7e6a1d4289d"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/PointCloudDangerPois.tsx": {
+    "mtime": 1781605158.48602,
+    "ast_hash": "3651637a85917d2165e30d0ce1323830",
+    "semantic_hash": "3651637a85917d2165e30d0ce1323830"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/PointCloudDirector.tsx": {
+    "mtime": 1781605158.48602,
+    "ast_hash": "22ea69d2edcded550f66c6fa10fcc0f8",
+    "semantic_hash": "22ea69d2edcded550f66c6fa10fcc0f8"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/SwipeCompare.tsx": {
+    "mtime": 1781605158.4862282,
+    "ast_hash": "51cb6ded80f5bc61714cc18967b6d6d8",
+    "semantic_hash": "51cb6ded80f5bc61714cc18967b6d6d8"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/basemaps.ts": {
+    "mtime": 1781605158.4862282,
+    "ast_hash": "4838a800735af576252e5c25e390b017",
+    "semantic_hash": "4838a800735af576252e5c25e390b017"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/layers/airplane3d.ts": {
+    "mtime": 1781605158.4862282,
+    "ast_hash": "c4dfb98adfe3d51662eee8a67975142f",
+    "semantic_hash": "c4dfb98adfe3d51662eee8a67975142f"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/layers/buildings3d.ts": {
+    "mtime": 1781605158.4868116,
+    "ast_hash": "9e5f8d3295a23946c01a3ac2925f4727",
+    "semantic_hash": "9e5f8d3295a23946c01a3ac2925f4727"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/layers/cadastre.ts": {
+    "mtime": 1781605158.4868116,
+    "ast_hash": "00a72ef5e96997046f423898b5e60336",
+    "semantic_hash": "00a72ef5e96997046f423898b5e60336"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/layers/heatmap.ts": {
+    "mtime": 1781605158.4868116,
+    "ast_hash": "93167ffae1032d92b940daaa5ea4d2f4",
+    "semantic_hash": "93167ffae1032d92b940daaa5ea4d2f4"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/layers/hikingTerrain.ts": {
+    "mtime": 1781605158.4868116,
+    "ast_hash": "fe10fa7f28e134fb46446ad14c35510f",
+    "semantic_hash": "fe10fa7f28e134fb46446ad14c35510f"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/layers/isochrones.ts": {
+    "mtime": 1781605158.4868116,
+    "ast_hash": "08de5141e90543094d633d4a6bf390e5",
+    "semantic_hash": "08de5141e90543094d633d4a6bf390e5"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/layers/measureLayer.ts": {
+    "mtime": 1781605158.4868116,
+    "ast_hash": "70e0d93a43960d9825f4acfef37a780a",
+    "semantic_hash": "70e0d93a43960d9825f4acfef37a780a"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/layers/networkFlow.ts": {
+    "mtime": 1781605158.4868116,
+    "ast_hash": "cc28ff3de6a8ecd2c41094191f744e8c",
+    "semantic_hash": "cc28ff3de6a8ecd2c41094191f744e8c"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/layers/pointCloud.ts": {
+    "mtime": 1781605158.4872282,
+    "ast_hash": "0c05b1091c94ea029bac4577511eb4f0",
+    "semantic_hash": "0c05b1091c94ea029bac4577511eb4f0"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/layers/realtime.ts": {
+    "mtime": 1781605158.4872282,
+    "ast_hash": "3887d92b2e1ad08feba0e0cebe95c770",
+    "semantic_hash": "3887d92b2e1ad08feba0e0cebe95c770"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/layers/satelliteHd.ts": {
+    "mtime": 1781605158.4872282,
+    "ast_hash": "86d7c4650c2eedd31c0e8b5a5f2ae253",
+    "semantic_hash": "86d7c4650c2eedd31c0e8b5a5f2ae253"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/layers/trafficFlow.ts": {
+    "mtime": 1781605158.4872282,
+    "ast_hash": "ca60a4375c436433efd710916371ae4d",
+    "semantic_hash": "ca60a4375c436433efd710916371ae4d"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/layers/vectorStyled.ts": {
+    "mtime": 1781605158.4872282,
+    "ast_hash": "97e8a66f83848982144af7a33dccdc7c",
+    "semantic_hash": "97e8a66f83848982144af7a33dccdc7c"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/openHikePoiPopup.tsx": {
+    "mtime": 1781605158.4872282,
+    "ast_hash": "475c6b6c702a687e543d2ae53136f8ea",
+    "semantic_hash": "475c6b6c702a687e543d2ae53136f8ea"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/openPoiPopup.tsx": {
+    "mtime": 1781605158.4872282,
+    "ast_hash": "7065d3fd606eb3f68d82ef43eeeaa38f",
+    "semantic_hash": "7065d3fd606eb3f68d82ef43eeeaa38f"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/pinMarker.ts": {
+    "mtime": 1781605158.4872282,
+    "ast_hash": "ad062e7bd0899870b72893bd69b40f0c",
+    "semantic_hash": "ad062e7bd0899870b72893bd69b40f0c"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/postHitMarkers.ts": {
+    "mtime": 1781605158.4872282,
+    "ast_hash": "b0a984fd77cbe38a1eb55bf4f791c280",
+    "semantic_hash": "b0a984fd77cbe38a1eb55bf4f791c280"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/preloadImages.ts": {
+    "mtime": 1781605158.4872282,
+    "ast_hash": "d44a5283cc3ef721436087cb082b8994",
+    "semantic_hash": "d44a5283cc3ef721436087cb082b8994"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/prewarm.ts": {
+    "mtime": 1781605158.4872282,
+    "ast_hash": "842614820f931885d53fc359b3566769",
+    "semantic_hash": "842614820f931885d53fc359b3566769"
+  },
+  "/home/popoch/Projects/gis_preview/src/map/swipe-view.ts": {
+    "mtime": 1781605158.4872282,
+    "ast_hash": "db84f9a621fecc10198c243c478feed0",
+    "semantic_hash": "db84f9a621fecc10198c243c478feed0"
+  },
+  "/home/popoch/Projects/gis_preview/src/store/map-data-store.ts": {
+    "mtime": 1781605158.4872282,
+    "ast_hash": "ac4b17e8205f69efa0513f3ecb508ffe",
+    "semantic_hash": "ac4b17e8205f69efa0513f3ecb508ffe"
+  },
+  "/home/popoch/Projects/gis_preview/src/store/preload-store.ts": {
+    "mtime": 1781605158.4884162,
+    "ast_hash": "c95480f52b71a3b2e1cd45046367b71d",
+    "semantic_hash": "c95480f52b71a3b2e1cd45046367b71d"
+  },
+  "/home/popoch/Projects/gis_preview/src/store/tour-store.ts": {
+    "mtime": 1781605158.4884162,
+    "ast_hash": "1e4316111b8bda30aad69f30be08dd7f",
+    "semantic_hash": "1e4316111b8bda30aad69f30be08dd7f"
+  },
+  "/home/popoch/Projects/gis_preview/src/tour/AirplaneDebugPanel.tsx": {
+    "mtime": 1781605158.4884162,
+    "ast_hash": "e6f9f2871094114696072f11ee37e1ef",
+    "semantic_hash": "e6f9f2871094114696072f11ee37e1ef"
+  },
+  "/home/popoch/Projects/gis_preview/src/tour/DebugPanel.tsx": {
+    "mtime": 1781605158.4886582,
+    "ast_hash": "6adff9faa3b3a30c4d0a289d93ee13a4",
+    "semantic_hash": "6adff9faa3b3a30c4d0a289d93ee13a4"
+  },
+  "/home/popoch/Projects/gis_preview/src/tour/PointCloudDebugPanel.tsx": {
+    "mtime": 1781605158.4886582,
+    "ast_hash": "352ba15616b2d42e82ccaa588a85ee98",
+    "semantic_hash": "352ba15616b2d42e82ccaa588a85ee98"
+  },
+  "/home/popoch/Projects/gis_preview/src/tour/PreloadBar.tsx": {
+    "mtime": 1781605158.4886582,
+    "ast_hash": "81b75fcc401359863dc4143d6938e514",
+    "semantic_hash": "81b75fcc401359863dc4143d6938e514"
+  },
+  "/home/popoch/Projects/gis_preview/src/tour/StartScreen.tsx": {
+    "mtime": 1781605158.4886582,
+    "ast_hash": "7b1667a084f49e8314e7e9d8ebaba63f",
+    "semantic_hash": "7b1667a084f49e8314e7e9d8ebaba63f"
+  },
+  "/home/popoch/Projects/gis_preview/src/tour/TourController.tsx": {
+    "mtime": 1781605158.4886582,
+    "ast_hash": "8ac4a9e58d84dea72f3a0a780f052022",
+    "semantic_hash": "8ac4a9e58d84dea72f3a0a780f052022"
+  },
+  "/home/popoch/Projects/gis_preview/src/tour/TrafficFlowDebugPanel.tsx": {
+    "mtime": 1781605158.4886582,
+    "ast_hash": "98d7b5df9b0394a89fd19d84ac8cd921",
+    "semantic_hash": "98d7b5df9b0394a89fd19d84ac8cd921"
+  },
+  "/home/popoch/Projects/gis_preview/src/tour/steps.ts": {
+    "mtime": 1781605158.4886582,
+    "ast_hash": "8b3d2d731383387337db1ee57192a92a",
+    "semantic_hash": "8b3d2d731383387337db1ee57192a92a"
+  },
+  "/home/popoch/Projects/gis_preview/tsconfig.app.json": {
+    "mtime": 1781605158.4886582,
+    "ast_hash": "06841accf5eaf2764a0b10ab7175007e",
+    "semantic_hash": "06841accf5eaf2764a0b10ab7175007e"
+  },
+  "/home/popoch/Projects/gis_preview/tsconfig.json": {
+    "mtime": 1781605158.4886582,
+    "ast_hash": "cebcd0aef9a53b9c724ac53266f03437",
+    "semantic_hash": "cebcd0aef9a53b9c724ac53266f03437"
+  },
+  "/home/popoch/Projects/gis_preview/tsconfig.node.json": {
+    "mtime": 1781605158.4886582,
+    "ast_hash": "70bdd0a673bcfc0e828080b306e7c680",
+    "semantic_hash": "70bdd0a673bcfc0e828080b306e7c680"
+  },
+  "/home/popoch/Projects/gis_preview/vite.config.ts": {
+    "mtime": 1781605158.4886582,
+    "ast_hash": "6105475b8a4c14d5371eec8fd0d2463d",
+    "semantic_hash": "6105475b8a4c14d5371eec8fd0d2463d"
+  },
+  "/home/popoch/Projects/gis_preview/CLAUDE.md": {
+    "mtime": 1781605158.3422284,
+    "ast_hash": "a2b0ac220f747d3400de48a0642dfd88",
+    "semantic_hash": "a2b0ac220f747d3400de48a0642dfd88"
+  },
+  "/home/popoch/Projects/gis_preview/CONTEXT.md": {
+    "mtime": 1781605158.3422284,
+    "ast_hash": "c381421c632ceabc7fe39b718d2cd530",
+    "semantic_hash": "c381421c632ceabc7fe39b718d2cd530"
+  },
+  "/home/popoch/Projects/gis_preview/ONBOARDING.md": {
+    "mtime": 1781605158.3422284,
+    "ast_hash": "72b4c2e945811498c6b2cc792c0cc112",
+    "semantic_hash": "72b4c2e945811498c6b2cc792c0cc112"
+  },
+  "/home/popoch/Projects/gis_preview/README.md": {
+    "mtime": 1781605158.3422284,
+    "ast_hash": "987442a8c620e4b9d478748fe65a6a46",
+    "semantic_hash": "987442a8c620e4b9d478748fe65a6a46"
+  },
+  "/home/popoch/Projects/gis_preview/index.html": {
+    "mtime": 1781605158.3452284,
+    "ast_hash": "ea50be02fc2ab6c8f87d2a2a6f80d101",
+    "semantic_hash": "ea50be02fc2ab6c8f87d2a2a6f80d101"
+  },
+  "/home/popoch/Projects/gis_preview/notes.md": {
+    "mtime": 1781605158.4282284,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/popoch/Projects/gis_preview/public/robots.txt": {
+    "mtime": 1781605158.4752283,
+    "ast_hash": "57031e51371a7629742cf1724eade32c",
+    "semantic_hash": "57031e51371a7629742cf1724eade32c"
+  },
+  "/home/popoch/Projects/gis_preview/model-src/plane/baseColor_1.png": {
+    "mtime": 1781605158.3502283,
+    "ast_hash": "e07a6b57f6981e79c96c63d5c126f4d5",
+    "semantic_hash": "e07a6b57f6981e79c96c63d5c126f4d5"
+  },
+  "/home/popoch/Projects/gis_preview/model-src/plane/baseColor_2.png": {
+    "mtime": 1781605158.3542283,
+    "ast_hash": "6912b81e36e8da3ae4b46ded1dfbb46b",
+    "semantic_hash": "6912b81e36e8da3ae4b46ded1dfbb46b"
+  },
+  "/home/popoch/Projects/gis_preview/model-src/plane/baseColor_3.png": {
+    "mtime": 1781605158.3602283,
+    "ast_hash": "af2d91abc46ece2934a0c5f39369db0a",
+    "semantic_hash": "af2d91abc46ece2934a0c5f39369db0a"
+  },
+  "/home/popoch/Projects/gis_preview/model-src/plane/baseColor_4.png": {
+    "mtime": 1781605158.3622284,
+    "ast_hash": "64a6fee46ba5eee04847a7d0a1eba0b0",
+    "semantic_hash": "64a6fee46ba5eee04847a7d0a1eba0b0"
+  },
+  "/home/popoch/Projects/gis_preview/model-src/plane/baseColor_5.png": {
+    "mtime": 1781605158.3672283,
+    "ast_hash": "2657dc3e1bfb7335118289d4ff88dc39",
+    "semantic_hash": "2657dc3e1bfb7335118289d4ff88dc39"
+  },
+  "/home/popoch/Projects/gis_preview/model-src/plane/baseColor_6.png": {
+    "mtime": 1781605158.3702283,
+    "ast_hash": "92ae7ebc06e23aa0e2e9446bc0e5ccff",
+    "semantic_hash": "92ae7ebc06e23aa0e2e9446bc0e5ccff"
+  },
+  "/home/popoch/Projects/gis_preview/public/favicon.svg": {
+    "mtime": 1781605158.4288793,
+    "ast_hash": "efecd423359248ff2e6f98631452e3a4",
+    "semantic_hash": "efecd423359248ff2e6f98631452e3a4"
+  },
+  "/home/popoch/Projects/gis_preview/public/icons.svg": {
+    "mtime": 1781605158.4292283,
+    "ast_hash": "3b4fcfcf393eca4d264dca4a4663bc37",
+    "semantic_hash": "3b4fcfcf393eca4d264dca4a4663bc37"
+  },
+  "/home/popoch/Projects/gis_preview/public/og-image.png": {
+    "mtime": 1781605158.4332283,
+    "ast_hash": "1e58ef77c8991b5e341e5c970bcc81a9",
+    "semantic_hash": "1e58ef77c8991b5e341e5c970bcc81a9"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/dvc-mark.svg": {
+    "mtime": 1781605158.4760764,
+    "ast_hash": "227c8909482c122435b8074c4c718417",
+    "semantic_hash": "227c8909482c122435b8074c4c718417"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/dvc-wordmark-black.svg": {
+    "mtime": 1781605158.476402,
+    "ast_hash": "bb53106cb3fc3b62e494833c1c488a5e",
+    "semantic_hash": "bb53106cb3fc3b62e494833c1c488a5e"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/dvc-wordmark.svg": {
+    "mtime": 1781605158.476402,
+    "ast_hash": "ff9f3884faaaf5af9179806ea66cb715",
+    "semantic_hash": "ff9f3884faaaf5af9179806ea66cb715"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/hero.png": {
+    "mtime": 1781605158.476402,
+    "ast_hash": "aead493361b27e7510691c5d7072dfc1",
+    "semantic_hash": "aead493361b27e7510691c5d7072dfc1"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/biotop.webp": {
+    "mtime": 1781605158.476402,
+    "ast_hash": "27691f6e930b7ca71257548aa7dcf5d9",
+    "semantic_hash": "27691f6e930b7ca71257548aa7dcf5d9"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/bright.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "ba8a2f449aeef93d9cafc060e8b4b18b",
+    "semantic_hash": "ba8a2f449aeef93d9cafc060e8b4b18b"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/bt.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "e136fb4a281b39f679db6c43b172b1fb",
+    "semantic_hash": "e136fb4a281b39f679db6c43b172b1fb"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/cadastre.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "586e5fdb6d51cfd8796edea568d76fa7",
+    "semantic_hash": "586e5fdb6d51cfd8796edea568d76fa7"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/conservatoire_espace_naturel.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "8ecffcd465d94f32afeebca38ce41e4d",
+    "semantic_hash": "8ecffcd465d94f32afeebca38ce41e4d"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/conservatoire_littoral.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "12a3ece57ab2a9bab4766da9b256e609",
+    "semantic_hash": "12a3ece57ab2a9bab4766da9b256e609"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/debroussaillement.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "0bf0b6eccfc6ddff2cdfeb9fb4460ab5",
+    "semantic_hash": "0bf0b6eccfc6ddff2cdfeb9fb4460ab5"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/geoparc.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "f9a795ac1a6697adf23d17dd27c034e4",
+    "semantic_hash": "f9a795ac1a6697adf23d17dd27c034e4"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/hta.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "0f3ccafbc4f3440f03208e773881df3f",
+    "semantic_hash": "0f3ccafbc4f3440f03208e773881df3f"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/ign.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "f9a8c2a373140032b3754905fa63135d",
+    "semantic_hash": "f9a8c2a373140032b3754905fa63135d"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/liberty.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "08fc65e908b07c6e4a37a2821a285c2e",
+    "semantic_hash": "08fc65e908b07c6e4a37a2821a285c2e"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/natura_2000__ZSC.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "d89854fa15f136dfc440c00b13bcd6d9",
+    "semantic_hash": "d89854fa15f136dfc440c00b13bcd6d9"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/natura_2000_habitat.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "90de20283c36a01d641e92debe316519",
+    "semantic_hash": "90de20283c36a01d641e92debe316519"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/natura_2000_oiseaux.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "2b5bab2c54c9d16ee397128fbba3a380",
+    "semantic_hash": "2b5bab2c54c9d16ee397128fbba3a380"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/parc_nationaux.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "f82f54584b22dab125dc321801469a03",
+    "semantic_hash": "f82f54584b22dab125dc321801469a03"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/parc_naturel_marin.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "94ec05c0df9a5c658e66b125bd6d3cff",
+    "semantic_hash": "94ec05c0df9a5c658e66b125bd6d3cff"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/parc_naturels_regionaux.webp": {
+    "mtime": 1781605158.4766939,
+    "ast_hash": "16051a2931f789ce7f31845162ecab75",
+    "semantic_hash": "16051a2931f789ce7f31845162ecab75"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/positron.webp": {
+    "mtime": 1781605158.4772282,
+    "ast_hash": "eaf5963874fdcba2f649e0d6cf66226e",
+    "semantic_hash": "eaf5963874fdcba2f649e0d6cf66226e"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/poste_hta.webp": {
+    "mtime": 1781605158.4772282,
+    "ast_hash": "8f20e86f1b4c1e4e328f191a7b75fe40",
+    "semantic_hash": "8f20e86f1b4c1e4e328f191a7b75fe40"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/poteaux.webp": {
+    "mtime": 1781605158.4772282,
+    "ast_hash": "220eced3e7abc06b290695a63d02fe5b",
+    "semantic_hash": "220eced3e7abc06b290695a63d02fe5b"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/protection_habitat_nat.webp": {
+    "mtime": 1781605158.4772282,
+    "ast_hash": "8e43bfa4ce27fde249d6e4f5bc5beb39",
+    "semantic_hash": "8e43bfa4ce27fde249d6e4f5bc5beb39"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/reserve_biologique.webp": {
+    "mtime": 1781605158.4772282,
+    "ast_hash": "5ba0bdec6ba170b447005426aee22598",
+    "semantic_hash": "5ba0bdec6ba170b447005426aee22598"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/reserve_biosphere.webp": {
+    "mtime": 1781605158.4772282,
+    "ast_hash": "e3d608fba967471871c3a2390c246ddc",
+    "semantic_hash": "e3d608fba967471871c3a2390c246ddc"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/reserve_integrale_chasse_animaux.webp": {
+    "mtime": 1781605158.4772282,
+    "ast_hash": "adce2ba5933b8b92fd5c169553c75d7b",
+    "semantic_hash": "adce2ba5933b8b92fd5c169553c75d7b"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/reserve_integrale_nationaux.webp": {
+    "mtime": 1781605158.4772282,
+    "ast_hash": "7218a469af4f07750914f0e896a3b0ee",
+    "semantic_hash": "7218a469af4f07750914f0e896a3b0ee"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/reserve_nat.webp": {
+    "mtime": 1781605158.4772282,
+    "ast_hash": "ad60e00b0572c5332e377228259409d3",
+    "semantic_hash": "ad60e00b0572c5332e377228259409d3"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/reserve_nat_nat.webp": {
+    "mtime": 1781605158.4772282,
+    "ast_hash": "d1a33b0765dfc45c6cf7c8de13e13e12",
+    "semantic_hash": "d1a33b0765dfc45c6cf7c8de13e13e12"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/reserve_nat_regionales.webp": {
+    "mtime": 1781605158.4772282,
+    "ast_hash": "960b45964dbf77e9ffc0ff5771bfec36",
+    "semantic_hash": "960b45964dbf77e9ffc0ff5771bfec36"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/sattelite.webp": {
+    "mtime": 1781605158.4772282,
+    "ast_hash": "5d8f9fef0d32ac53d07795048294f279",
+    "semantic_hash": "5d8f9fef0d32ac53d07795048294f279"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/site_unesco.webp": {
+    "mtime": 1781605158.4772282,
+    "ast_hash": "58df4edeab1baf6415ba09e9c5ab636e",
+    "semantic_hash": "58df4edeab1baf6415ba09e9c5ab636e"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/uas.webp": {
+    "mtime": 1781605158.4772282,
+    "ast_hash": "8a5400feb74320d6028fe00af4d4f37a",
+    "semantic_hash": "8a5400feb74320d6028fe00af4d4f37a"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/zico.webp": {
+    "mtime": 1781605158.4782283,
+    "ast_hash": "4f7cc415279d46973f300e4453bc6d6d",
+    "semantic_hash": "4f7cc415279d46973f300e4453bc6d6d"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/znieff1.webp": {
+    "mtime": 1781605158.4782283,
+    "ast_hash": "8c2b19bfccf6695923d4c852d418ceb8",
+    "semantic_hash": "8c2b19bfccf6695923d4c852d418ceb8"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/znieff2.webp": {
+    "mtime": 1781605158.4782283,
+    "ast_hash": "b93dacb05b4fdbaadb146ac38af80ecb",
+    "semantic_hash": "b93dacb05b4fdbaadb146ac38af80ecb"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/layer-previews/zones_humides.webp": {
+    "mtime": 1781605158.4782283,
+    "ast_hash": "6fe795d1e2de684be2895bde1b3862e5",
+    "semantic_hash": "6fe795d1e2de684be2895bde1b3862e5"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/logos/arcgis.svg": {
+    "mtime": 1781605158.4782283,
+    "ast_hash": "aecb7dbd7a4eb054af569a75a21093d8",
+    "semantic_hash": "aecb7dbd7a4eb054af569a75a21093d8"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/logos/autocad.svg": {
+    "mtime": 1781605158.4787672,
+    "ast_hash": "e7e234118e1f49a290e818c182f5b7ca",
+    "semantic_hash": "e7e234118e1f49a290e818c182f5b7ca"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/logos/docker.svg": {
+    "mtime": 1781605158.4787672,
+    "ast_hash": "bacb90ebb9ed3f0930b1632fe159c4e9",
+    "semantic_hash": "bacb90ebb9ed3f0930b1632fe159c4e9"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/logos/googleearth.svg": {
+    "mtime": 1781605158.4787672,
+    "ast_hash": "11dae4cdbe234a522e731fe7efe07b49",
+    "semantic_hash": "11dae4cdbe234a522e731fe7efe07b49"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/logos/googlesheets.svg": {
+    "mtime": 1781605158.4787672,
+    "ast_hash": "03c49bac33cac8569965cd90370a3301",
+    "semantic_hash": "03c49bac33cac8569965cd90370a3301"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/logos/map-pin-simple.svg": {
+    "mtime": 1781605158.4787672,
+    "ast_hash": "6a796b1096921a11f803b96a30dca651",
+    "semantic_hash": "6a796b1096921a11f803b96a30dca651"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/logos/maplibre.svg": {
+    "mtime": 1781605158.4787672,
+    "ast_hash": "181880273202bcf42bde4c097a96e2d6",
+    "semantic_hash": "181880273202bcf42bde4c097a96e2d6"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/logos/nodedotjs.svg": {
+    "mtime": 1781605158.4787672,
+    "ast_hash": "f216a4a331e174408defcde7ff8327d1",
+    "semantic_hash": "f216a4a331e174408defcde7ff8327d1"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/logos/postgresql.svg": {
+    "mtime": 1781605158.4787672,
+    "ast_hash": "ed9ed79d3ccb6257e38ce824f2523725",
+    "semantic_hash": "ed9ed79d3ccb6257e38ce824f2523725"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/logos/qgis.svg": {
+    "mtime": 1781605158.4787672,
+    "ast_hash": "644896dbcbe7c96528026f81ad57fef2",
+    "semantic_hash": "644896dbcbe7c96528026f81ad57fef2"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/logos/react.svg": {
+    "mtime": 1781605158.4787672,
+    "ast_hash": "3e675f19f64550d4bb2cee2bcc298072",
+    "semantic_hash": "3e675f19f64550d4bb2cee2bcc298072"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/logos/redis.svg": {
+    "mtime": 1781605158.4787672,
+    "ast_hash": "d4a5da62a7f803bf2df5edcd270222fa",
+    "semantic_hash": "d4a5da62a7f803bf2df5edcd270222fa"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/photos/hike/dent_du_requin.webp": {
+    "mtime": 1781605158.479269,
+    "ast_hash": "1e901664feee70951d269a84daeddab2",
+    "semantic_hash": "1e901664feee70951d269a84daeddab2"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/photos/hike/grotte_glace.webp": {
+    "mtime": 1781605158.4795902,
+    "ast_hash": "ae99ac877362cc5a018222eb0b34c6fa",
+    "semantic_hash": "ae99ac877362cc5a018222eb0b34c6fa"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/photos/hike/mer_de_glace.webp": {
+    "mtime": 1781605158.4795902,
+    "ast_hash": "7aa773a67730fc80f194482b2a603273",
+    "semantic_hash": "7aa773a67730fc80f194482b2a603273"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/photos/hike/refuge.webp": {
+    "mtime": 1781605158.4795902,
+    "ast_hash": "e83741e99c9f3004538b161964ad521a",
+    "semantic_hash": "e83741e99c9f3004538b161964ad521a"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/photos/poste_source.webp": {
+    "mtime": 1781605158.4795902,
+    "ast_hash": "16cf167af3fd4d11245dd20373aafafc",
+    "semantic_hash": "16cf167af3fd4d11245dd20373aafafc"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/react.svg": {
+    "mtime": 1781605158.4795902,
+    "ast_hash": "f0402b67b6ce880f65666bb49e841696",
+    "semantic_hash": "f0402b67b6ce880f65666bb49e841696"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/vite.svg": {
+    "mtime": 1781605158.4795902,
+    "ast_hash": "9960a24288958394ac50e57ff638b036",
+    "semantic_hash": "9960a24288958394ac50e57ff638b036"
+  }
+}

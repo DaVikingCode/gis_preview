@@ -1,0 +1,11 @@
+{
+  // Configuration Cloudflare Pages. La démo est un site statique (build Vite dans
+  // `dist`) + une Pages Function (`functions/api/contact.ts`) qui relaie vers le
+  // worker Daviking-Mailer. `nodejs_compat` est requis pour le rendu React Email
+  // côté edge. Le secret MAILER_KEY se règle dans le dashboard Pages (ou .dev.vars
+  // en local) — jamais ici.
+  "name": "gis-preview",
+  "compatibility_date": "2025-06-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "pages_build_output_dir": "dist",
+}

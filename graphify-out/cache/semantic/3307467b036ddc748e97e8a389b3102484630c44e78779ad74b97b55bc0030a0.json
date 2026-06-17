@@ -1,0 +1,59 @@
+{
+  "nodes": [
+    {
+      "id": "index_html_seo_metadata",
+      "label": "SEO / Structured Data Metadata",
+      "file_type": "document",
+      "source_file": "index.html",
+      "source_location": "head",
+      "source_url": "https://solutions-sig.davikingcode.com/",
+      "captured_at": null,
+      "author": "DaVikingCode",
+      "contributor": null
+    },
+    {
+      "id": "index_html_solutions_sig",
+      "label": "Solutions SIG (web application)",
+      "file_type": "concept",
+      "source_file": "index.html",
+      "source_location": "ld+json WebApplication",
+      "source_url": "https://solutions-sig.davikingcode.com/",
+      "captured_at": null,
+      "author": "DaVikingCode",
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "index_html_solutions_sig",
+      "target": "context_reseau_hta",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "index.html",
+      "source_location": "supervision HTA description",
+      "weight": 1.0
+    },
+    {
+      "source": "index_html_seo_metadata",
+      "target": "onboarding_davikingcode",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "index.html",
+      "source_location": "Organization DaVikingCode",
+      "weight": 1.0
+    },
+    {
+      "source": "index_html_solutions_sig",
+      "target": "claude_guided_product_demo_tour",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "index.html",
+      "source_location": "WebApplication = the demo app",
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

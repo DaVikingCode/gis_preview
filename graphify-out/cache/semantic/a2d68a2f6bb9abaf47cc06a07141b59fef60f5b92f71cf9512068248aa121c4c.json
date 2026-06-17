@@ -1,0 +1,39 @@
+{
+  "nodes": [
+    {
+      "id": "onboarding_davikingcode",
+      "label": "DaVikingCode (team)",
+      "file_type": "concept",
+      "source_file": "ONBOARDING.md",
+      "source_location": "Welcome",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "onboarding_context7_mcp",
+      "label": "context7 MCP Server",
+      "file_type": "concept",
+      "source_file": "ONBOARDING.md",
+      "source_location": "MCP Servers",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "onboarding_context7_mcp",
+      "target": "onboarding_davikingcode",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ONBOARDING.md",
+      "source_location": "MCP Servers to Activate",
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

@@ -1,0 +1,17 @@
+{
+  "nodes": [
+    {
+      "id": "readme_react_compiler",
+      "label": "React Compiler",
+      "file_type": "concept",
+      "source_file": "README.md",
+      "source_location": "React Compiler",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [],
+  "hyperedges": []
+}

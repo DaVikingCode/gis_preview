@@ -1,0 +1,253 @@
+{
+  "nodes": [
+    {
+      "id": "context_reseau_hta",
+      "label": "Reseau HTA (20 kV network)",
+      "file_type": "concept",
+      "source_file": "CONTEXT.md",
+      "source_location": "Reseau HTA",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "context_poste",
+      "label": "Poste (network node)",
+      "file_type": "concept",
+      "source_file": "CONTEXT.md",
+      "source_location": "Poste",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "context_poste_source",
+      "label": "Poste source (feeder substation P-4521 Salbris)",
+      "file_type": "concept",
+      "source_file": "CONTEXT.md",
+      "source_location": "Poste source",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "context_charge",
+      "label": "Charge (instantaneous load)",
+      "file_type": "concept",
+      "source_file": "CONTEXT.md",
+      "source_location": "Charge",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "context_statut",
+      "label": "Statut (colour band)",
+      "file_type": "concept",
+      "source_file": "CONTEXT.md",
+      "source_location": "Statut",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "context_surcharge",
+      "label": "Surcharge (overload state)",
+      "file_type": "concept",
+      "source_file": "CONTEXT.md",
+      "source_location": "Statut",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "context_incident",
+      "label": "Incident (scripted storyline)",
+      "file_type": "concept",
+      "source_file": "CONTEXT.md",
+      "source_location": "Incident",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "context_fiche_intervention",
+      "label": "Fiche d'intervention",
+      "file_type": "concept",
+      "source_file": "CONTEXT.md",
+      "source_location": "Fiche",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "context_retablissement",
+      "label": "Retablissement",
+      "file_type": "concept",
+      "source_file": "CONTEXT.md",
+      "source_location": "Retablissement",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "context_flux_scada",
+      "label": "Flux SCADA (live telemetry)",
+      "file_type": "concept",
+      "source_file": "CONTEXT.md",
+      "source_location": "Flux SCADA",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "context_conduite",
+      "label": "Conduite (control-room function)",
+      "file_type": "concept",
+      "source_file": "CONTEXT.md",
+      "source_location": "Conduite",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "context_poste_source",
+      "target": "context_poste",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CONTEXT.md",
+      "source_location": "Poste source",
+      "weight": 1.0
+    },
+    {
+      "source": "context_poste",
+      "target": "context_reseau_hta",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CONTEXT.md",
+      "source_location": "Poste node of HTA network",
+      "weight": 1.0
+    },
+    {
+      "source": "context_charge",
+      "target": "context_statut",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CONTEXT.md",
+      "source_location": "Statut derived from charge",
+      "weight": 1.0
+    },
+    {
+      "source": "context_surcharge",
+      "target": "context_statut",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CONTEXT.md",
+      "source_location": "Statut: Surcharge",
+      "weight": 1.0
+    },
+    {
+      "source": "context_incident",
+      "target": "context_poste_source",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CONTEXT.md",
+      "source_location": "incident poste = poste source",
+      "weight": 1.0
+    },
+    {
+      "source": "context_incident",
+      "target": "context_surcharge",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CONTEXT.md",
+      "source_location": "nominal to surcharge to intervention",
+      "weight": 1.0
+    },
+    {
+      "source": "context_fiche_intervention",
+      "target": "context_poste",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CONTEXT.md",
+      "source_location": "popup card opened on a poste",
+      "weight": 1.0
+    },
+    {
+      "source": "context_retablissement",
+      "target": "context_incident",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CONTEXT.md",
+      "source_location": "poste returning to nominal",
+      "weight": 1.0
+    },
+    {
+      "source": "context_flux_scada",
+      "target": "context_charge",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CONTEXT.md",
+      "source_location": "per-poste charge + total MW",
+      "weight": 1.0
+    },
+    {
+      "source": "context_conduite",
+      "target": "context_reseau_hta",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CONTEXT.md",
+      "source_location": "supervises the network",
+      "weight": 1.0
+    },
+    {
+      "source": "context_reseau_hta",
+      "target": "claude_guided_product_demo_tour",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "CONTEXT.md",
+      "source_location": "flagship scene of the tour",
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "incident_storyline",
+      "label": "Incident storyline lifecycle",
+      "nodes": [
+        "context_poste_source",
+        "context_surcharge",
+        "context_fiche_intervention",
+        "context_retablissement"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CONTEXT.md"
+    }
+  ]
+}

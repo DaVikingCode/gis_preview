@@ -20,6 +20,7 @@ import { useTourStore } from '@/store/tour-store'
 import { STEPS } from '@/tour/steps'
 import { SmoothCursor } from '@/components/ui/smooth-cursor'
 import { Toaster } from '@/components/ui/sonner'
+import { ContactFab } from '@/components/ContactFab'
 import { Button } from '@/components/ui/button'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { ArrowLeft } from 'lucide-react'
@@ -43,8 +44,15 @@ function Overlays() {
   return (
     <>
       {/* Toasts d'incident (séquence HTA). z au-dessus de l'overlay driver.js
-          (~100100) mais sous le faux curseur (100120). */}
-      <Toaster position="bottom-right" style={{ zIndex: 100115 }} />
+          (~100100) mais sous le faux curseur (100120). Décalé vers le haut pour
+          ne pas chevaucher le FAB de contact (coin bas-droite). */}
+      <Toaster
+        position="bottom-right"
+        offset={{ bottom: '6rem', right: '1.5rem' }}
+        style={{ zIndex: 100115 }}
+      />
+      {/* Bouton de contact flottant — visible à tout moment (y compris StartScreen). */}
+      <ContactFab />
       <CinematicCamera />
       {isSwipe && <SwipeCompare />}
       {started && <PointCloudDirector />}

@@ -441,6 +441,15 @@ body,
   pointer-events: auto !important;
 }
 
+/* Bouton de contact + overlay : toujours cliquables, y compris pendant le tour.
+   driver.js coupe les pointer-events hors élément actif (`.driver-active *`) ; on
+   les force ici. Le z-index reste sous la popover driver (1e9) → le FAB passe
+   bien DERRIÈRE le stepper. */
+.gp-contact,
+.gp-contact * {
+  pointer-events: auto !important;
+}
+
 /* ─── driver.js tour popover — shadcn aesthetic ───────────────────────── */
 .driver-popover.gp-tour {
   --gp-tour-radius: calc(var(--radius) + 4px);

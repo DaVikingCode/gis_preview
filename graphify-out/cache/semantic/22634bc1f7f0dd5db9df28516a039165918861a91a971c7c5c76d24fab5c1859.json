@@ -1,0 +1,256 @@
+{
+  "nodes": [
+    {
+      "id": "claude_guided_product_demo_tour",
+      "label": "Guided Product-Demo Tour",
+      "file_type": "concept",
+      "source_file": "CLAUDE.md",
+      "source_location": "What this is",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "claude_tour_steps_spine",
+      "label": "STEPS Tour Spine",
+      "file_type": "rationale",
+      "source_file": "CLAUDE.md",
+      "source_location": "The tour is the spine",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "claude_tour_store",
+      "label": "tour-store (Zustand)",
+      "file_type": "concept",
+      "source_file": "CLAUDE.md",
+      "source_location": "Three layers of state/control",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "claude_map_data_store",
+      "label": "map-data-store (Zustand)",
+      "file_type": "concept",
+      "source_file": "CLAUDE.md",
+      "source_location": "Three layers of state/control",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "claude_tour_controller",
+      "label": "TourController (driver.js)",
+      "file_type": "concept",
+      "source_file": "CLAUDE.md",
+      "source_location": "Three layers of state/control",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "claude_charts_panel",
+      "label": "ChartsPanel",
+      "file_type": "concept",
+      "source_file": "CLAUDE.md",
+      "source_location": "UI components",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "claude_map_canvas_context",
+      "label": "MapCanvas / MapContext",
+      "file_type": "concept",
+      "source_file": "CLAUDE.md",
+      "source_location": "Map instance access",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "claude_layer_modules",
+      "label": "Imperative Layer Modules",
+      "file_type": "rationale",
+      "source_file": "CLAUDE.md",
+      "source_location": "Layer modules",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "claude_react_compiler_convention",
+      "label": "React Compiler Convention",
+      "file_type": "rationale",
+      "source_file": "CLAUDE.md",
+      "source_location": "Conventions",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "claude_import_gate",
+      "label": "Import Gate",
+      "file_type": "concept",
+      "source_file": "CLAUDE.md",
+      "source_location": "Three layers of state/control",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "claude_tour_steps_spine",
+      "target": "claude_guided_product_demo_tour",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": "The tour is the spine",
+      "weight": 1.0
+    },
+    {
+      "source": "claude_tour_controller",
+      "target": "claude_tour_store",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": "Three layers of state/control",
+      "weight": 1.0
+    },
+    {
+      "source": "claude_tour_controller",
+      "target": "claude_tour_steps_spine",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": "Three layers of state/control",
+      "weight": 1.0
+    },
+    {
+      "source": "claude_tour_steps_spine",
+      "target": "claude_map_data_store",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": "onEnter calls setX",
+      "weight": 1.0
+    },
+    {
+      "source": "claude_charts_panel",
+      "target": "claude_map_data_store",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": "ChartsPanel charts read",
+      "weight": 1.0
+    },
+    {
+      "source": "claude_layer_modules",
+      "target": "claude_map_data_store",
+      "relation": "shares_data_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": "onEnter hooks compute",
+      "weight": 1.0
+    },
+    {
+      "source": "claude_tour_steps_spine",
+      "target": "claude_layer_modules",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": "onEnter adds layers",
+      "weight": 1.0
+    },
+    {
+      "source": "claude_layer_modules",
+      "target": "claude_map_canvas_context",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": "addX(map)",
+      "weight": 1.0
+    },
+    {
+      "source": "claude_charts_panel",
+      "target": "claude_tour_steps_spine",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": "keyed off current step chart",
+      "weight": 1.0
+    },
+    {
+      "source": "claude_import_gate",
+      "target": "claude_tour_controller",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": "import gate blocks advancing",
+      "weight": 1.0
+    },
+    {
+      "source": "claude_react_compiler_convention",
+      "target": "readme_react_compiler",
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "CLAUDE.md",
+      "source_location": "React Compiler enabled",
+      "weight": 1.0
+    },
+    {
+      "source": "claude_map_data_store",
+      "target": "context_flux_scada",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "CLAUDE.md",
+      "source_location": "map-data-store holds poste status/charge",
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "three_layer_state_control",
+      "label": "Three layers of state/control",
+      "nodes": ["claude_tour_controller", "claude_tour_store", "claude_map_data_store"],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md"
+    },
+    {
+      "id": "imperative_to_react_bridge",
+      "label": "Imperative map to React chart bridge",
+      "nodes": ["claude_layer_modules", "claude_map_data_store", "claude_charts_panel"],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md"
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "/home/popoch/Projects/gis_preview/components.json": {
+    "size": 569,
+    "mtime_ns": 1781605158345228383,
+    "hash": "4ad63a429e9947e5f2f5979227bd724bf3579d7699c9f56a5a769ddc7150d084"
+  },
+  "/home/popoch/Projects/gis_preview/package.json": {
+    "size": 1948,
+    "mtime_ns": 1781605158428228278,
+    "hash": "5961fcc62034c6e12f52bd4b2a234bad8a8c9803282b1c8b620a3a776e590c87"
+  },
+  "/home/popoch/Projects/gis_preview/public/pointcloud/auxonne.points.json": {
+    "size": 4611,
+    "mtime_ns": 1781605158433228272,
+    "hash": "d3d2ef1333204102b4aa43b707cd3875ec17093cf26717a20dcb3fb605726c25"
+  },
+  "/home/popoch/Projects/gis_preview/public/pointcloud/manifest.json": {
+    "size": 479,
+    "mtime_ns": 1781605158474228221,
+    "hash": "dfce343a6e52d69df577f3b2e70be6b4c3311c177fe89d1cb5a7c53ae1a4b8a0"
+  },
+  "/home/popoch/Projects/gis_preview/src/assets/pointcloud/auxonne.points.json": {
+    "size": 4611,
+    "mtime_ns": 1781605158479590206,
+    "hash": "460fe77796f97db846d362d5ea25b39012961845483f4c14e0951d40bb0d7d80"
+  },
+  "/home/popoch/Projects/gis_preview/tsconfig.app.json": {
+    "size": 660,
+    "mtime_ns": 1781605158488658290,
+    "hash": "2071db3d5df0c9c39feae375d93415e4406072655638fa6f19a22cfe226daf25"
+  },
+  "/home/popoch/Projects/gis_preview/tsconfig.json": {
+    "size": 107,
+    "mtime_ns": 1781605158488658290,
+    "hash": "1df8de670dd1febedc2554ced3c9a2b5215fc68cad16d4b8dc2b7b64943a7f17"
+  },
+  "/home/popoch/Projects/gis_preview/tsconfig.node.json": {
+    "size": 591,
+    "mtime_ns": 1781605158488658290,
+    "hash": "363d2b77ee0b411cb1a762561e96f62e8259d30d320603aebd11b06088ad48a2"
+  },
+  "/home/popoch/Projects/gis_preview/CLAUDE.md": {
+    "size": 5398,
+    "mtime_ns": 1781605158342228386,
+    "hash": "22634bc1f7f0dd5db9df28516a039165918861a91a971c7c5c76d24fab5c1859"
+  },
+  "/home/popoch/Projects/gis_preview/CONTEXT.md": {
+    "size": 2529,
+    "mtime_ns": 1781605158342228386,
+    "hash": "2f818d34793c542bdca3826350c2bfdeb9208fabad0c6b32502ec1360848b65c"
+  },
+  "/home/popoch/Projects/gis_preview/ONBOARDING.md": {
+    "size": 3647,
+    "mtime_ns": 1781605158342228386,
+    "hash": "a2d68a2f6bb9abaf47cc06a07141b59fef60f5b92f71cf9512068248aa121c4c"
+  },
+  "/home/popoch/Projects/gis_preview/README.md": {
+    "size": 2423,
+    "mtime_ns": 1781605158342228386,
+    "hash": "4ad327a12b1fadcb2b4b4fce33fda17d1bfd2316ac187fd1191ec432569a68be"
+  },
+  "/home/popoch/Projects/gis_preview/index.html": {
+    "size": 6019,
+    "mtime_ns": 1781605158345228383,
+    "hash": "3307467b036ddc748e97e8a389b3102484630c44e78779ad74b97b55bc0030a0"
+  },
+  "/home/popoch/Projects/gis_preview/notes.md": {
+    "size": 0,
+    "mtime_ns": 1781605158428228278,
+    "hash": "fa811c620a70dda3943aa5dadbd8043843f4b32ca621115a93873e833cca2a01"
+  },
+  "/home/popoch/Projects/gis_preview/public/robots.txt": {
+    "size": 167,
+    "mtime_ns": 1781605158475228219,
+    "hash": "4f05ab8753460465fb007ec46eb63a85713473fb0a5ecfc864701066fb7119b6"
+  }
+}
