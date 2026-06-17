@@ -10,14 +10,12 @@ import {
   type HikingHandle,
   type PanFlightPlan,
 } from '@/map/layers/hikingTerrain'
-import { addAirplane3D, prewarmGlobe, type AirplaneHandle } from '@/map/layers/airplane3d'
-import {
-  addPointCloud,
-  prewarmPointCloud,
-  bringPointCloudToFront,
-  POINTCLOUD_ANCHOR,
-  type PointCloudHandle,
-} from '@/map/layers/pointCloud'
+// Partie LÉGÈRE seulement (sans three.js) en statique. Les fonctions lourdes —
+// addAirplane3D / addPointCloud / prewarmPointCloud / bringPointCloudToFront — sont
+// chargées via `import()` dynamique dans les onEnter concernés : three.js sort ainsi du
+// bundle d'entrée et n'arrive qu'à la première étape 3D du tour.
+import { prewarmGlobe, type AirplaneHandle } from '@/map/layers/airplane3d.shared'
+import { POINTCLOUD_ANCHOR, type PointCloudHandle } from '@/map/layers/pointCloud.shared'
 import { addSatelliteHd, removeSatelliteHd } from '@/map/layers/satelliteHd'
 import { STATIC_LADEFENSE_HEIGHTS } from '@/data/sample-buildings'
 import { addVectorStyled, removeVectorStyled } from '@/map/layers/vectorStyled'
@@ -129,7 +127,11 @@ let measureHandle: MeasureHandle | null = null
 let realtimeHandle: RealtimeHandle | null = null
 let hikingHandle: HikingHandle | null = null
 let airplaneHandle: AirplaneHandle | null = null
+// Annule l'adoption du handle si on quitte le step avant que l'`import()` dynamique du
+// module lourd ne soit résolu (navigation rapide).
+let airplaneCancel: (() => void) | null = null
 let pointCloudHandle: PointCloudHandle | null = null
+let pointCloudCancel: (() => void) | null = null
 
 // Séquence HTA (supervision live → surcharge → réparation → rétablissement).
 // Poste incident = poste source P-4521 (id 1) : flambe sur cue puis se rétablit.
@@ -302,7 +304,9 @@ export const STEPS: TourStep[] = [
       // upload GPU, compile shader — tourne pendant qu'on regarde le terrain → arrivée
       // au step sans freeze. N'écrit rien dans le store → pas d'animation ici. NE PAS
       // le détacher dans onLeave (déclenché aussi sur 6→7, ça tuerait le préchauffe).
-      prewarmPointCloud(map)
+      // Charge le module lourd (three.js) à la demande : c'est la 1re étape qui en a
+      // besoin → le chunk est téléchargé puis adopté tel quel au step LiDAR suivant.
+      void import('@/map/layers/pointCloud').then((m) => m.prewarmPointCloud(map))
     },
     onLeave() {
       hikingHandle?.detach()
@@ -350,21 +354,33 @@ export const STEPS: TourStep[] = [
       // le nuage → les points restent au-dessus.
       addSatelliteHd(map)
 
-      pointCloudHandle = addPointCloud(map)
-      // La préchauffe (step 6) a posé le nuage AVANT addSatelliteHd → le satellite se
-      // retrouve par-dessus et masque les points. On remet le nuage au sommet.
-      bringPointCloudToFront(map)
-      const handle = pointCloudHandle
-      ds.setPointCloudHandle(handle)
-      ds.setPointCloudReplay(() => useMapDataStore.getState().bumpPointCloudRun())
+      // Module lourd (three.js) chargé à la demande. Déjà téléchargé/caché par la
+      // préchauffe du step précédent → résolution quasi immédiate. Garde d'annulation au
+      // cas où l'on quitte le step avant la résolution (navigation rapide).
+      let cancelled = false
+      pointCloudCancel = () => {
+        cancelled = true
+      }
+      void import('@/map/layers/pointCloud').then((m) => {
+        if (cancelled) return
+        pointCloudHandle = m.addPointCloud(map)
+        // La préchauffe (step 6) a posé le nuage AVANT addSatelliteHd → le satellite se
+        // retrouve par-dessus et masque les points. On remet le nuage au sommet.
+        m.bringPointCloudToFront(map)
+        const handle = pointCloudHandle
+        ds.setPointCloudHandle(handle)
+        ds.setPointCloudReplay(() => useMapDataStore.getState().bumpPointCloudRun())
 
-      // Démarre une fois la géométrie chargée, si on est toujours sur ce step.
-      void handle.ready.then(() => {
-        if (pointCloudHandle !== handle) return
-        useMapDataStore.getState().bumpPointCloudRun()
+        // Démarre une fois la géométrie chargée, si on est toujours sur ce step.
+        void handle.ready.then(() => {
+          if (pointCloudHandle !== handle) return
+          useMapDataStore.getState().bumpPointCloudRun()
+        })
       })
     },
     onLeave(map) {
+      pointCloudCancel?.()
+      pointCloudCancel = null
       removeSatelliteHd(map)
       const ds = useMapDataStore.getState()
       // STOP SYNCHRONE de l'orbite caméra : en fin de chorégraphie, makeOrbit() relance
@@ -421,9 +437,20 @@ export const STEPS: TourStep[] = [
       prewarmGlobe(map)
     },
     onEnter(map) {
-      airplaneHandle = addAirplane3D(map)
+      // Module lourd (three.js + GLTFLoader) chargé à la demande. Garde d'annulation si
+      // l'on quitte avant la résolution de l'`import()`.
+      let cancelled = false
+      airplaneCancel = () => {
+        cancelled = true
+      }
+      void import('@/map/layers/airplane3d').then((m) => {
+        if (cancelled) return
+        airplaneHandle = m.addAirplane3D(map)
+      })
     },
     onLeave() {
+      airplaneCancel?.()
+      airplaneCancel = null
       airplaneHandle?.detach()
       airplaneHandle = null
     },

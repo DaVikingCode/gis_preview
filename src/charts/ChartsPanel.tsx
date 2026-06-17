@@ -1,26 +1,56 @@
-import { useRef, useState } from 'react'
+import { lazy, Suspense, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useTourStore } from '@/store/tour-store'
 import { STEPS } from '@/tour/steps'
-import { BuildingsHeightChart } from './BuildingsHeightChart'
-import { MeasureChart } from './MeasureChart'
-import { HeatmapChart } from './HeatmapChart'
-import { BasemapChart } from './BasemapChart'
-import { HighlightChart } from './HighlightChart'
+// EAGER (pas de lazy) : cette modale est montée tôt dans le tour ET pilote une
+// chorégraphie GSAP de faux curseur sensible au timing. En lazy, le Suspense (fallback
+// null) démonte/remonte la modale au 1er affichage (« flash ») et casse la choré du
+// curseur (qui ne déclenche alors plus l'avancée d'étape → le curseur reste). Elle
+// n'importe pas Recharts : la charger en statique ne touche pas au split Recharts.
 import { LayersPresentationModal } from './LayersPresentationModal'
-import { LayersAppliedCard } from './LayersAppliedCard'
-import { DataTablePanel } from './DataTablePanel'
-import { KanbanPanel } from './KanbanPanel'
-import { IsochroneChart } from './IsochroneChart'
-import { SwipeChart } from './SwipeChart'
-import { RealtimeChart } from './RealtimeChart'
-import { HikingChart } from './HikingChart'
-import { AirplaneCard } from './AirplaneCard'
-import { PointCloudCard } from './PointCloudCard'
-import { EcosystemBridge } from './EcosystemBridge'
-import { TechStackDiagram } from './TechStackDiagram'
+
+// Charts chargés à la demande (exports nommés → mappés vers `default`). Recharts et les
+// gros composants partent ainsi dans des chunks séparés, hors du bundle d'entrée : ils
+// ne sont téléchargés qu'à la première étape du tour qui les affiche.
+const BuildingsHeightChart = lazy(() =>
+  import('./BuildingsHeightChart').then((m) => ({ default: m.BuildingsHeightChart })),
+)
+const MeasureChart = lazy(() => import('./MeasureChart').then((m) => ({ default: m.MeasureChart })))
+const HeatmapChart = lazy(() => import('./HeatmapChart').then((m) => ({ default: m.HeatmapChart })))
+const BasemapChart = lazy(() => import('./BasemapChart').then((m) => ({ default: m.BasemapChart })))
+const HighlightChart = lazy(() =>
+  import('./HighlightChart').then((m) => ({ default: m.HighlightChart })),
+)
+const LayersAppliedCard = lazy(() =>
+  import('./LayersAppliedCard').then((m) => ({ default: m.LayersAppliedCard })),
+)
+// Charts à faux curseur scripté MAIS sans modale sœur à leur étape (table / kanban) :
+// avec les boundaries Suspense séparées, leur suspension lazy est isolée (pas de
+// teardown d'un voisin) → lazy sans risque, et hors du bundle d'entrée.
+const DataTablePanel = lazy(() =>
+  import('./DataTablePanel').then((m) => ({ default: m.DataTablePanel })),
+)
+const KanbanPanel = lazy(() => import('./KanbanPanel').then((m) => ({ default: m.KanbanPanel })))
+const IsochroneChart = lazy(() =>
+  import('./IsochroneChart').then((m) => ({ default: m.IsochroneChart })),
+)
+const SwipeChart = lazy(() => import('./SwipeChart').then((m) => ({ default: m.SwipeChart })))
+const RealtimeChart = lazy(() =>
+  import('./RealtimeChart').then((m) => ({ default: m.RealtimeChart })),
+)
+const HikingChart = lazy(() => import('./HikingChart').then((m) => ({ default: m.HikingChart })))
+const AirplaneCard = lazy(() => import('./AirplaneCard').then((m) => ({ default: m.AirplaneCard })))
+const PointCloudCard = lazy(() =>
+  import('./PointCloudCard').then((m) => ({ default: m.PointCloudCard })),
+)
+const EcosystemBridge = lazy(() =>
+  import('./EcosystemBridge').then((m) => ({ default: m.EcosystemBridge })),
+)
+const TechStackDiagram = lazy(() =>
+  import('./TechStackDiagram').then((m) => ({ default: m.TechStackDiagram })),
+)
 
 const META: Record<string, { title: string; description: string }> = {
   buildings: { title: 'Hauteurs visibles', description: 'Répartition des hauteurs de bâtiments' },
@@ -100,19 +130,23 @@ export function ChartsPanel() {
               <CardDescription className="hidden sm:block">{meta.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              {chart === 'buildings' && (
-                <BuildingsHeightChart byHeight={step.id === 'layers-apply-buildings'} />
-              )}
-              {chart === 'measure' && <MeasureChart />}
-              {chart === 'heatmap' && <HeatmapChart />}
-              {chart === 'basemap' && <BasemapChart />}
-              {chart === 'highlight' && <HighlightChart />}
-              {chart === 'isochrone' && <IsochroneChart />}
-              {chart === 'swipe' && <SwipeChart />}
-              {chart === 'realtime' && <RealtimeChart />}
-              {chart === 'hiking' && <HikingChart />}
-              {chart === 'airplane' && <AirplaneCard />}
-              {chart === 'pointcloud' && <PointCloudCard />}
+              {/* Boundary serrée : seule la zone de chart suspend pendant le chargement
+                  du chunk — l'enveloppe Card (titre/description) reste stable, pas de CLS. */}
+              <Suspense fallback={null}>
+                {chart === 'buildings' && (
+                  <BuildingsHeightChart byHeight={step.id === 'layers-apply-buildings'} />
+                )}
+                {chart === 'measure' && <MeasureChart />}
+                {chart === 'heatmap' && <HeatmapChart />}
+                {chart === 'basemap' && <BasemapChart />}
+                {chart === 'highlight' && <HighlightChart />}
+                {chart === 'isochrone' && <IsochroneChart />}
+                {chart === 'swipe' && <SwipeChart />}
+                {chart === 'realtime' && <RealtimeChart />}
+                {chart === 'hiking' && <HikingChart />}
+                {chart === 'airplane' && <AirplaneCard />}
+                {chart === 'pointcloud' && <PointCloudCard />}
+              </Suspense>
             </CardContent>
           </Card>
         </div>
@@ -120,10 +154,17 @@ export function ChartsPanel() {
     }
   }
 
+  // Boundaries SÉPARÉES pour `content` et `modal` : un chart lazy de `content` qui
+  // suspend (ex. LayersAppliedCard au passage pick-cadastre → apply-cadastre, 1er
+  // chargement) ne doit PAS faire tomber la modale dans le même fallback. Sinon la
+  // modale (encore montée en sortie `exiting`) est arrachée avant la fin de son
+  // animation → `onExited` ne se déclenche jamais → `exiting` reste true → la modale et
+  // son faux curseur se re-montent et restent bloqués (bug « le curseur ne part plus »,
+  // visible seulement au 1er passage, le chunk étant ensuite en cache).
   return (
     <>
-      {content}
-      {modal}
+      <Suspense fallback={null}>{content}</Suspense>
+      <Suspense fallback={null}>{modal}</Suspense>
     </>
   )
 }

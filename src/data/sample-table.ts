@@ -153,8 +153,7 @@ const distToCenter = (z: Zone) => {
   return Math.hypot(cx - bboxCx, cy - bboxCy)
 }
 const centermost = new Set(
-  [...ZONES]
-    .sort((a, b) => distToCenter(a) - distToCenter(b))
+  ZONES.toSorted((a, b) => distToCenter(a) - distToCenter(b))
     .slice(0, 3)
     .map((z) => z.id),
 )

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { IsochroneStats } from '@/map/layers/isochrones'
 import type { RealtimeFeed } from '@/map/layers/realtime'
-import type { PointCloudHandle } from '@/map/layers/pointCloud'
+import type { PointCloudHandle } from '@/map/layers/pointCloud.shared'
 
 export type MeasurePoint = { lng: number; lat: number }
 export type POIStatus = 'todo' | 'in_progress' | 'done'

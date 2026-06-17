@@ -4,8 +4,7 @@ import { useTourStore } from '@/store/tour-store'
 import { useMapMaybe } from '@/map/MapContext'
 import { STEPS } from './steps'
 import { addBuildings3D } from '@/map/layers/buildings3d'
-import { prefetchPointCloud } from '@/map/layers/pointCloud'
-import { prefetchAirplaneModel } from '@/map/layers/airplane3d'
+import { prefetchAirplaneModel } from '@/map/layers/airplane3d.shared'
 import { preloadImages } from '@/map/preloadImages'
 import { Play, Boxes, Ruler, Flame, MapPin, MonitorPlay } from 'lucide-react'
 import dvcWordmark from '@/assets/dvc-wordmark.svg?inline'
@@ -27,17 +26,30 @@ export function StartScreen() {
   useEffect(() => {
     if (!map || addedRef.current) return
     addedRef.current = true
-    // Préchargement EN TÂCHE DE FOND dès le splash, NON bloquant : on lance le
-    // téléchargement du nuage LiDAR (~32 Mo gzippés), du glb avion et des images d'interface
-    // pour que les steps correspondants arrivent sans latence, mais les boutons
-    // « Démarrer » restent actifs immédiatement (aucun gate sur la fin du préchargement).
-    // Les tuiles sont réchauffées en fond par TourController au démarrage.
-    prefetchPointCloud()
-    prefetchAirplaneModel()
-    preloadImages()
+    // Préchargements lourds (nuage LiDAR ~32 Mo, glb avion ~0,77 Mo, images d'interface)
+    // DIFFÉRÉS après le 1er paint via requestIdleCallback : ils cèdent la priorité au
+    // rendu/LCP du splash au lieu de concurrencer la fenêtre critique. NON bloquants — les
+    // boutons « Démarrer » restent actifs immédiatement (aucun gate sur la fin du
+    // préchargement). Les tuiles sont réchauffées en fond par TourController au démarrage.
+    // prefetchPointCloud est dans le module lourd (three.js) : on le charge via import()
+    // ici, à cet instant d'inactivité, donc hors du bundle d'entrée.
+    const warm = () => {
+      prefetchAirplaneModel()
+      void import('@/map/layers/pointCloud').then((m) => m.prefetchPointCloud())
+      preloadImages()
+    }
+    const hasRic = 'requestIdleCallback' in window
+    const handle = hasRic
+      ? window.requestIdleCallback(warm, { timeout: 2000 })
+      : setTimeout(warm, 300)
     // Drop the 3D buildings in so the idle cinematic rotation has something to chew on.
     if (map.isStyleLoaded()) addBuildings3D(map)
     else map.once('idle', () => addBuildings3D(map))
+    // Annule le préchargement planifié si le splash est démonté avant qu'il ne se déclenche.
+    return () => {
+      if (hasRic) window.cancelIdleCallback(handle as number)
+      else clearTimeout(handle as ReturnType<typeof setTimeout>)
+    }
   }, [map])
 
   return (

@@ -1,7 +1,7 @@
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { useMap } from './MapContext'
-import { MODE, pointCloudView, SCAN_MAX, SCAN_MIN } from './layers/pointCloud'
+import { MODE, pointCloudView, SCAN_MAX, SCAN_MIN } from './layers/pointCloud.shared'
 import { usePointCloudChoreography } from '@/hooks/animations/usePointCloudChoreography'
 import { useMapDataStore } from '@/store/map-data-store'
 

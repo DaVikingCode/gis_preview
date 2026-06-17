@@ -1,7 +1,6 @@
-import { useRef, useState } from 'react'
+import { lazy, Suspense, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Line, LineChart, ResponsiveContainer } from 'recharts'
-import { TrendingDown, TrendingUp, Map as MapIcon, Table2 } from 'lucide-react'
+import { Map as MapIcon, Table2 } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -16,7 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { SmoothCursor } from '@/components/ui/smooth-cursor'
 import { SAMPLE_TABLE, type DataRow, type RowStatus } from '@/data/sample-table'
 import { CATEGORY_COLORS, setVectorHover } from '@/map/layers/vectorStyled'
-import type { VectorCategory } from '@/data/sample-vectors'
+import { ZonePreview } from './ZonePreview'
 import { useMapMaybe } from '@/map/MapContext'
 import { useTourStore } from '@/store/tour-store'
 import { STEPS } from '@/tour/steps'
@@ -60,84 +59,10 @@ function Avatar({ initials, hue }: { initials: string; hue: number }) {
 
 // Tiny thumbnail of the zone's real polygon — same color as its map fill.
 // Exported so the import-simulation preview can reuse the exact same thumbnail.
-export function ZonePreview({
-  ring,
-  category,
-}: {
-  ring: [number, number][]
-  category: VectorCategory
-}) {
-  const color = CATEGORY_COLORS[category]
-  const xs = ring.map((p) => p[0])
-  const ys = ring.map((p) => p[1])
-  const minX = Math.min(...xs)
-  const minY = Math.min(...ys)
-  const spanX = Math.max(...xs) - minX || 1
-  const spanY = Math.max(...ys) - minY || 1
-  const span = Math.max(spanX, spanY)
-  const SIZE = 36
-  const PAD = 4
-  const inner = SIZE - PAD * 2
-  const points = ring
-    .map(([lng, lat]) => {
-      const x = PAD + ((lng - minX + (span - spanX) / 2) / span) * inner
-      const y = PAD + (1 - (lat - minY + (span - spanY) / 2) / span) * inner
-      return `${x.toFixed(1)},${y.toFixed(1)}`
-    })
-    .join(' ')
-  return (
-    <svg
-      width={SIZE}
-      height={SIZE}
-      viewBox={`0 0 ${SIZE} ${SIZE}`}
-      className="rounded-md border border-border/60 bg-background/40"
-      aria-hidden
-    >
-      <polygon
-        points={points}
-        fill={color}
-        fillOpacity={0.35}
-        stroke={color}
-        strokeWidth={1.25}
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-function Sparkline({ trend }: { trend: number[] }) {
-  const delta = trend[trend.length - 1] - trend[0]
-  const up = delta >= 0
-  const color = up ? '#22c55e' : '#ef4444'
-  const data = trend.map((value, i) => ({ i, value }))
-  const pct = trend[0] === 0 ? 0 : Math.round((delta / trend[0]) * 100)
-  return (
-    <div className="flex items-center gap-2">
-      <div className="h-9 w-24">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 4, bottom: 4, left: 2, right: 2 }}>
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke={color}
-              strokeWidth={1.75}
-              dot={false}
-              isAnimationActive={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-      <span
-        className="inline-flex items-center gap-0.5 text-xs font-medium tabular-nums"
-        style={{ color }}
-      >
-        {up ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
-        {up ? '+' : ''}
-        {pct}%
-      </span>
-    </div>
-  )
-}
+// Sparkline (Recharts) chargée à la demande → Recharts reste hors du bundle d'entrée
+// alors que DataTablePanel est en eager (cf. ChartsPanel). Non sensible au timing du
+// curseur : un fallback bref de même gabarit suffit (pas de décalage de mise en page).
+const Sparkline = lazy(() => import('./Sparkline').then((m) => ({ default: m.Sparkline })))
 
 function Row({
   row,
@@ -207,7 +132,9 @@ function Row({
         </div>
       </TableCell>
       <TableCell>
-        <Sparkline trend={row.trend} />
+        <Suspense fallback={<div className="h-9 w-24" />}>
+          <Sparkline trend={row.trend} />
+        </Suspense>
       </TableCell>
       <TableCell>
         <ZonePreview ring={row.ring} category={row.category} />

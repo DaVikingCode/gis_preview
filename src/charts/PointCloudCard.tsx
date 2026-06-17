@@ -1,6 +1,6 @@
 import { RotateCcw } from 'lucide-react'
 import { useMapDataStore, type PointCloudColorMode } from '@/store/map-data-store'
-import { classInfo } from '@/map/layers/pointCloud'
+import { classInfo } from '@/map/layers/pointCloud.shared'
 
 // Panneau « Nuage de points · LiDAR » (Auxonne) : stats du scan + sélecteur de
 // colorisation (Altitude / RGB / Classification) qui déclenche le balayage de scan, et

@@ -8,7 +8,7 @@ import {
   pointCloudView,
   SCAN_MAX,
   SCAN_MIN,
-} from '@/map/layers/pointCloud'
+} from '@/map/layers/pointCloud.shared'
 import { useMapDataStore, type PointCloudColorMode } from '@/store/map-data-store'
 import { useTourStore } from '@/store/tour-store'
 
