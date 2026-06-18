@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Moon, Sun } from 'lucide-react'
 import { flushSync } from 'react-dom'
 
@@ -140,7 +140,7 @@ export const AnimatedThemeToggler = ({
     return () => observer.disconnect()
   }, [])
 
-  const toggleTheme = useCallback(() => {
+  const toggleTheme = () => {
     const button = buttonRef.current
     if (!button) return
 
@@ -219,7 +219,7 @@ export const AnimatedThemeToggler = ({
         )
       })
     }
-  }, [shape, fromCenter, duration, isDark])
+  }
 
   return (
     <button

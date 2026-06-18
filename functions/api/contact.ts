@@ -19,7 +19,7 @@ type EventContext = {
 }
 
 const DEFAULT_MAILER_URL = 'https://daviking-mailer.blue-tree-8b17.workers.dev'
-const RECIPIENT = 'pocheron.louis@gmail.com'
+const RECIPIENT = 'hello@davikingcode.com'
 
 const MAX = { name: 120, email: 200, message: 5000 } as const
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

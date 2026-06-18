@@ -524,30 +524,57 @@ body,
   border-color: var(--border);
 }
 
-/* Injected stepper rail (see TourController onPopoverRender) */
-.driver-popover.gp-tour .gp-tour-stepper {
+/* Stepper du tour : îlot React monté dans le popover (cf. TourStepper.tsx).
+   Les dots sont des <button> (zone tactile) ; la barre visuelle interne porte
+   l'état + la micro-interaction GSAP (transform piloté par GSAP, pas en CSS). */
+.driver-popover.gp-tour .gp-stepper-mount {
+  display: contents;
+}
+.driver-popover.gp-tour .gp-stepper {
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 0 18px 14px;
 }
-.driver-popover.gp-tour .gp-tour-stepper-dot {
-  flex: 1;
+.driver-popover.gp-tour .gp-stepper-dot {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.driver-popover.gp-tour .gp-stepper-dot[data-disabled] {
+  cursor: default;
+}
+.driver-popover.gp-tour .gp-stepper-dot:focus-visible {
+  outline: none;
+}
+.driver-popover.gp-tour .gp-stepper-bar {
+  display: block;
+  width: 100%;
   height: 3px;
   border-radius: 999px;
+  transform-origin: center;
   background: color-mix(in oklab, var(--muted-foreground) 22%, transparent);
   transition:
     background-color 350ms ease,
-    transform 350ms ease;
-  transform-origin: center;
+    height 250ms ease,
+    box-shadow 250ms ease;
 }
-.driver-popover.gp-tour .gp-tour-stepper-dot[data-state='completed'] {
+.driver-popover.gp-tour .gp-stepper-dot[data-state='completed'] .gp-stepper-bar {
   background: color-mix(in oklab, var(--foreground) 60%, transparent);
 }
-.driver-popover.gp-tour .gp-tour-stepper-dot[data-state='active'] {
+.driver-popover.gp-tour .gp-stepper-dot[data-state='active'] .gp-stepper-bar {
   background: var(--primary);
-  transform: scaleY(1.6);
+  height: 5px;
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 18%, transparent);
+}
+.driver-popover.gp-tour .gp-stepper-dot:focus-visible .gp-stepper-bar {
+  box-shadow: 0 0 0 2px var(--primary);
 }
 
 /* Import step: pin the popover to the bottom-center so it clears the centered

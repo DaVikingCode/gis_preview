@@ -14,8 +14,13 @@ import {
 // addAirplane3D / addPointCloud / prewarmPointCloud / bringPointCloudToFront — sont
 // chargées via `import()` dynamique dans les onEnter concernés : three.js sort ainsi du
 // bundle d'entrée et n'arrive qu'à la première étape 3D du tour.
-import { prewarmGlobe, type AirplaneHandle } from '@/map/layers/airplane3d.shared'
-import { POINTCLOUD_ANCHOR, type PointCloudHandle } from '@/map/layers/pointCloud.shared'
+import { prewarmGlobe, resetGlobe, type AirplaneHandle } from '@/map/layers/airplane3d.shared'
+import {
+  POINTCLOUD_ANCHOR,
+  setLidarSky,
+  clearLidarSky,
+  type PointCloudHandle,
+} from '@/map/layers/pointCloud.shared'
 import { addSatelliteHd, removeSatelliteHd } from '@/map/layers/satelliteHd'
 import { STATIC_LADEFENSE_HEIGHTS } from '@/data/sample-buildings'
 import { addVectorStyled, removeVectorStyled } from '@/map/layers/vectorStyled'
@@ -26,6 +31,7 @@ import { addHeatmap, removeHeatmap } from '@/map/layers/heatmap'
 import { addCadastre, removeCadastre } from '@/map/layers/cadastre'
 import { addRealtimeSupervision, type RealtimeHandle } from '@/map/layers/realtime'
 import {
+  showSurchargeToast,
   showRecoveryToast,
   dismissSurchargeToast,
   dismissRecoveryToast,
@@ -42,7 +48,6 @@ export type ChartKind =
   | 'kanban'
   | 'measure'
   | 'heatmap'
-  | 'highlight'
   | 'layers-presentation'
   | 'layers-applied'
   | 'isochrone'
@@ -61,6 +66,9 @@ export type AppliedLayerId = 'cadastre' | 'buildings3d'
 
 export type StepContext = {
   setBasemap: (id: BasemapId) => void
+  // Entrée par saut (clic stepper) : onEnter doit reconstruire l'état de fin du step
+  // instantanément (snapshot) sans chorégraphie. Faux/absent = navigation séquentielle.
+  jumped?: boolean
 }
 
 export type TourStep = {
@@ -341,6 +349,12 @@ export const STEPS: TourStep[] = [
     // TOUT le mouvement (survol + scans de colorisation), puis réactive l'orbite calme
     // (setCinematic(true)) une fois posée.
     cinematic: false,
+    // Ciel diurne posé AVANT le flyTo (hiking→lidar restent en basemap satellite → pas de
+    // setStyle qui l'effacerait) : son shader compile pendant le vol, pas de freeze quand la
+    // chorégraphie démarre. Symétrique de prewarmGlobe au step survol.
+    onBeforePan(map) {
+      setLidarSky(map)
+    },
     onEnter(map) {
       // La timeline GSAP vit dans usePointCloudChoreography (monté par
       // PointCloudDirector) ; ici on ne fait que poser la couche dans le store et
@@ -381,6 +395,7 @@ export const STEPS: TourStep[] = [
     onLeave(map) {
       pointCloudCancel?.()
       pointCloudCancel = null
+      clearLidarSky(map)
       removeSatelliteHd(map)
       const ds = useMapDataStore.getState()
       // STOP SYNCHRONE de l'orbite caméra : en fin de chorégraphie, makeOrbit() relance
@@ -448,11 +463,16 @@ export const STEPS: TourStep[] = [
         airplaneHandle = m.addAirplane3D(map)
       })
     },
-    onLeave() {
+    onLeave(map) {
+      // Le globe est posé par onBeforePan (prewarmGlobe), AVANT l'import de l'avion.
+      // Si on quitte avant que l'import ne soit adopté, le detach (qui rend la main à
+      // mercator) ne tourne pas → on annule le globe nous-mêmes, sinon il reste bloqué.
+      const adopted = airplaneHandle != null
       airplaneCancel?.()
       airplaneCancel = null
       airplaneHandle?.detach()
       airplaneHandle = null
+      if (!adopted) resetGlobe(map)
     },
   },
   {
@@ -611,11 +631,14 @@ export const STEPS: TourStep[] = [
     chart: 'realtime',
     pan: { duration: 4200 },
     enterOnSettle: true,
-    onEnter(map) {
+    onEnter(map, { jumped }) {
       const rt = ensureRealtime(map)
-      // (Re)part d'un réseau nominal : poste incident vert, fiche fermée.
-      rt.resetIncident()
+      // (Re)part d'un réseau nominal : poste incident vert, fiche fermée. Normalise
+      // les toasts (un saut depuis un autre step HTA pourrait en laisser un ouvert).
+      rt.resetIncident({ instant: jumped })
       rt.closePopup()
+      dismissSurchargeToast()
+      dismissRecoveryToast()
       useMapDataStore.getState().resetPOIStatus()
       useTourStore.getState().setIncidentClicked(false)
     },
@@ -635,8 +658,24 @@ export const STEPS: TourStep[] = [
     // GATE : « Suivant » reste verrouillé (incidentClicked) jusqu'à ce que le
     // curseur ait cliqué le poste et ouvert sa fiche (cf. TourController +
     // RtScriptedCursor). Pas de skip anticipé pendant le climax.
-    onEnter(map) {
-      ensureRealtime(map).triggerSurcharge(HTA_INCIDENT_ID)
+    onEnter(map, { jumped }) {
+      const rt = ensureRealtime(map)
+      if (!jumped) {
+        // Séquentiel : surcharge animée ; le curseur scripté joue toast + vol + clic
+        // et lève la gate (cf. useRtScriptedCursor).
+        rt.triggerSurcharge(HTA_INCIDENT_ID)
+        return
+      }
+      // Saut : snapshot du moment de départ — overview + poste rouge instantané +
+      // toast (sans vol), fiche fermée, gate levée. La fiche s'ouvre au step suivant.
+      rt.triggerSurcharge(HTA_INCIDENT_ID, { instant: true })
+      showSurchargeToast(() => {
+        // « Localiser » après un saut : ouvre la fiche sur place (openPost ne vole pas).
+        dismissSurchargeToast()
+        rt.openPost(HTA_INCIDENT_ID)
+        useMapDataStore.getState().setPOIStatus(String(HTA_INCIDENT_ID), 'todo')
+      })
+      useTourStore.getState().setIncidentClicked(true)
     },
     onLeave: htaLeave,
   },
@@ -651,10 +690,12 @@ export const STEPS: TourStep[] = [
     // sur le poste (z15.2), transition instantanée, fiche déjà ouverte.
     camera: { center: [2.04, 47.428], zoom: 15.2, pitch: 0, bearing: 0 },
     chart: 'realtime',
-    onEnter(map) {
+    onEnter(map, { jumped }) {
       const rt = ensureRealtime(map)
+      // Le toast surcharge appartient au step précédent : on le referme (utile sur saut).
+      dismissSurchargeToast()
       // Garantit l'état rouge + fiche ouverte (re-jeu après retour arrière / saut).
-      rt.triggerSurcharge(HTA_INCIDENT_ID)
+      rt.triggerSurcharge(HTA_INCIDENT_ID, { instant: jumped })
       if (!rt.popupOpen()) rt.openPost(HTA_INCIDENT_ID)
       useMapDataStore.getState().setPOIStatus(String(HTA_INCIDENT_ID), 'todo')
     },
@@ -669,9 +710,10 @@ export const STEPS: TourStep[] = [
     basemap: 'positron',
     camera: { center: [2.04, 47.428], zoom: 15.2, pitch: 0, bearing: 0 },
     chart: 'realtime',
-    onEnter(map) {
+    onEnter(map, { jumped }) {
       const rt = ensureRealtime(map)
-      rt.triggerSurcharge(HTA_INCIDENT_ID)
+      dismissSurchargeToast()
+      rt.triggerSurcharge(HTA_INCIDENT_ID, { instant: jumped })
       if (!rt.popupOpen()) rt.openPost(HTA_INCIDENT_ID)
       useMapDataStore.getState().setPOIStatus(String(HTA_INCIDENT_ID), 'in_progress')
     },
@@ -686,8 +728,12 @@ export const STEPS: TourStep[] = [
     basemap: 'positron',
     camera: { center: [2.04, 47.428], zoom: 15.2, pitch: 0, bearing: 0 },
     chart: 'realtime',
-    onEnter(map) {
+    onEnter(map, { jumped }) {
       const rt = ensureRealtime(map)
+      dismissSurchargeToast()
+      // Pose l'état surchargé AVANT de résoudre, pour que le rétablissement rouge→vert
+      // (onde « résolu ») se joue même sur saut direct (sinon le poste reste vert).
+      rt.triggerSurcharge(HTA_INCIDENT_ID, { instant: jumped })
       if (!rt.popupOpen()) rt.openPost(HTA_INCIDENT_ID)
       useMapDataStore.getState().setPOIStatus(String(HTA_INCIDENT_ID), 'done')
       // Réseau rétabli : toast de succès symétrique (auto-fermeture).
@@ -705,8 +751,16 @@ export const STEPS: TourStep[] = [
     camera: { center: [1.82, 47.45], zoom: 10.2, pitch: 0, bearing: 0 },
     chart: 'realtime',
     pan: { duration: 3600 },
-    onEnter(map) {
-      ensureRealtime(map).closePopup()
+    onEnter(map, { jumped }) {
+      const rt = ensureRealtime(map)
+      rt.closePopup()
+      dismissSurchargeToast()
+      if (jumped) {
+        // Saut direct : pas d'incident joué en amont → on pose l'état « tout vert »
+        // (réseau rétabli) instantanément, fiche fermée.
+        rt.resetIncident({ instant: true })
+        useMapDataStore.getState().resetPOIStatus()
+      }
     },
     onLeave: htaLeave,
   },

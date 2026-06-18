@@ -103,6 +103,16 @@ export function prewarmGlobe(map: MLMap): void {
   map.setSky(SPACE_SKY as unknown as Parameters<MLMap['setSky']>[0])
 }
 
+// Annule prewarmGlobe (projection + ciel + fond espace). En vol normal,
+// removeAirplane3D fait déjà ce retour ; ce reset sert quand prewarmGlobe a posé le
+// globe (onBeforePan) mais que addAirplane3D n'a jamais été adopté — sortie du step
+// avant la résolution de l'import dynamique → sinon la carte reste bloquée en globe.
+export function resetGlobe(map: MLMap): void {
+  if (map.getProjection()?.type === 'globe') map.setProjection({ type: 'mercator' })
+  setSpaceBackground(map, false)
+  ;(map.setSky as (sky?: unknown) => void)()
+}
+
 // --- Réglages d'orientation / échelle (édités live par AirplaneDebugPanel) ----
 // Mutable : lu par render() à chaque frame. Unités « friendly » (degrés, km) pour
 // l'éditeur. Valeurs exagérées car, vu de l'orbite, un avion réaliste serait sous-

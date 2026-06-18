@@ -1,6 +1,6 @@
 import type { FeatureCollection, Polygon } from 'geojson'
 
-export const CATEGORIES = ['agricole', 'urbain', 'industriel', 'forêt'] as const
+const CATEGORIES = ['agricole', 'urbain', 'industriel', 'forêt'] as const
 export type VectorCategory = (typeof CATEGORIES)[number]
 
 export type Zone = {

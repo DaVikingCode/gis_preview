@@ -783,6 +783,319 @@ function SrcLineRow({ line, n }: { line: SrcLine; n: number }) {
   )
 }
 
+function FileUploadCard() {
+  return (
+    <Card data-up-card className="p-4 border-fuchsia-500/40 bg-fuchsia-500/5">
+      <div className="flex items-start gap-3">
+        <div className="size-11 shrink-0 rounded-lg bg-fuchsia-500/15 flex items-center justify-center">
+          <FileJson className="size-5 text-fuchsia-500" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sm truncate">zones_dijon.geojson</span>
+            <Badge
+              variant="outline"
+              className="text-[10px] shrink-0 border-fuchsia-500/40 text-fuchsia-500"
+            >
+              GeoJSON
+            </Badge>
+          </div>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              FeatureCollection
+            </span>
+            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
+              {IMPORT_FEATURES} polygones
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs font-medium text-fuchsia-500 shrink-0">
+          <Loader2 data-up-spinner className="size-3.5 animate-spin" />
+          <span data-up-status>En attente</span>
+        </div>
+      </div>
+
+      <div className="mt-3">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            data-up-bar
+            className="relative h-full w-full origin-left rounded-full bg-fuchsia-500"
+          >
+            <div
+              data-up-shimmer
+              className="absolute inset-y-0 -inset-x-1/3 w-1/3 bg-gradient-to-r from-transparent via-white/55 to-transparent"
+            />
+          </div>
+        </div>
+        <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground tabular-nums">
+          <span data-up-size>0 / 38 Ko</span>
+          <span data-up-pct className="font-medium text-foreground">
+            0%
+          </span>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+function ImportPipelineStages() {
+  return (
+    <div data-import-panel className="rounded-xl border bg-card/40 p-4">
+      <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 font-medium mb-3">
+        Pipeline d’import
+      </div>
+      <div>
+        {STAGES.map((s, i) => (
+          <div key={s.key} data-stage={s.key} className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <div
+                data-node={s.key}
+                className="relative flex size-7 shrink-0 items-center justify-center rounded-full border bg-background"
+              >
+                <Loader2
+                  data-spin={s.key}
+                  className="absolute size-3.5 animate-spin text-fuchsia-500"
+                />
+                <Check data-check={s.key} className="absolute size-3.5 text-emerald-500" />
+              </div>
+              {i < STAGES.length - 1 && (
+                <div className="relative my-1 w-px flex-1 bg-border">
+                  <div data-line={s.key} className="absolute inset-0 bg-emerald-500" />
+                </div>
+              )}
+            </div>
+            <div className="pb-4">
+              <div className="text-sm font-medium leading-tight">{s.label}</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">{s.sub}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// raw uploaded file — streamed in line by line during upload, so the
+// demo shows the source GeoJSON being read into the GIS render
+function SourceViewer() {
+  return (
+    <div data-import-panel className="overflow-hidden rounded-xl border bg-card/40">
+      <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
+        <Braces className="size-3.5 shrink-0 text-fuchsia-500" />
+        <span className="text-xs font-medium">zones_dijon.geojson</span>
+        <Badge
+          variant="outline"
+          className="text-[10px] shrink-0 border-fuchsia-500/40 text-fuchsia-500"
+        >
+          GeoJSON
+        </Badge>
+        <span
+          data-src-count
+          className="ml-auto shrink-0 text-[10px] tabular-nums text-muted-foreground"
+        >
+          0 entités
+        </span>
+      </div>
+      <div
+        data-src-body
+        className="relative h-[220px] overflow-hidden bg-[#0b0b14] px-3 py-2.5 font-mono text-[11px] leading-relaxed sm:h-[360px]"
+      >
+        {IMPORT_SOURCE_LINES.map((line, i) => (
+          <SrcLineRow key={i} line={line} n={i + 1} />
+        ))}
+        <div className="flex gap-3">
+          <span className="w-5 shrink-0" />
+          <span
+            data-src-caret
+            className="mt-0.5 inline-block h-3.5 w-1.5 rounded-[1px] bg-fuchsia-400"
+          />
+        </div>
+      </div>
+      <div
+        data-src-done
+        className="flex items-center gap-1.5 border-t border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5 text-[10px] font-medium text-emerald-400"
+      >
+        <Check className="size-3 shrink-0" />
+        {IMPORT_FEATURES} features · 6 attributs · EPSG:2154 → EPSG:4326
+      </div>
+    </div>
+  )
+}
+
+function MapPreviewPanel() {
+  return (
+    <div
+      data-import-panel
+      className="relative aspect-[16/9] overflow-hidden rounded-xl border bg-[#0b0b14]"
+    >
+      <div
+        className="absolute inset-0"
+        style={{ backgroundImage: DOT_GRID, backgroundSize: '16px 16px' }}
+      />
+      <svg
+        viewBox="0 0 420 250"
+        className="absolute inset-0 size-full"
+        preserveAspectRatio="xMidYMid meet"
+        aria-hidden="true"
+      >
+        {IMPORT_ZONES.map((z) => (
+          <path
+            key={z.id}
+            d={z.d}
+            data-zone=""
+            pathLength={1}
+            fill={z.color}
+            stroke={z.color}
+            strokeWidth={1.4}
+            strokeLinejoin="round"
+          />
+        ))}
+      </svg>
+      <div className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
+        <span className="rounded-md bg-black/55 px-2 py-0.5 text-[10px] font-medium text-white/90 ring-1 ring-inset ring-white/10 backdrop-blur">
+          Polygones
+        </span>
+        <span className="rounded-md bg-black/55 px-2 py-0.5 text-[10px] font-medium text-white/90 ring-1 ring-inset ring-white/10 backdrop-blur">
+          WGS 84
+        </span>
+        <span
+          data-feat
+          className="rounded-md bg-fuchsia-500/25 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-fuchsia-100 ring-1 ring-inset ring-fuchsia-400/30 backdrop-blur"
+        >
+          0 entités
+        </span>
+      </div>
+      <div className="absolute bottom-2.5 left-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-black/45 px-2 py-1 ring-1 ring-inset ring-white/10 backdrop-blur">
+        {CATEGORY_LEGEND.map((l) => (
+          <span
+            key={l.c}
+            className="inline-flex items-center gap-1.5 text-[10px] font-medium text-white/85"
+          >
+            <span className="size-2 rounded-[3px]" style={{ background: l.color }} />
+            {l.label}
+            <span className="tabular-nums text-white/50">{l.n}</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ImportDataTable() {
+  return (
+    <div data-import-panel className="overflow-hidden rounded-xl border">
+      <div className="grid grid-cols-[36px_1.5fr_1.6fr_auto_6rem] items-center gap-3 bg-muted/50 px-3 py-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        <span>Aperçu</span>
+        <span>Zone</span>
+        <span>Responsable</span>
+        <span>Statut</span>
+        <span>Couverture</span>
+      </div>
+      <div className="divide-y divide-border/60">
+        {IMPORT_ZONES.map((z) => {
+          const st = ZONE_STATUS[z.status]
+          return (
+            <div
+              key={z.id}
+              data-row
+              className="grid grid-cols-[36px_1.5fr_1.6fr_auto_6rem] items-center gap-3 px-3 py-1.5"
+            >
+              <ZonePreview ring={z.ring} category={z.category} />
+              <div className="min-w-0">
+                <div className="truncate text-xs font-medium">{z.name}</div>
+                <div className="truncate text-[10px] tabular-nums text-muted-foreground">
+                  {z.id} · {z.code}
+                </div>
+              </div>
+              <div className="flex min-w-0 items-center gap-2">
+                <span
+                  className="flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white ring-1 ring-inset ring-white/15"
+                  style={{
+                    background: `linear-gradient(135deg, hsl(${z.user.hue} 70% 55%), hsl(${(z.user.hue + 40) % 360} 65% 42%))`,
+                  }}
+                >
+                  {z.user.initials}
+                </span>
+                <div className="min-w-0">
+                  <div className="truncate text-xs font-medium">{z.user.name}</div>
+                  <div className="truncate text-[10px] text-muted-foreground">{z.user.role}</div>
+                </div>
+              </div>
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium ${st.cls}`}
+              >
+                <span className="size-1.5 rounded-full" style={{ background: st.dot }} />
+                {st.label}
+              </span>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">Couv.</span>
+                  <span className="font-semibold tabular-nums">{z.coverage}%</span>
+                </div>
+                <Progress value={z.coverage} className="h-1" />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function SuccessBanner() {
+  return (
+    <div
+      data-success
+      className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2"
+    >
+      <Check className="size-4 shrink-0 text-emerald-500" />
+      <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+        Couche importée — {IMPORT_FEATURES} zones reprojetées et prêtes pour la vue tabulaire.
+      </span>
+    </div>
+  )
+}
+
+function SupportedFormats() {
+  return (
+    <div
+      data-import-panel
+      className="mt-5 grid grid-cols-1 gap-4 border-t pt-4 lg:grid-cols-[1fr_auto] lg:items-center"
+    >
+      <div>
+        <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 font-medium mb-2">
+          Formats supportés
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {FORMATS.map((f) => (
+            <div
+              key={f.label}
+              className="flex items-center gap-1.5 rounded-md border border-border bg-card/50 px-2.5 py-1"
+            >
+              <f.icon className="size-3.5 text-fuchsia-500" />
+              <span className="text-xs font-medium">{f.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Badge variant="outline" className="text-[10px]">
+          Reprojection auto
+        </Badge>
+        <Badge variant="outline" className="text-[10px]">
+          Jointure attributaire
+        </Badge>
+        <Badge variant="outline" className="text-[10px]">
+          Style par catégorie
+        </Badge>
+        <Badge variant="outline" className="text-[10px]">
+          Partage équipe
+        </Badge>
+      </div>
+    </div>
+  )
+}
+
 function ImportPane() {
   const paneRef = useRef<HTMLDivElement>(null)
   const setImportDone = useTourStore((s) => s.setImportDone)
@@ -800,297 +1113,17 @@ function ImportPane() {
       <div ref={paneRef} className="px-6 pb-6 pt-2">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,400px)_1fr] gap-5">
           <div className="space-y-4">
-            <Card data-up-card className="p-4 border-fuchsia-500/40 bg-fuchsia-500/5">
-              <div className="flex items-start gap-3">
-                <div className="size-11 shrink-0 rounded-lg bg-fuchsia-500/15 flex items-center justify-center">
-                  <FileJson className="size-5 text-fuchsia-500" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm truncate">zones_dijon.geojson</span>
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] shrink-0 border-fuchsia-500/40 text-fuchsia-500"
-                    >
-                      GeoJSON
-                    </Badge>
-                  </div>
-                  <div className="mt-1 flex items-center gap-1.5">
-                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      FeatureCollection
-                    </span>
-                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
-                      {IMPORT_FEATURES} polygones
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs font-medium text-fuchsia-500 shrink-0">
-                  <Loader2 data-up-spinner className="size-3.5 animate-spin" />
-                  <span data-up-status>En attente</span>
-                </div>
-              </div>
-
-              <div className="mt-3">
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    data-up-bar
-                    className="relative h-full w-full origin-left rounded-full bg-fuchsia-500"
-                  >
-                    <div
-                      data-up-shimmer
-                      className="absolute inset-y-0 -inset-x-1/3 w-1/3 bg-gradient-to-r from-transparent via-white/55 to-transparent"
-                    />
-                  </div>
-                </div>
-                <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground tabular-nums">
-                  <span data-up-size>0 / 38 Ko</span>
-                  <span data-up-pct className="font-medium text-foreground">
-                    0%
-                  </span>
-                </div>
-              </div>
-            </Card>
-
-            <div data-import-panel className="rounded-xl border bg-card/40 p-4">
-              <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 font-medium mb-3">
-                Pipeline d’import
-              </div>
-              <div>
-                {STAGES.map((s, i) => (
-                  <div key={s.key} data-stage={s.key} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div
-                        data-node={s.key}
-                        className="relative flex size-7 shrink-0 items-center justify-center rounded-full border bg-background"
-                      >
-                        <Loader2
-                          data-spin={s.key}
-                          className="absolute size-3.5 animate-spin text-fuchsia-500"
-                        />
-                        <Check data-check={s.key} className="absolute size-3.5 text-emerald-500" />
-                      </div>
-                      {i < STAGES.length - 1 && (
-                        <div className="relative my-1 w-px flex-1 bg-border">
-                          <div data-line={s.key} className="absolute inset-0 bg-emerald-500" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="pb-4">
-                      <div className="text-sm font-medium leading-tight">{s.label}</div>
-                      <div className="mt-0.5 text-xs text-muted-foreground">{s.sub}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* raw uploaded file — streamed in line by line during upload, so the
-                demo shows the source GeoJSON being read into the GIS render */}
-            <div data-import-panel className="overflow-hidden rounded-xl border bg-card/40">
-              <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
-                <Braces className="size-3.5 shrink-0 text-fuchsia-500" />
-                <span className="text-xs font-medium">zones_dijon.geojson</span>
-                <Badge
-                  variant="outline"
-                  className="text-[10px] shrink-0 border-fuchsia-500/40 text-fuchsia-500"
-                >
-                  GeoJSON
-                </Badge>
-                <span
-                  data-src-count
-                  className="ml-auto shrink-0 text-[10px] tabular-nums text-muted-foreground"
-                >
-                  0 entités
-                </span>
-              </div>
-              <div
-                data-src-body
-                className="relative h-[220px] overflow-hidden bg-[#0b0b14] px-3 py-2.5 font-mono text-[11px] leading-relaxed sm:h-[360px]"
-              >
-                {IMPORT_SOURCE_LINES.map((line, i) => (
-                  <SrcLineRow key={i} line={line} n={i + 1} />
-                ))}
-                <div className="flex gap-3">
-                  <span className="w-5 shrink-0" />
-                  <span
-                    data-src-caret
-                    className="mt-0.5 inline-block h-3.5 w-1.5 rounded-[1px] bg-fuchsia-400"
-                  />
-                </div>
-              </div>
-              <div
-                data-src-done
-                className="flex items-center gap-1.5 border-t border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5 text-[10px] font-medium text-emerald-400"
-              >
-                <Check className="size-3 shrink-0" />
-                {IMPORT_FEATURES} features · 6 attributs · EPSG:2154 → EPSG:4326
-              </div>
-            </div>
+            <FileUploadCard />
+            <ImportPipelineStages />
+            <SourceViewer />
           </div>
-
           <div className="min-w-0 space-y-4">
-            <div
-              data-import-panel
-              className="relative aspect-[16/9] overflow-hidden rounded-xl border bg-[#0b0b14]"
-            >
-              <div
-                className="absolute inset-0"
-                style={{ backgroundImage: DOT_GRID, backgroundSize: '16px 16px' }}
-              />
-              <svg
-                viewBox="0 0 420 250"
-                className="absolute inset-0 size-full"
-                preserveAspectRatio="xMidYMid meet"
-                aria-hidden="true"
-              >
-                {IMPORT_ZONES.map((z) => (
-                  <path
-                    key={z.id}
-                    d={z.d}
-                    data-zone=""
-                    pathLength={1}
-                    fill={z.color}
-                    stroke={z.color}
-                    strokeWidth={1.4}
-                    strokeLinejoin="round"
-                  />
-                ))}
-              </svg>
-              <div className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
-                <span className="rounded-md bg-black/55 px-2 py-0.5 text-[10px] font-medium text-white/90 ring-1 ring-inset ring-white/10 backdrop-blur">
-                  Polygones
-                </span>
-                <span className="rounded-md bg-black/55 px-2 py-0.5 text-[10px] font-medium text-white/90 ring-1 ring-inset ring-white/10 backdrop-blur">
-                  WGS 84
-                </span>
-                <span
-                  data-feat
-                  className="rounded-md bg-fuchsia-500/25 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-fuchsia-100 ring-1 ring-inset ring-fuchsia-400/30 backdrop-blur"
-                >
-                  0 entités
-                </span>
-              </div>
-              <div className="absolute bottom-2.5 left-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-black/45 px-2 py-1 ring-1 ring-inset ring-white/10 backdrop-blur">
-                {CATEGORY_LEGEND.map((l) => (
-                  <span
-                    key={l.c}
-                    className="inline-flex items-center gap-1.5 text-[10px] font-medium text-white/85"
-                  >
-                    <span className="size-2 rounded-[3px]" style={{ background: l.color }} />
-                    {l.label}
-                    <span className="tabular-nums text-white/50">{l.n}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div data-import-panel className="overflow-hidden rounded-xl border">
-              <div className="grid grid-cols-[36px_1.5fr_1.6fr_auto_6rem] items-center gap-3 bg-muted/50 px-3 py-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                <span>Aperçu</span>
-                <span>Zone</span>
-                <span>Responsable</span>
-                <span>Statut</span>
-                <span>Couverture</span>
-              </div>
-              <div className="divide-y divide-border/60">
-                {IMPORT_ZONES.map((z) => {
-                  const st = ZONE_STATUS[z.status]
-                  return (
-                    <div
-                      key={z.id}
-                      data-row
-                      className="grid grid-cols-[36px_1.5fr_1.6fr_auto_6rem] items-center gap-3 px-3 py-1.5"
-                    >
-                      <ZonePreview ring={z.ring} category={z.category} />
-                      <div className="min-w-0">
-                        <div className="truncate text-xs font-medium">{z.name}</div>
-                        <div className="truncate text-[10px] tabular-nums text-muted-foreground">
-                          {z.id} · {z.code}
-                        </div>
-                      </div>
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span
-                          className="flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white ring-1 ring-inset ring-white/15"
-                          style={{
-                            background: `linear-gradient(135deg, hsl(${z.user.hue} 70% 55%), hsl(${(z.user.hue + 40) % 360} 65% 42%))`,
-                          }}
-                        >
-                          {z.user.initials}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="truncate text-xs font-medium">{z.user.name}</div>
-                          <div className="truncate text-[10px] text-muted-foreground">
-                            {z.user.role}
-                          </div>
-                        </div>
-                      </div>
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium ${st.cls}`}
-                      >
-                        <span className="size-1.5 rounded-full" style={{ background: st.dot }} />
-                        {st.label}
-                      </span>
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center justify-between text-[10px]">
-                          <span className="text-muted-foreground">Couv.</span>
-                          <span className="font-semibold tabular-nums">{z.coverage}%</span>
-                        </div>
-                        <Progress value={z.coverage} className="h-1" />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div
-              data-success
-              className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2"
-            >
-              <Check className="size-4 shrink-0 text-emerald-500" />
-              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                Couche importée — {IMPORT_FEATURES} zones reprojetées et prêtes pour la vue
-                tabulaire.
-              </span>
-            </div>
+            <MapPreviewPanel />
+            <ImportDataTable />
+            <SuccessBanner />
           </div>
         </div>
-
-        <div
-          data-import-panel
-          className="mt-5 grid grid-cols-1 gap-4 border-t pt-4 lg:grid-cols-[1fr_auto] lg:items-center"
-        >
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 font-medium mb-2">
-              Formats supportés
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {FORMATS.map((f) => (
-                <div
-                  key={f.label}
-                  className="flex items-center gap-1.5 rounded-md border border-border bg-card/50 px-2.5 py-1"
-                >
-                  <f.icon className="size-3.5 text-fuchsia-500" />
-                  <span className="text-xs font-medium">{f.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="text-[10px]">
-              Reprojection auto
-            </Badge>
-            <Badge variant="outline" className="text-[10px]">
-              Jointure attributaire
-            </Badge>
-            <Badge variant="outline" className="text-[10px]">
-              Style par catégorie
-            </Badge>
-            <Badge variant="outline" className="text-[10px]">
-              Partage équipe
-            </Badge>
-          </div>
-        </div>
+        <SupportedFormats />
       </div>
     </ScrollArea>
   )

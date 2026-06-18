@@ -39,8 +39,10 @@ export type RealtimeHandle = {
   getPostLngLat: (id: number) => [number, number] | null
   showTooltip: (id: number) => void
   hideTooltip: () => void
-  triggerSurcharge: (id: number) => void
-  resetIncident: () => void
+  // `instant` : pose l'état (rouge / vert) immédiatement, sans tween « pop » ni rampe —
+  // utilisé sur saut stepper (snapshot) ; sans `instant`, joue la cinématique.
+  triggerSurcharge: (id: number, opts?: { instant?: boolean }) => void
+  resetIncident: (opts?: { instant?: boolean }) => void
   openPost: (id: number) => void
   popupOpen: () => boolean
   closePopup: () => void
@@ -82,11 +84,11 @@ const STATUS_WORD: Record<RealtimeStatus, string> = {
   crit: 'surcharge',
 }
 
-export function statusFor(load: number): RealtimeStatus {
+function statusFor(load: number): RealtimeStatus {
   return load >= RT_CRIT ? 'crit' : load >= RT_WARN ? 'warn' : 'ok'
 }
 
-export function colorFor(status: RealtimeStatus): string {
+function colorFor(status: RealtimeStatus): string {
   return status === 'crit' ? CRIT : status === 'warn' ? WARN : OK
 }
 
@@ -331,6 +333,15 @@ export function addRealtimeSupervision(
 
   const incidentPoste = () => (incidentId != null ? posteById.get(incidentId) : undefined)
 
+  // Force la charge du poste incident et recolore son pin tout de suite (sans
+  // attendre le prochain tick) — pour les snapshots instantanés (saut stepper).
+  const setIncidentLoadInstant = (load: number) => {
+    const st = states.find((s) => s.id === incidentId)
+    if (!st) return
+    st.load = load
+    incidentPoste()?.update(load, statusFor(load))
+  }
+
   const fireRecovery = () => {
     const p = incidentPoste()
     if (!p || reduced) return
@@ -439,12 +450,20 @@ export function addRealtimeSupervision(
     hideTooltip() {
       for (const p of postes) p.hideTip()
     },
-    triggerSurcharge(id) {
+    triggerSurcharge(id, opts) {
       if (incidentId == null || id !== incidentId) return
       if (surchargeActive) return // idempotent : pas de re-pop si déjà en surcharge
       surchargeActive = true
       const p = incidentPoste()
-      if (!p || reduced) return
+      if (!p) return
+      // Snapshot (saut) ou reduced-motion : rouge immédiat (charge forcée + halo posé),
+      // sans le « pop » d'alerte.
+      if (opts?.instant || reduced) {
+        setIncidentLoadInstant(SURGE_TARGET)
+        glowTween?.kill()
+        p.pin.style.filter = PIN_GLOW_FILTER
+        return
+      }
       // « Pop » d'alerte : le pin gonfle puis revient, + halo rouge persistant.
       gsap.fromTo(
         p.pin,
@@ -461,12 +480,19 @@ export function addRealtimeSupervision(
       glowTween?.kill()
       glowTween = gsap.to(p.pin, { filter: PIN_GLOW_FILTER, duration: 0.5, ease: 'power2.out' })
     },
-    resetIncident() {
+    resetIncident(opts) {
       surchargeActive = false
       lastIncidentDone = false
       const p = incidentPoste()
       if (!p) return
       glowTween?.kill()
+      // Snapshot (saut) : vert immédiat (charge ramenée à la base + halo retiré).
+      if (opts?.instant) {
+        const st = states.find((s) => s.id === incidentId)
+        if (st) setIncidentLoadInstant(st.cfg.base)
+        p.pin.style.filter = PIN_BASE_FILTER
+        return
+      }
       if (!reduced) gsap.to(p.pin, { filter: PIN_BASE_FILTER, duration: 0.4, ease: 'power2.out' })
       else p.pin.style.filter = PIN_BASE_FILTER
     },

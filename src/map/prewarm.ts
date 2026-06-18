@@ -1,6 +1,7 @@
 import type { Map as MLMap, StyleSpecification } from 'maplibre-gl'
 import { BASEMAPS, type BasemapId } from './basemaps'
 import { THEME_FLIP_STEP_ID, type TourStep } from '@/tour/steps'
+import { STEP_PREVIEW_URLS } from '@/tour/stepPreviews'
 
 // -----------------------------------------------------------------------------
 // Tile prewarming.
@@ -281,6 +282,23 @@ async function warmUrls(urls: string[], signal: AbortSignal): Promise<void> {
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, fresh.length) }, worker))
 }
 
+// Précharge les vignettes du stepper (webp locaux). Ce sont des balises <img> au
+// survol : on les charge ET décode à l'avance pour que la carte de survol
+// apparaisse sans réseau ni jank de décodage au premier hover. Léger (~25 webp
+// de ~560px) — on lance tout en parallèle, en s'arrêtant si le prewarm est annulé.
+function prewarmStepPreviews(signal: AbortSignal): void {
+  if (typeof Image === 'undefined') return
+  for (const url of STEP_PREVIEW_URLS) {
+    if (signal.aborted) return
+    const img = new Image()
+    img.decoding = 'async'
+    img.src = url
+    void img.decode?.().catch(() => {
+      /* décodage interrompu / format non décodable — sans gravité */
+    })
+  }
+}
+
 // Warm, in tour order, every tile each step's view will request (basemap +
 // overlays). Runs in the background; safe to call again — already-warmed URLs
 // are skipped. Cancels any prior run.
@@ -290,6 +308,9 @@ export function startPrewarm(map: MLMap, steps: TourStep[]): void {
   const ctrl = new AbortController()
   controller = ctrl
   const { signal } = ctrl
+
+  // Vignettes du stepper : préchargées d'emblée (indépendant des tuiles carto).
+  prewarmStepPreviews(signal)
 
   void (async () => {
     const container = map.getContainer()

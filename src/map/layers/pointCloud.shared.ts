@@ -1,3 +1,5 @@
+import type { Map as MLMap } from 'maplibre-gl'
+
 // -----------------------------------------------------------------------------
 // Partie LÉGÈRE du nuage de points LiDAR — AUCUN `import 'three'`.
 //
@@ -20,6 +22,31 @@ export type PointCloudHandle = {
 // Emplacement réel du scan : centre de l'emprise UTM31N → WGS84 (Auxonne, France).
 // Émis par le prebake (champ anchorLngLat) ; partagé avec le step (caméra centrée ici).
 export const POINTCLOUD_ANCHOR: [number, number] = [5.392126, 47.202674]
+
+// Ciel diurne du step LiDAR. Vue sol inclinée (pitch 64→77° pendant la chorégraphie)
+// → l'horizon occupe une large bande haute ; sans ciel, le vide par défaut paraît plat.
+// Fog volontairement léger (horizon-fog-blend bas) pour garder le nuage net jusqu'au bord
+// — c'est la donnée héros du step. Pas d'`atmosphere-blend` : le step est en mercator
+// (plat), pas en globe (cf. SPACE_SKY dans airplane3d.shared.ts, qui lui l'utilise).
+const LIDAR_SKY = {
+  'sky-color': '#3f74ad',
+  'horizon-color': '#b9d4ea',
+  'fog-color': '#cfe0ec',
+  'sky-horizon-blend': 0.4,
+  'horizon-fog-blend': 0.05,
+} as const
+
+// Posé en `onBeforePan` du step : le shader du ciel compile pendant le vol vers Auxonne
+// (~3,2 s) plutôt que de freezer à l'atterrissage, quand la chorégraphie GSAP démarre
+// (même logique que prewarmGlobe / prewarmHikingTerrain).
+export function setLidarSky(map: MLMap): void {
+  map.setSky(LIDAR_SKY as unknown as Parameters<MLMap['setSky']>[0])
+}
+
+// Retire le ciel (onLeave). `setSky()` sans argument réinitialise au défaut du style.
+export function clearLidarSky(map: MLMap): void {
+  ;(map.setSky as (sky?: unknown) => void)()
+}
 
 // Modes de colorisation (valeurs numériques lues par le shader).
 export const MODE = { altitude: 0, rgb: 1, classification: 2 } as const
@@ -71,7 +98,7 @@ export const pointCloudView = {
 // (proximité végétation/conducteur) aux couleurs de sky. `color` en 0–1 (RGB) ; `order`
 // = ordre d'affichage dans la légende. Palette PARTAGÉE avec le shader (pcClass) —
 // garder les deux synchronisées.
-export const CLASS_INFO: Record<
+const CLASS_INFO: Record<
   number,
   { label: string; color: [number, number, number]; order: number }
 > = {
@@ -86,7 +113,7 @@ export const CLASS_INFO: Record<
   28: { label: 'Urgence U3', color: [0.624, 1.0, 1.0], order: 8 }, // cyan
   29: { label: 'Urgence U4', color: [0.059, 0.529, 1.0], order: 9 }, // bleu
 }
-export const CLASS_OTHER = {
+const CLASS_OTHER = {
   label: 'Autre',
   color: [0.55, 0.55, 0.6] as [number, number, number],
   order: 10,

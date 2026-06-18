@@ -106,7 +106,6 @@ export const TRAIL_PROFILE: TrailPoint[] = RAW.map(([, , alt], i) => ({
 export const TRAIL_DISTANCE_KM = TRAIL_PROFILE[TRAIL_PROFILE.length - 1].dist
 export const TRAIL_SUMMIT_M = Math.max(...RAW.map(([, , a]) => a))
 export const TRAIL_MIN_M = Math.min(...RAW.map(([, , a]) => a))
-export const TRAIL_START_M = RAW[0][2]
 export const TRAIL_DPLUS_M = RAW.reduce(
   (sum, [, , a], i) => (i === 0 ? 0 : sum + Math.max(0, a - RAW[i - 1][2])),
   0,

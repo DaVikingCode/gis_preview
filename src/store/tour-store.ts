@@ -31,6 +31,9 @@ type State = {
   kanbanDone: boolean
   // Lecture automatique : la visite enchaîne les étapes seule, sans clic « Suivant ».
   autoPlay: boolean
+  // Mode d'entrée du step courant : `jump` (clic stepper → snapshot instantané, pas
+  // de chorégraphie) vs `sequential` (Suivant/Précédent → cinématique jouée).
+  navMode: 'sequential' | 'jump'
   jumpToStep: ((i: number) => void) | null
 }
 type Actions = {
@@ -52,6 +55,7 @@ type Actions = {
   setTableLinkDone: (v: boolean) => void
   setPointcloudFollowDone: (v: boolean) => void
   setKanbanDone: (v: boolean) => void
+  setNavMode: (v: 'sequential' | 'jump') => void
   setJumpToStep: (fn: ((i: number) => void) | null) => void
 }
 
@@ -73,6 +77,7 @@ export const useTourStore = create<State & Actions>((set) => ({
   pointcloudFollowDone: false,
   kanbanDone: false,
   autoPlay: false,
+  navMode: 'sequential',
   jumpToStep: null,
   start: () => set({ started: true, currentStep: 0 }),
   startAuto: () => set({ started: true, currentStep: 0, autoPlay: true }),
@@ -96,6 +101,7 @@ export const useTourStore = create<State & Actions>((set) => ({
       pointcloudFollowDone: false,
       kanbanDone: false,
       autoPlay: false,
+      navMode: 'sequential',
     }),
   setCinematic: (v) => set({ cinematicActive: v }),
   setImportDone: (v) => set({ importDone: v }),
@@ -110,5 +116,6 @@ export const useTourStore = create<State & Actions>((set) => ({
   setTableLinkDone: (v) => set({ tableLinkDone: v }),
   setPointcloudFollowDone: (v) => set({ pointcloudFollowDone: v }),
   setKanbanDone: (v) => set({ kanbanDone: v }),
+  setNavMode: (v) => set({ navMode: v }),
   setJumpToStep: (fn) => set({ jumpToStep: fn }),
 }))

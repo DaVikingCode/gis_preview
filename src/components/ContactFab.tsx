@@ -41,7 +41,7 @@ export function ContactFab() {
             <span className="pointer-events-none absolute inset-1 rounded-full ring-2 ring-primary/40 motion-safe:animate-ping" />
           </span>
           <span className="max-w-0 overflow-hidden pr-0 text-sm font-semibold whitespace-nowrap transition-[max-width,padding] duration-300 ease-out group-hover/fab:max-w-[200px] group-hover/fab:pr-5">
-            Démarrer un projet
+            Parlons de votre projet
           </span>
         </button>
       )}

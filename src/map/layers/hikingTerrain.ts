@@ -57,7 +57,7 @@ const SUMMIT_HOLD_SEC = 2 // beat d'arrivée au sommet (pulse + fiche finale)
 
 // Élévation (exagérée ×1.15) du centre du cadrage du step — constante tant que le centre du
 // step, l'exagération et la source DEM ne changent pas (mesurée via queryTerrainElevation).
-export const HIKE_CENTER_ELEVATION = 2546.4
+const HIKE_CENTER_ELEVATION = 2546.4
 
 export type FlightCamera = {
   center: [number, number]

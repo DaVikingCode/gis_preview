@@ -20,9 +20,6 @@ const BuildingsHeightChart = lazy(() =>
 const MeasureChart = lazy(() => import('./MeasureChart').then((m) => ({ default: m.MeasureChart })))
 const HeatmapChart = lazy(() => import('./HeatmapChart').then((m) => ({ default: m.HeatmapChart })))
 const BasemapChart = lazy(() => import('./BasemapChart').then((m) => ({ default: m.BasemapChart })))
-const HighlightChart = lazy(() =>
-  import('./HighlightChart').then((m) => ({ default: m.HighlightChart })),
-)
 const LayersAppliedCard = lazy(() =>
   import('./LayersAppliedCard').then((m) => ({ default: m.LayersAppliedCard })),
 )
@@ -57,7 +54,6 @@ const META: Record<string, { title: string; description: string }> = {
   measure: { title: 'Mesure courante', description: 'Mise à jour en temps réel' },
   heatmap: { title: 'Top 5 densité', description: 'Zones de plus forte densité' },
   basemap: { title: 'Fonds de plan', description: '4 styles disponibles' },
-  highlight: { title: 'Bâtiment surligné', description: 'feature-state + paint case' },
   isochrone: { title: 'Accessibilité', description: 'Zones par temps de trajet' },
   swipe: { title: 'Avant / après', description: 'Comparer deux états d’un territoire' },
   realtime: { title: 'Supervision en direct', description: 'Mise à jour en continu' },
@@ -139,7 +135,6 @@ export function ChartsPanel() {
                 {chart === 'measure' && <MeasureChart />}
                 {chart === 'heatmap' && <HeatmapChart />}
                 {chart === 'basemap' && <BasemapChart />}
-                {chart === 'highlight' && <HighlightChart />}
                 {chart === 'isochrone' && <IsochroneChart />}
                 {chart === 'swipe' && <SwipeChart />}
                 {chart === 'realtime' && <RealtimeChart />}

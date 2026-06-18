@@ -1,7 +1,6 @@
 import type { Map as MLMap } from 'maplibre-gl'
 import gsap from 'gsap'
-import * as turf from '@turf/turf'
-import type { Feature, FeatureCollection, MultiPolygon, Point, Polygon } from 'geojson'
+import type { FeatureCollection, Point } from 'geojson'
 
 // map.project() renvoie des px relatifs au conteneur #map-canvas ; on ajoute
 // l'offset du canvas (sidebar…) pour obtenir des coordonnées viewport.
@@ -343,71 +342,4 @@ export function createTourCursor(map: MLMap, opts?: { aim?: boolean }): TourCurs
       )
     },
   }
-}
-
-// Remplissage révélé par propagation : un cercle Turf grandit depuis `ring[0]` et
-// est intersecté avec le polygone, si bien que la couleur « inonde » la zone depuis
-// ce coin. Tweens ancrés au label `at` (synchro avec le clic final du curseur).
-export function addFloodReveal(
-  tl: gsap.core.Timeline,
-  map: MLMap,
-  opts: {
-    ring: [number, number][]
-    source: string
-    layer: string
-    base: number
-    dark: number
-    at: string
-  },
-): void {
-  const origin = opts.ring[0]
-  const closed: [number, number][] = [...opts.ring, opts.ring[0]]
-  const polygon = turf.polygon([closed])
-  const maxR =
-    Math.max(...opts.ring.map((v) => turf.distance(origin, v, { units: 'kilometers' }))) * 1.18
-
-  const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
-  const setRegion = (t: number) => {
-    if (!map.getLayer(opts.layer)) return
-    const src = map.getSource(opts.source) as maplibregl.GeoJSONSource | undefined
-    if (!src) return
-    let feat: Feature<Polygon | MultiPolygon> | null = null
-    if (t >= 1) feat = polygon
-    else if (t > 0.001) {
-      const circ = turf.circle(origin, maxR * t, { units: 'kilometers', steps: 56 })
-      feat = turf.intersect(turf.featureCollection([polygon, circ]))
-    }
-    src.setData(feat ? { type: 'FeatureCollection', features: [feat] } : empty)
-  }
-
-  // 1) Opacité ON + géométrie vide : prêt à inonder depuis le coin.
-  tl.call(
-    () => {
-      if (map.getLayer(opts.layer)) map.setPaintProperty(opts.layer, 'fill-opacity', opts.base)
-      setRegion(0)
-    },
-    [],
-    opts.at,
-  )
-  // 2) Propagation depuis le coin de fin de tracé.
-  const prog = { v: 0 }
-  tl.to(
-    prog,
-    { v: 1, duration: 0.8, ease: 'power2.out', onUpdate: () => setRegion(prog.v) },
-    opts.at,
-  )
-  // 3) Une fois propagé, on assombrit la zone d'un cran.
-  const dk = { v: opts.base }
-  tl.to(
-    dk,
-    {
-      v: opts.dark,
-      duration: 0.42,
-      ease: 'power2.inOut',
-      onUpdate: () => {
-        if (map.getLayer(opts.layer)) map.setPaintProperty(opts.layer, 'fill-opacity', dk.v)
-      },
-    },
-    `${opts.at}+=0.85`,
-  )
 }

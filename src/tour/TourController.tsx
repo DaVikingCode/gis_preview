@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
 import { driver } from 'driver.js'
 import { useMap } from '@/map/MapContext'
 import { useTourStore } from '@/store/tour-store'
 import { STEPS, THEME_FLIP_STEP_ID } from './steps'
+import { TourStepper } from './TourStepper'
 import { BASEMAPS, type BasemapId } from '@/map/basemaps'
 import { startPrewarm, cancelPrewarm } from '@/map/prewarm'
 import { useGateUnlockNudge } from '@/hooks/animations/useGateUnlockNudge'
@@ -115,6 +117,12 @@ export function TourController() {
   const driverRef = useRef<DriverInstance | null>(null)
   const prevStepRef = useRef<number>(-1)
   const drivingRef = useRef<boolean>(false)
+  // Armé par `jumpToStep` (clic stepper) juste avant drive/moveTo : `onHighlightStarted`
+  // le consomme pour fixer `navMode` (saut → snapshot instantané vs séquentiel → cinématique).
+  const jumpArmedRef = useRef<boolean>(false)
+  // Îlot React du stepper, monté dans le popover driver.js (cf. onPopoverRender).
+  const stepperRootRef = useRef<Root | null>(null)
+  const stepperNodeRef = useRef<HTMLElement | null>(null)
   const nudge = useGateUnlockNudge()
   const isMobile = useIsMobile()
 
@@ -163,7 +171,6 @@ export function TourController() {
         else d.destroy()
       },
       onPopoverRender: (popover, opts) => {
-        const total = STEPS.length
         const active = opts.state.activeIndex ?? 0
         // Lock the Next button on entry to a gated step.
         const locked = isStepLocked(active, useTourStore.getState())
@@ -197,22 +204,34 @@ export function TourController() {
           }
           alignToTable()
         }
-        const bar = document.createElement('div')
-        bar.className = 'gp-tour-stepper'
-        bar.setAttribute('role', 'progressbar')
-        bar.setAttribute('aria-valuemin', '1')
-        bar.setAttribute('aria-valuemax', String(total))
-        bar.setAttribute('aria-valuenow', String(active + 1))
-        for (let i = 0; i < total; i++) {
-          const dot = document.createElement('span')
-          dot.className = 'gp-tour-stepper-dot'
-          dot.dataset.state = i < active ? 'completed' : i === active ? 'active' : 'inactive'
-          bar.appendChild(dot)
+        // Stepper : îlot React monté une fois dans le popover. Il lit currentStep
+        // / flying / jumpToStep réactivement depuis le store, donc on ne re-render
+        // pas ici — on garantit juste que le noeud de montage et la racine existent.
+        // (driver.js réutilise son wrapper entre les steps ; si jamais il le
+        // recrée, le `contains` ci-dessous reconstruit la racine.)
+        let node = stepperNodeRef.current
+        if (!node || !popover.wrapper.contains(node)) {
+          if (stepperRootRef.current) {
+            stepperRootRef.current.unmount()
+            stepperRootRef.current = null
+          }
+          node = document.createElement('div')
+          node.className = 'gp-stepper-mount'
+          stepperNodeRef.current = node
+          popover.wrapper.insertBefore(node, popover.footer)
         }
-        popover.wrapper.insertBefore(bar, popover.footer)
+        if (!stepperRootRef.current) {
+          stepperRootRef.current = createRoot(node)
+          stepperRootRef.current.render(<TourStepper />)
+        }
       },
       onHighlightStarted: (_el, _step, opts) => {
         const idx = opts.state.activeIndex ?? 0
+        // Mode d'entrée du step : saut (clic stepper, one-shot armé par jumpToStep)
+        // vs séquentiel (Suivant/Précédent). Lu par le step-effect (ctx.jumped) et le
+        // curseur scripté pour jouer la cinématique uniquement en séquentiel.
+        useTourStore.getState().setNavMode(jumpArmedRef.current ? 'jump' : 'sequential')
+        jumpArmedRef.current = false
         // Verrouille « Suivant » dès l'entrée (avant onPopoverRender) ; le vol
         // déclenché par l'effet de transition lèvera le verrou à l'atterrissage
         // (moveend), ou immédiatement pour une transition instantanée.
@@ -248,6 +267,13 @@ export function TourController() {
       },
       onDestroyed: () => {
         drivingRef.current = false
+        // Démonte l'îlot React du stepper (le popover est détruit avec le tour).
+        if (stepperRootRef.current) {
+          const root = stepperRootRef.current
+          stepperRootRef.current = null
+          stepperNodeRef.current = null
+          queueMicrotask(() => root.unmount())
+        }
         useTourStore.getState().reset()
       },
     })
@@ -265,6 +291,8 @@ export function TourController() {
     const d = driverRef.current
     if (!d) return
     useTourStore.getState().setJumpToStep((i: number) => {
+      // Tout passage par jumpToStep (clic stepper) est un saut → snapshot instantané.
+      jumpArmedRef.current = true
       if (!drivingRef.current) {
         drivingRef.current = true
         d.drive(i)
@@ -423,6 +451,13 @@ export function TourController() {
 
       const prevStep = prev >= 0 && prev < STEPS.length ? STEPS[prev] : undefined
       const step = STEPS[cur]
+      // Contexte passé à onEnter : `jumped` indique une entrée par saut (clic stepper)
+      // → snapshot instantané, vs séquentiel → cinématique. Lu au moment de l'appel
+      // (stable pendant un vol : la navigation est verrouillée par `flying`).
+      const enterCtx = () => ({
+        setBasemap: setBasemapStore,
+        jumped: useTourStore.getState().navMode === 'jump',
+      })
       // Reset padding each step (it persists on the map) so only steps that
       // opt in get an offset center.
       const padding = {
@@ -496,7 +531,7 @@ export function TourController() {
         // Scripted-animation steps (enterOnSettle) must start once the camera has
         // landed, otherwise the trace plays mid-flight (off-screen) and looks like
         // it never replayed. Their onEnter runs in the moveend handler below.
-        if (!step.enterOnSettle) step.onEnter?.(map, { setBasemap: setBasemapStore })
+        if (!step.enterOnSettle) step.onEnter?.(map, enterCtx())
         prevStepRef.current = cur
         map.flyTo({
           ...(flightPlan?.flight ?? target),
@@ -523,7 +558,7 @@ export function TourController() {
           if (flightPlan) map.jumpTo({ ...flightPlan.land, padding })
           // Atterri : déverrouille « Suivant ».
           useTourStore.getState().setFlying(false)
-          if (step.enterOnSettle) step.onEnter?.(map, { setBasemap: setBasemapStore })
+          if (step.enterOnSettle) step.onEnter?.(map, enterCtx())
           if (step.cinematic) setCinematic(true)
         })
         return
@@ -534,7 +569,7 @@ export function TourController() {
         await waitForStyle(map)
         if (cancelled) return
 
-        step.onEnter?.(map, { setBasemap: setBasemapStore })
+        step.onEnter?.(map, enterCtx())
         map.flyTo({
           center: step.camera.center,
           zoom: camZoom,
@@ -558,7 +593,7 @@ export function TourController() {
       await waitForStyle(map)
       if (cancelled) return
 
-      step.onEnter?.(map, { setBasemap: setBasemapStore })
+      step.onEnter?.(map, enterCtx())
       prevStepRef.current = cur
       // Transition instantanée (jumpTo) : rien à attendre, déverrouille tout de suite.
       useTourStore.getState().setFlying(false)

@@ -27,6 +27,9 @@ export function useRtScriptedCursor() {
   const map = useMap()
   const id = useTourStore((s) => STEPS[s.currentStep]?.id)
   const flying = useTourStore((s) => s.flying)
+  // Sur saut (clic stepper), l'état est posé en snapshot par onEnter : on ne rejoue
+  // pas la chorégraphie du curseur (balayage / vol+clic).
+  const navMode = useTourStore((s) => s.navMode)
   // Re-déclenche les gestes une fois la couche live prête (1er tick).
   const feedReady = useMapDataStore((s) => s.realtime !== null)
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -40,7 +43,7 @@ export function useRtScriptedCursor() {
   // Supervision : balayage de plusieurs postes (fiche express), puis on cache.
   useGSAP(
     () => {
-      if (id !== 'rt-supervision' || flying || reduced) return
+      if (id !== 'rt-supervision' || flying || reduced || navMode === 'jump') return
       const rt = getRealtimeHandle()
       if (!rt) return
       const cursor = createTourCursor(map, { aim: true })
@@ -56,13 +59,13 @@ export function useRtScriptedCursor() {
       tl.call(() => setHidden(true))
       return () => rt.hideTooltip()
     },
-    { dependencies: [id, flying, feedReady], revertOnUpdate: true },
+    { dependencies: [id, flying, feedReady, navMode], revertOnUpdate: true },
   )
 
   // Surcharge : la gate ne se lève qu'à l'atterrissage du vol (moveend).
   useGSAP(
     () => {
-      if (id !== 'rt-surcharge' || flying) return
+      if (id !== 'rt-surcharge' || flying || navMode === 'jump') return
       const rt = getRealtimeHandle()
       if (!rt) return
       const ll = rt.getPostLngLat(HTA_INCIDENT_ID)
@@ -175,7 +178,7 @@ export function useRtScriptedCursor() {
         dismissSurchargeToast()
       }
     },
-    { dependencies: [id, flying, feedReady], revertOnUpdate: true },
+    { dependencies: [id, flying, feedReady, navMode], revertOnUpdate: true },
   )
 
   return { hidden }

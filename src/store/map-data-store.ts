@@ -141,5 +141,3 @@ export const useMapDataStore = create<State & Actions>((set) => ({
   resetPointCloudRun: () => set({ pointCloudRun: 0 }),
   setPointCloudStopCamera: (fn) => set({ pointCloudStopCamera: fn }),
 }))
-
-export const hasCompletedAnyPOI = (s: State) => Object.values(s.poiStatus).some((v) => v === 'done')
