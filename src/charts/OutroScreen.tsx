@@ -24,7 +24,6 @@ const CONTOUR = {
 // ici qu'on referme la boucle (« voici tout ce qu'on a parcouru ») et qu'on porte le CTA.
 export function OutroScreen() {
   const currentStep = useTourStore((s) => s.currentStep)
-  const reset = useTourStore((s) => s.reset)
   const step = STEPS[currentStep]
 
   return (
@@ -104,7 +103,7 @@ export function OutroScreen() {
             <Button
               variant="ghost"
               size="lg"
-              onClick={reset}
+              onClick={() => window.dispatchEvent(new CustomEvent('gp:restart-tour'))}
               className="h-10 w-full gap-2 rounded-lg text-sm font-medium text-white/55 hover:bg-white/5 hover:text-white/85"
             >
               <RotateCcw className="size-4" /> Revoir la visite

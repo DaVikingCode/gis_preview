@@ -329,6 +329,15 @@ export function TourController() {
   // Stop any in-flight prewarming when the controller unmounts.
   useEffect(() => () => cancelPrewarm(), [])
 
+  // « Revoir la visite » (OutroScreen) : on emprunte le MÊME teardown que « Terminer »
+  // — driver.destroy() retire popover/overlay/stepper, puis onDestroyed appelle reset()
+  // (retour à l'intro). Passer par reset() seul laisserait le popover orphelin.
+  useEffect(() => {
+    const restart = () => driverRef.current?.destroy()
+    window.addEventListener('gp:restart-tour', restart)
+    return () => window.removeEventListener('gp:restart-tour', restart)
+  }, [])
+
   // Keep the Next button lock in sync as a gated step completes (or the step
   // changes), and nudge it with a pulse the moment it unlocks.
   useEffect(() => {
