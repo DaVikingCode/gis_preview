@@ -1,0 +1,239 @@
+{
+  "nodes": [
+    {
+      "id": "home_popoch_projects_gis_preview_claude_md",
+      "label": "CLAUDE.md",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "gis_preview_claude_claude_md",
+      "label": "CLAUDE.md",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "gis_preview_claude_what_this_is",
+      "label": "What this is",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L5"
+    },
+    {
+      "id": "gis_preview_claude_commands",
+      "label": "Commands",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L9"
+    },
+    {
+      "id": "gis_preview_claude_architecture",
+      "label": "Architecture",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L20"
+    },
+    {
+      "id": "gis_preview_claude_the_tour_is_the_spine",
+      "label": "The tour is the spine",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L22"
+    },
+    {
+      "id": "gis_preview_claude_three_layers_of_state_control",
+      "label": "Three layers of state/control",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L33"
+    },
+    {
+      "id": "gis_preview_claude_map_instance_access",
+      "label": "Map instance access",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L41"
+    },
+    {
+      "id": "gis_preview_claude_layer_modules_src_map_layers",
+      "label": "Layer modules (`src/map/layers/`)",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L45"
+    },
+    {
+      "id": "gis_preview_claude_ui_components",
+      "label": "UI components",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L49"
+    },
+    {
+      "id": "gis_preview_claude_conventions",
+      "label": "Conventions",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L54"
+    },
+    {
+      "id": "gis_preview_claude_end_of_task_checklist",
+      "label": "End-of-task checklist",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L61"
+    },
+    {
+      "id": "gis_preview_claude_using_vite_the_unified_toolchain_for_the_web",
+      "label": "Using Vite+, the Unified Toolchain for the Web",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L70"
+    },
+    {
+      "id": "gis_preview_claude_review_checklist",
+      "label": "Review Checklist",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L76"
+    },
+    {
+      "id": "gis_preview_claude_graphify",
+      "label": "graphify",
+      "file_type": "document",
+      "source_file": "CLAUDE.md",
+      "source_location": "L85"
+    }
+  ],
+  "edges": [
+    {
+      "source": "home_popoch_projects_gis_preview_claude_md",
+      "target": "gis_preview_claude_claude_md",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_claude_claude_md",
+      "target": "gis_preview_claude_what_this_is",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_claude_claude_md",
+      "target": "gis_preview_claude_commands",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_claude_claude_md",
+      "target": "gis_preview_claude_architecture",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_claude_architecture",
+      "target": "gis_preview_claude_the_tour_is_the_spine",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L22",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_claude_architecture",
+      "target": "gis_preview_claude_three_layers_of_state_control",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L33",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_claude_architecture",
+      "target": "gis_preview_claude_map_instance_access",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L41",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_claude_architecture",
+      "target": "gis_preview_claude_layer_modules_src_map_layers",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L45",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_claude_architecture",
+      "target": "gis_preview_claude_ui_components",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L49",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_claude_claude_md",
+      "target": "gis_preview_claude_conventions",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L54",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_claude_claude_md",
+      "target": "gis_preview_claude_end_of_task_checklist",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L61",
+      "weight": 1.0
+    },
+    {
+      "source": "home_popoch_projects_gis_preview_claude_md",
+      "target": "gis_preview_claude_using_vite_the_unified_toolchain_for_the_web",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L70",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_claude_using_vite_the_unified_toolchain_for_the_web",
+      "target": "gis_preview_claude_review_checklist",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L76",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_claude_using_vite_the_unified_toolchain_for_the_web",
+      "target": "gis_preview_claude_graphify",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CLAUDE.md",
+      "source_location": "L85",
+      "weight": 1.0
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

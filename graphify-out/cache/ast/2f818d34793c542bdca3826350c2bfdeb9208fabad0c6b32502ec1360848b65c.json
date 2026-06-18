@@ -1,0 +1,47 @@
+{
+  "nodes": [
+    {
+      "id": "home_popoch_projects_gis_preview_context_md",
+      "label": "CONTEXT.md",
+      "file_type": "document",
+      "source_file": "CONTEXT.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "gis_preview_context_gis_preview_domain_language",
+      "label": "GIS Preview \u2014 Domain Language",
+      "file_type": "document",
+      "source_file": "CONTEXT.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "gis_preview_context_r\u00e9seau_hta_supervision_temps_r\u00e9el",
+      "label": "R\u00e9seau HTA (supervision temps r\u00e9el)",
+      "file_type": "document",
+      "source_file": "CONTEXT.md",
+      "source_location": "L5"
+    }
+  ],
+  "edges": [
+    {
+      "source": "home_popoch_projects_gis_preview_context_md",
+      "target": "gis_preview_context_gis_preview_domain_language",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CONTEXT.md",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_context_gis_preview_domain_language",
+      "target": "gis_preview_context_r\u00e9seau_hta_supervision_temps_r\u00e9el",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "CONTEXT.md",
+      "source_location": "L5",
+      "weight": 1.0
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

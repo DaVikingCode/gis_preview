@@ -39,7 +39,6 @@ function TourTraceCursor() {
 function Overlays() {
   const started = useTourStore((s) => s.started)
   const currentStep = useTourStore((s) => s.currentStep)
-  const reset = useTourStore((s) => s.reset)
   const isSwipe = started && STEPS[currentStep]?.id === 'swipe'
   return (
     <>
@@ -69,8 +68,12 @@ function Overlays() {
       {started && import.meta.env.DEV && <PointCloudDebugPanel />}
       {!started && <StartScreen />}
       {started && (
-        <div className="absolute bottom-4 left-4" style={{ zIndex: 100100 }}>
-          <Button variant="outline" size="sm" onClick={reset}>
+        <div className="gp-tour-exit absolute bottom-4 left-4" style={{ zIndex: 100116 }}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.dispatchEvent(new CustomEvent('gp:restart-tour'))}
+          >
             <ArrowLeft /> Quitter la visite
           </Button>
         </div>

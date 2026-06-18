@@ -14,7 +14,7 @@ type DriverInstance = ReturnType<typeof driver>
 
 // Lecture automatique : temps de pause sur une étape une fois qu'elle est posée
 // (caméra arrivée + gate levée) avant d'enchaîner sur la suivante. Réglable.
-const AUTOPLAY_DWELL_MS = 2000
+const AUTOPLAY_DWELL_MS = 3000
 
 // Gates that block the Next button until a step's interaction completes.
 function isStepLocked(
@@ -147,15 +147,20 @@ export function TourController() {
           align: 'start',
           // The import modal is centered and the popover would land on top of
           // its content — pin this step's popover to the bottom-center instead.
-          // Same for the ecosystem/interop and techstack diagrams (also centered
-          // full-screen overlays whose content the popover would otherwise cover).
+          // Same for the ecosystem/interop diagram (also a centered full-screen
+          // overlay whose content the popover would otherwise cover).
+          // The techstack diagram is a big centered overlay we now rotate/inspect:
+          // pin its popover to the RIGHT gutter (vertically centered) so it never
+          // sits over the visualisation.
           // The data-table panel is a full-width bottom overlay (h-[52vh]) — pin
           // the popover just above it, flush left.
-          ...(s.id === 'layers-import' || s.id === 'ecosystem' || s.id === 'techstack'
-            ? { popoverClass: 'gp-tour gp-tour-bottom' }
-            : s.id === 'data-table' || s.id === 'kanban'
-              ? { popoverClass: 'gp-tour gp-tour-above-table' }
-              : {}),
+          ...(s.id === 'techstack'
+            ? { popoverClass: 'gp-tour gp-tour-stack-right' }
+            : s.id === 'layers-import' || s.id === 'ecosystem'
+              ? { popoverClass: 'gp-tour gp-tour-bottom' }
+              : s.id === 'data-table' || s.id === 'kanban'
+                ? { popoverClass: 'gp-tour gp-tour-above-table' }
+                : {}),
         },
       })),
       // Gate: block advancing past gated steps until their interaction finishes

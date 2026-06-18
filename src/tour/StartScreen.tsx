@@ -17,7 +17,7 @@ import {
 
 // Coordonnées réelles de la vue d'ouverture (cf. STEPS[0].camera.center) — la marge de
 // la feuille affiche le vrai relevé, pas un placeholder.
-const ORIGIN = { lon: 2.5, lat: 46.5 }
+const ORIGIN = { lon: 5.051709, lat: 47.353578 }
 
 // Centre du relief calé en haut-droite : le « sommet » (anneaux jaunes) sert d'unique accent.
 const CONTOUR = { cx: 338, cy: 104, radii: [22, 40, 62, 90, 124, 164, 210, 264, 328, 404] }

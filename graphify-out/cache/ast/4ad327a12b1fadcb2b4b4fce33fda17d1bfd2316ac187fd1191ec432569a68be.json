@@ -1,0 +1,63 @@
+{
+  "nodes": [
+    {
+      "id": "home_popoch_projects_gis_preview_readme_md",
+      "label": "README.md",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "gis_preview_readme_react_typescript_vite",
+      "label": "React + TypeScript + Vite",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "gis_preview_readme_react_compiler",
+      "label": "React Compiler",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L10"
+    },
+    {
+      "id": "gis_preview_readme_expanding_the_eslint_configuration",
+      "label": "Expanding the ESLint configuration",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L16"
+    }
+  ],
+  "edges": [
+    {
+      "source": "home_popoch_projects_gis_preview_readme_md",
+      "target": "gis_preview_readme_react_typescript_vite",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_readme_react_typescript_vite",
+      "target": "gis_preview_readme_react_compiler",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_readme_react_typescript_vite",
+      "target": "gis_preview_readme_expanding_the_eslint_configuration",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L16",
+      "weight": 1.0
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

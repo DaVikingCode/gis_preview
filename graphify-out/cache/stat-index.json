@@ -5,9 +5,9 @@
     "hash": "4ad63a429e9947e5f2f5979227bd724bf3579d7699c9f56a5a769ddc7150d084"
   },
   "/home/popoch/Projects/gis_preview/package.json": {
-    "size": 1948,
-    "mtime_ns": 1781605158428228278,
-    "hash": "5961fcc62034c6e12f52bd4b2a234bad8a8c9803282b1c8b620a3a776e590c87"
+    "size": 2017,
+    "mtime_ns": 1781708057096971452,
+    "hash": "ef5c717e8e92d659fc4f09797527dda4971ffa2d2c9f305ed3b4774e219a9bae"
   },
   "/home/popoch/Projects/gis_preview/public/pointcloud/auxonne.points.json": {
     "size": 4611,
@@ -40,9 +40,9 @@
     "hash": "363d2b77ee0b411cb1a762561e96f62e8259d30d320603aebd11b06088ad48a2"
   },
   "/home/popoch/Projects/gis_preview/CLAUDE.md": {
-    "size": 5398,
-    "mtime_ns": 1781605158342228386,
-    "hash": "22634bc1f7f0dd5db9df28516a039165918861a91a971c7c5c76d24fab5c1859"
+    "size": 6172,
+    "mtime_ns": 1781777809979943087,
+    "hash": "ead9c2e58095b8dedbedabbd07e9963525d3bc26c926f78f1e0c235d2866bf16"
   },
   "/home/popoch/Projects/gis_preview/CONTEXT.md": {
     "size": 2529,
@@ -73,5 +73,10 @@
     "size": 167,
     "mtime_ns": 1781605158475228219,
     "hash": "4f05ab8753460465fb007ec46eb63a85713473fb0a5ecfc864701066fb7119b6"
+  },
+  "/home/popoch/Projects/gis_preview/.claude/settings.json": {
+    "size": 1997,
+    "mtime_ns": 1781777809954942831,
+    "hash": "e43eb1c413581f3e666a96fc11ac41c6a7cb59739fcd1ee2d56cf25f504c4ba6"
   }
 }

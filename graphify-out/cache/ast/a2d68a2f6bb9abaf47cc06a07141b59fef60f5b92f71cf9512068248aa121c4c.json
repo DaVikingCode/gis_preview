@@ -1,0 +1,143 @@
+{
+  "nodes": [
+    {
+      "id": "home_popoch_projects_gis_preview_onboarding_md",
+      "label": "ONBOARDING.md",
+      "file_type": "document",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "gis_preview_onboarding_welcome_to_davikingcode",
+      "label": "Welcome to DaVikingCode",
+      "file_type": "document",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "gis_preview_onboarding_how_we_use_claude",
+      "label": "How We Use Claude",
+      "file_type": "document",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L3"
+    },
+    {
+      "id": "gis_preview_onboarding_your_setup_checklist",
+      "label": "Your Setup Checklist",
+      "file_type": "document",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L24"
+    },
+    {
+      "id": "gis_preview_onboarding_codebases",
+      "label": "Codebases",
+      "file_type": "document",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L26"
+    },
+    {
+      "id": "gis_preview_onboarding_mcp_servers_to_activate",
+      "label": "MCP Servers to Activate",
+      "file_type": "document",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L30"
+    },
+    {
+      "id": "gis_preview_onboarding_skills_to_know_about",
+      "label": "Skills to Know About",
+      "file_type": "document",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L34"
+    },
+    {
+      "id": "gis_preview_onboarding_team_tips",
+      "label": "Team Tips",
+      "file_type": "document",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L44"
+    },
+    {
+      "id": "gis_preview_onboarding_get_started",
+      "label": "Get Started",
+      "file_type": "document",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L48"
+    }
+  ],
+  "edges": [
+    {
+      "source": "home_popoch_projects_gis_preview_onboarding_md",
+      "target": "gis_preview_onboarding_welcome_to_davikingcode",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_onboarding_welcome_to_davikingcode",
+      "target": "gis_preview_onboarding_how_we_use_claude",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_onboarding_welcome_to_davikingcode",
+      "target": "gis_preview_onboarding_your_setup_checklist",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_onboarding_your_setup_checklist",
+      "target": "gis_preview_onboarding_codebases",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L26",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_onboarding_your_setup_checklist",
+      "target": "gis_preview_onboarding_mcp_servers_to_activate",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L30",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_onboarding_your_setup_checklist",
+      "target": "gis_preview_onboarding_skills_to_know_about",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L34",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_onboarding_welcome_to_davikingcode",
+      "target": "gis_preview_onboarding_team_tips",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L44",
+      "weight": 1.0
+    },
+    {
+      "source": "gis_preview_onboarding_welcome_to_davikingcode",
+      "target": "gis_preview_onboarding_get_started",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "ONBOARDING.md",
+      "source_location": "L48",
+      "weight": 1.0
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

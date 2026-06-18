@@ -1,0 +1,14 @@
+{
+  "nodes": [
+    {
+      "id": "home_popoch_projects_gis_preview_notes_md",
+      "label": "notes.md",
+      "file_type": "document",
+      "source_file": "notes.md",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

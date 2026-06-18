@@ -19,6 +19,7 @@ import {
 export interface ContactEmailProps {
   name: string
   email: string
+  phone: string
   message: string
 }
 
@@ -26,7 +27,7 @@ export interface ContactEmailProps {
 // Responsive : container fluide (width 100% / max-width 600), mono-colonne, meta
 // viewport + media query qui réduit le padding sur petit écran.
 // Palette marque : jaune #FFEB04 / encre #232323 / accent cyan #00B5E1.
-export function ContactEmail({ name, email, message }: ContactEmailProps) {
+export function ContactEmail({ name, email, phone, message }: ContactEmailProps) {
   return (
     <Html lang="fr">
       <Head>
@@ -59,6 +60,19 @@ export function ContactEmail({ name, email, message }: ContactEmailProps) {
                   {email}
                 </Link>
               </Text>
+
+              {phone ? (
+                <>
+                  <Hr style={divider} />
+
+                  <Text style={fieldLabel}>Téléphone</Text>
+                  <Text style={fieldValue}>
+                    <Link href={`tel:${phone}`} style={emailLink}>
+                      {phone}
+                    </Link>
+                  </Text>
+                </>
+              ) : null}
 
               <Hr style={divider} />
 

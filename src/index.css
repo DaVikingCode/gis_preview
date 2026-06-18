@@ -477,15 +477,6 @@ body,
   pointer-events: auto !important;
 }
 
-/* Tech-stack diagram: only the invisible SVG hit-polygons need to stay
-   interactive during the tour. driver.js disables pointer-events on everything
-   but the active element, so force them on. `all` (not `auto`) so a polygon with
-   fill:none is still hit on its interior. id+class beats driver's `*` rule. */
-#techstack-diagram .gp-stack-hit {
-  pointer-events: all !important;
-  cursor: pointer;
-}
-
 /* Vue tabulaire : une fois la démo scriptée finie, le survol RÉEL des lignes pilote
    le spotlight de la zone liée sur la carte. driver.js coupe les pointer-events hors
    élément actif → on force tout le sous-arbre du panneau (id bat le `*` de driver). */
@@ -500,6 +491,13 @@ body,
    bien DERRIÈRE le stepper. */
 .gp-contact,
 .gp-contact * {
+  pointer-events: auto !important;
+}
+
+/* Bouton « Quitter la visite » : toujours cliquable pendant le tour. driver.js
+   coupe les pointer-events hors élément actif → on les force ici. */
+.gp-tour-exit,
+.gp-tour-exit * {
   pointer-events: auto !important;
 }
 
@@ -658,6 +656,24 @@ body,
   margin: 0 !important;
 }
 .driver-popover.gp-tour.gp-tour-bottom .driver-popover-arrow {
+  display: none !important;
+}
+
+/* Techstack step: the diagram is a large centered overlay we rotate/inspect.
+   Pin the popover to the right gutter, vertically centered, so it stays clear of
+   the (centered) cabinet. On ≤640px the generic mobile rule below turns it into a
+   bottom sheet. !important is required because driver.js rewrites left/top/transform
+   inline on every render. */
+.driver-popover.gp-tour.gp-tour-stack-right {
+  position: fixed !important;
+  left: auto !important;
+  right: 24px !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
+}
+.driver-popover.gp-tour.gp-tour-stack-right .driver-popover-arrow {
   display: none !important;
 }
 

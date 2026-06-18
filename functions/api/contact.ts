@@ -21,7 +21,7 @@ type EventContext = {
 const DEFAULT_MAILER_URL = 'https://daviking-mailer.blue-tree-8b17.workers.dev'
 const RECIPIENT = 'hello@davikingcode.com'
 
-const MAX = { name: 120, email: 200, message: 5000 } as const
+const MAX = { name: 120, email: 200, phone: 30, message: 5000 } as const
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function json(data: unknown, status: number): Response {
@@ -72,15 +72,18 @@ export const onRequestPost = async ({ request, env }: EventContext): Promise<Res
 
   const name = typeof payload.name === 'string' ? payload.name.trim() : ''
   const email = typeof payload.email === 'string' ? payload.email.trim() : ''
+  const phone = typeof payload.phone === 'string' ? payload.phone.trim() : ''
   const message = typeof payload.message === 'string' ? payload.message.trim() : ''
 
   if (!name || name.length > MAX.name) return json({ error: 'invalid_name' }, 400)
   if (!email || email.length > MAX.email || !EMAIL_RE.test(email))
     return json({ error: 'invalid_email' }, 400)
+  // Téléphone facultatif : on rejette seulement s'il est trop long.
+  if (phone.length > MAX.phone) return json({ error: 'invalid_phone' }, 400)
   if (!message || message.length > MAX.message) return json({ error: 'invalid_message' }, 400)
 
-  const html = await render(ContactEmail({ name, email, message }))
-  const text = await render(ContactEmail({ name, email, message }), { plainText: true })
+  const html = await render(ContactEmail({ name, email, phone, message }))
+  const text = await render(ContactEmail({ name, email, phone, message }), { plainText: true })
 
   const mailerUrl = env.MAILER_URL ?? DEFAULT_MAILER_URL
   let mailerRes: Response

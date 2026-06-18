@@ -92,7 +92,7 @@ export function CoordLabel({
 }) {
   return (
     <span className={cn('font-mono tabular-nums', className)}>
-      {lat.toFixed(2)}° N · {lon.toFixed(2)}° E
+      {lat}° N · {lon}° E
     </span>
   )
 }

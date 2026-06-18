@@ -14,7 +14,7 @@ const ENDPOINT = import.meta.env.VITE_CONTACT_ENDPOINT ?? '/api/contact'
 
 // Coordonnées du studio DVC (Dijon) — signature : le contact est un point réel
 // sur la carte, en écho au sujet SIG de la démo.
-const DVC_COORDS = '47.3220° N · 5.0415° E — DIJON'
+const DVC_COORDS = '47.353490° N, 5.051602° E — DIJON'
 
 type Status = 'idle' | 'sending' | 'sent'
 
@@ -116,6 +116,7 @@ function ContactPanel({
     const payload = {
       name: field('name').trim(),
       email: field('email').trim(),
+      phone: field('phone').trim(),
       message: field('message').trim(),
       company: field('company'), // honeypot
     }
@@ -241,6 +242,18 @@ function ContactPanel({
                   maxLength={200}
                   autoComplete="email"
                   placeholder="vous@entreprise.com"
+                  className="h-9"
+                />
+              </Field>
+
+              <Field label="Téléphone" htmlFor="contact-phone">
+                <Input
+                  id="contact-phone"
+                  name="phone"
+                  type="tel"
+                  maxLength={30}
+                  autoComplete="tel"
+                  placeholder="06 12 34 56 78 (facultatif)"
                   className="h-9"
                 />
               </Field>

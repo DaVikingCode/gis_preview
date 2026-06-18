@@ -779,7 +779,7 @@ export const STEPS: TourStep[] = [
     id: 'techstack',
     title: 'Notre stack technique',
     description:
-      'De la donnée à l’écran : conteneurisée avec Docker, la plateforme stocke et interroge la géométrie via PostgreSQL/PostGIS (édition QGIS), Node.js orchestre la logique métier, Redis met en cache et diffuse en temps réel, et MapLibre + React restituent le tout. Une pile pensée pour la performance géospatiale.',
+      'De la donnée à l’écran : une pile géospatiale conteneurisée, pensée pour la performance.',
     element: '#techstack-diagram',
     basemap: 'positron',
     camera: { center: [2.5, 46.5], zoom: 5, pitch: 0, bearing: 0 },
