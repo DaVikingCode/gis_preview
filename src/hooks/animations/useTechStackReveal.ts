@@ -84,7 +84,10 @@ export function useTechStackReveal(
 
           gsap.set(float, { scale: rest.scale })
 
-          // ── Entrée : assemblage ascendant + settle de l'angle iso ───────────
+          // Course d'entrée d'un tiroir : il DESCEND dans sa case depuis le dessus.
+          const ENTER_DROP = mobile ? 110 : 150
+
+          // ── Entrée : assemblage descendant + settle de l'angle iso ──────────
           gsap.set(graticule, { autoAlpha: 0, scale: 0.8, transformOrigin: '50% 50%' })
           gsap.set(docker, { autoAlpha: 0 })
           gsap.set(glows.filter(Boolean), { autoAlpha: 0 })
@@ -197,7 +200,7 @@ export function useTechStackReveal(
             })
           }
 
-          // ── Timeline d'entrée : empilement → tour de table → settle iso ─────
+          // ── Timeline d'entrée : descente en place → tour de table → settle iso
           const tl = gsap.timeline({
             defaults: { ease: 'power3.out' },
             onComplete: attachInteractions,
@@ -209,13 +212,20 @@ export function useTechStackReveal(
             0,
           ).to(graticule, { autoAlpha: 1, scale: 1, duration: 1.1, ease: 'sine.out' }, 0.1)
 
+          // Chaque tiroir DESCEND dans sa case depuis le dessus (z + ENTER_DROP),
+          // dans l'espace encore VIDE : le remplissage est bas→haut, donc les cases
+          // au-dessus ne sont posées que plus tard. Ease SANS overshoot (power3.out) :
+          // un tiroir reste alors toujours ≥ son slot, jamais il ne replonge dans la
+          // case du dessous déjà remplie → aucun chevauchement, plus de mélange de
+          // couleurs entre caissons opaques (cf. l'ancien `z - 150` + back.out qui
+          // faisait traverser les tiroirs déjà posés en-dessous).
           layers.forEach((el, i) => {
             const at = 0.4 + i * 0.12
             tl.set(el, { visibility: 'visible' }, at)
             tl.fromTo(
               el,
-              { z: layerZ[i] - 150 },
-              { z: layerZ[i], duration: 0.8, ease: 'back.out(1.3)' },
+              { z: layerZ[i] + ENTER_DROP },
+              { z: layerZ[i], duration: 0.8, ease: 'power3.out' },
               at,
             )
           })

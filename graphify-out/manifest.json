@@ -30,8 +30,8 @@
     "semantic_hash": "09e9b4f8798cc9a20fb7d02ab7bf1a14"
   },
   "src/App.tsx": {
-    "mtime": 1781689512.4860098,
-    "ast_hash": "7fbb1e95ecd69c6d7d5052c9917f7852",
+    "mtime": 1781788115.9740458,
+    "ast_hash": "2f92caafb7d9ad4b9f4adbf6e5a37e32",
     "semantic_hash": ""
   },
   "src/animations/measureLabels.ts": {
@@ -135,8 +135,8 @@
     "semantic_hash": ""
   },
   "src/charts/TechStackDiagram.tsx": {
-    "mtime": 1781785546.3739748,
-    "ast_hash": "f6d71abaf879b7b26390cc9b41ed2a97",
+    "mtime": 1781788500.3712704,
+    "ast_hash": "d1963b8ea125fa75d3be1690b0a23a44",
     "semantic_hash": ""
   },
   "src/components/AppSidebar.tsx": {
@@ -465,8 +465,8 @@
     "semantic_hash": "9b7893d3f823f1d504a0fef90ca49f8f"
   },
   "src/hooks/animations/useTechStackReveal.ts": {
-    "mtime": 1781784097.127714,
-    "ast_hash": "d2a9b0f52bd487e7011261e27792c130",
+    "mtime": 1781788910.4056473,
+    "ast_hash": "dd6eec09a778e307b2f6fb555c9c613b",
     "semantic_hash": ""
   },
   "src/hooks/animations/useThemeFlipCursor.ts": {
@@ -680,8 +680,8 @@
     "semantic_hash": ""
   },
   "src/tour/TourController.tsx": {
-    "mtime": 1781784110.1466763,
-    "ast_hash": "33f1a128df9b5fabfb7a8d8c8324d421",
+    "mtime": 1781788041.6732495,
+    "ast_hash": "b5fe4376dd7f0437b0acbdea0de83960",
     "semantic_hash": ""
   },
   "src/tour/TrafficFlowDebugPanel.tsx": {
@@ -1375,8 +1375,8 @@
     "semantic_hash": ""
   },
   "src/assets/stepper_preview/stack.png": {
-    "mtime": 1781772949.477076,
-    "ast_hash": "3ebbe5045c928c0e46915f04f8d2e994",
+    "mtime": 1781787732.7020557,
+    "ast_hash": "db481604e64a089025b4e711fdc9ca0b",
     "semantic_hash": ""
   },
   "src/assets/stepper_preview/step-00.webp": {
@@ -1500,8 +1500,8 @@
     "semantic_hash": ""
   },
   "src/assets/stepper_preview/step-24.webp": {
-    "mtime": 1781773174.353133,
-    "ast_hash": "d19958311adf06e748013151656bfa73",
+    "mtime": 1781787850.0383599,
+    "ast_hash": "e5ed377da92e7d9510e08ce47b36563e",
     "semantic_hash": ""
   },
   "src/assets/stepper_preview/step-25.webp": {

@@ -576,8 +576,10 @@ export function TechStackDiagram() {
 
                   {/* Logo DaVikingCode gravé au DOS du meuble (LogoMask monochrome,
                       cf. le pattern en tête de fichier), orienté -Y : net et lisible
-                      quand la rotation d'entrée (axe vertical) ou le drag expose le dos,
-                      discret par l'avant à travers le verre dépoli. Cliquable. */}
+                      quand la rotation d'entrée (axe vertical) ou le drag expose le dos.
+                      backface-visibility:hidden → masqué ET non hit-testé quand on voit
+                      la FACE AVANT (sinon sa projection capte le survol À TRAVERS les
+                      tiroirs). Visible/cliquable seulement dos face caméra. */}
                   <div
                     data-docker
                     className="absolute inset-0 m-auto grid place-items-center"
@@ -585,6 +587,8 @@ export function TechStackDiagram() {
                       width: FRAME_W,
                       height: STACK_H,
                       transform: `translate3d(0px, ${-FRAME_D / 2 - 0.5}px, 0px) rotateX(-90deg) rotateY(180deg)`,
+                      backfaceVisibility: 'hidden',
+                      WebkitBackfaceVisibility: 'hidden',
                       pointerEvents: 'none',
                     }}
                   >

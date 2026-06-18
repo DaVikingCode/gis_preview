@@ -135,8 +135,8 @@
     "semantic_hash": ""
   },
   "src/charts/TechStackDiagram.tsx": {
-    "mtime": 1781781799.4753225,
-    "ast_hash": "b6611f21c7f5bd55e92409fb0f9e0756",
+    "mtime": 1781785546.3739748,
+    "ast_hash": "f6d71abaf879b7b26390cc9b41ed2a97",
     "semantic_hash": ""
   },
   "src/components/AppSidebar.tsx": {
@@ -465,8 +465,8 @@
     "semantic_hash": "9b7893d3f823f1d504a0fef90ca49f8f"
   },
   "src/hooks/animations/useTechStackReveal.ts": {
-    "mtime": 1781780930.3364983,
-    "ast_hash": "db9c3b97ed060fc27d50518b5aa3a6a8",
+    "mtime": 1781784097.127714,
+    "ast_hash": "d2a9b0f52bd487e7011261e27792c130",
     "semantic_hash": ""
   },
   "src/hooks/animations/useThemeFlipCursor.ts": {
@@ -675,13 +675,13 @@
     "semantic_hash": ""
   },
   "src/tour/StartScreen.tsx": {
-    "mtime": 1781767737.2200387,
-    "ast_hash": "231b2d67ee98b7bdc3d23088302bdac6",
+    "mtime": 1781784866.7849426,
+    "ast_hash": "3711ed65a4948c5d1658858067d59519",
     "semantic_hash": ""
   },
   "src/tour/TourController.tsx": {
-    "mtime": 1781769458.7676992,
-    "ast_hash": "2150ec7671246c443f36ded6f3912cd3",
+    "mtime": 1781784110.1466763,
+    "ast_hash": "33f1a128df9b5fabfb7a8d8c8324d421",
     "semantic_hash": ""
   },
   "src/tour/TrafficFlowDebugPanel.tsx": {
@@ -690,8 +690,8 @@
     "semantic_hash": "98d7b5df9b0394a89fd19d84ac8cd921"
   },
   "src/tour/steps.ts": {
-    "mtime": 1781767396.8862789,
-    "ast_hash": "e83d1ef1daaeb0d06eb0331383963a53",
+    "mtime": 1781785198.440979,
+    "ast_hash": "9333deae28b6d3b07dc9d1f2b4fbff62",
     "semantic_hash": ""
   },
   "tsconfig.app.json": {
@@ -1150,8 +1150,8 @@
     "semantic_hash": ""
   },
   "functions/api/contact.ts": {
-    "mtime": 1781706743.3269045,
-    "ast_hash": "c4b2551d895b7767e9f5bf44a0190646",
+    "mtime": 1781785524.331667,
+    "ast_hash": "65e709254e0b96509f7017fea4c08d2f",
     "semantic_hash": ""
   },
   "src/charts/OutroScreen.tsx": {
@@ -1175,13 +1175,13 @@
     "semantic_hash": ""
   },
   "src/components/ContactFab.tsx": {
-    "mtime": 1781768002.1151133,
-    "ast_hash": "f8188402197c7631d76e324b77de0c36",
+    "mtime": 1781785515.180539,
+    "ast_hash": "06597784d96e9b1a28cb8ef921d8ede4",
     "semantic_hash": ""
   },
   "src/components/survey/Survey.tsx": {
-    "mtime": 1781767736.9180353,
-    "ast_hash": "b49fe4d3820c591ac8355e3708025efe",
+    "mtime": 1781784941.817111,
+    "ast_hash": "db6510d1de6f9f0eb43b22c98b5a0917",
     "semantic_hash": ""
   },
   "src/components/survey/contour.ts": {
@@ -1200,8 +1200,8 @@
     "semantic_hash": ""
   },
   "src/emails/ContactEmail.tsx": {
-    "mtime": 1781692511.0629954,
-    "ast_hash": "389af9d77323501cdc1384b502ad5bc5",
+    "mtime": 1781785532.0567749,
+    "ast_hash": "cf2638b3d4177762103bc5f39272d4c7",
     "semantic_hash": ""
   },
   "src/hooks/animations/useContactExit.ts": {
@@ -1507,6 +1507,11 @@
   "src/assets/stepper_preview/step-25.webp": {
     "mtime": 1781725424.899381,
     "ast_hash": "0ace1f19a2f9a04fc6e3c5897da3c939",
+    "semantic_hash": ""
+  },
+  "src/assets/dvc_full.svg": {
+    "mtime": 1769113014.4858813,
+    "ast_hash": "420462c12b33587c3c860c79a096eb2a",
     "semantic_hash": ""
   }
 }

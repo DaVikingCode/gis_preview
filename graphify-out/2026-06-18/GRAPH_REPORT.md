@@ -2,7 +2,7 @@
 
 ## Corpus Check
 
-- 178 files · ~1,158,340 words
+- 178 files · ~1,160,256 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -157,14 +157,14 @@
 
 - `Solutions SIG (web application)` --semantically_similar_to--> `Guided Product-Demo Tour` [INFERRED] [semantically similar]
   index.html → CLAUDE.md
+- `addMeasureTool()` --calls--> `createMeasureLabels()` [INFERRED]
+  src/map/layers/measureLayer.ts → src/animations/measureLabels.ts
 - `PlatformTile()` --calls--> `cn()` [INFERRED]
   src/charts/EcosystemBridge.tsx → src/lib/utils.ts
 - `LayerCard()` --calls--> `cn()` [INFERRED]
   src/charts/LayersPresentationModal.tsx → src/lib/utils.ts
 - `OutroScreen()` --calls--> `useTourStore` [INFERRED]
   src/charts/OutroScreen.tsx → src/store/tour-store.ts
-- `Field()` --calls--> `cn()` [INFERRED]
-  src/components/ContactFab.tsx → src/lib/utils.ts
 
 ## Import Cycles
 
@@ -580,8 +580,8 @@ Nodes (3): buttons, wait, width
 
 ### Community 122 - "Community 122"
 
-Cohesion: 0.20
-Nodes (8): createMeasureLabels(), Entry, MeasureLabels, Pt, createMeasureReveal(), MeasureReveal, createTourCursor(), addMeasureTool()
+Cohesion: 0.22
+Nodes (7): createMeasureReveal(), MeasureReveal, createTourCursor(), addMeasureTool(), MEASURE_DEMO_BLOCK, MeasureHandle, MeasureOptions
 
 ### Community 123 - "Community 123"
 
@@ -595,8 +595,8 @@ Nodes (5): addHikingTerrain(), FlightCamera, HikingHandle, PanFlightPlan, prewar
 
 ### Community 125 - "Community 125"
 
-Cohesion: 0.50
-Nodes (3): MEASURE_DEMO_BLOCK, MeasureHandle, MeasureOptions
+Cohesion: 0.40
+Nodes (4): createMeasureLabels(), Entry, MeasureLabels, Pt
 
 ## Knowledge Gaps
 
