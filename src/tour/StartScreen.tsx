@@ -6,16 +6,21 @@ import { STEPS } from './steps'
 import { addBuildings3D } from '@/map/layers/buildings3d'
 import { prefetchAirplaneModel } from '@/map/layers/airplane3d.shared'
 import { preloadImages } from '@/map/preloadImages'
-import { Play, Boxes, Ruler, Flame, MapPin, MonitorPlay } from 'lucide-react'
+import { Play, MonitorPlay } from 'lucide-react'
 import dvcWordmark from '@/assets/dvc-wordmark.svg?inline'
+import {
+  CalibrationCorners,
+  ContourField,
+  CoordLabel,
+  PrimitivesLegend,
+} from '@/components/survey/Survey'
 
-// Capacités phares, résumées en pastilles scannables plutôt qu'en paragraphe.
-const CAPS = [
-  { icon: Boxes, label: 'Bâtiments 3D' },
-  { icon: Ruler, label: 'Mesure' },
-  { icon: Flame, label: 'Heatmaps' },
-  { icon: MapPin, label: 'POI cliquables' },
-] as const
+// Coordonnées réelles de la vue d'ouverture (cf. STEPS[0].camera.center) — la marge de
+// la feuille affiche le vrai relevé, pas un placeholder.
+const ORIGIN = { lon: 2.5, lat: 46.5 }
+
+// Centre du relief calé en haut-droite : le « sommet » (anneaux jaunes) sert d'unique accent.
+const CONTOUR = { cx: 338, cy: 104, radii: [22, 40, 62, 90, 124, 164, 210, 264, 328, 404] }
 
 export function StartScreen() {
   const start = useTourStore((s) => s.start)
@@ -54,94 +59,84 @@ export function StartScreen() {
 
   return (
     <div
-      className="absolute inset-0 grid place-items-center overflow-auto bg-black/30 p-4 backdrop-blur-md sm:p-6"
+      className="absolute inset-0 grid place-items-center overflow-auto bg-black/45 p-4 backdrop-blur-[3px] sm:p-6"
       style={{ zIndex: 100200 }}
     >
-      {/* Splash sombre « panneau de contrôle » : tranche sur la carte claire et colle
-          à l'identité DVC (jaune + cyan sur quasi-noir). */}
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-gradient-to-b from-[#26262a] to-[#161618] p-7 shadow-[0_30px_90px_-25px_rgba(0,0,0,0.7)] ring-1 ring-white/10 duration-500 animate-in fade-in zoom-in-95 sm:p-9">
+      {/* La feuille de relevé : un instrument calibré, pas une carte marketing. */}
+      <div className="relative w-full max-w-[27rem] overflow-hidden rounded-[14px] bg-gradient-to-b from-[#353535] to-[#1a1a1a] shadow-[0_40px_120px_-30px_rgba(0,0,0,0.85)] ring-1 ring-[#4a4a4a]/70">
+        {/* Champ topographique : isolignes dessinées au chargement, sommet en jaune. */}
+        <ContourField
+          cx={CONTOUR.cx}
+          cy={CONTOUR.cy}
+          radii={CONTOUR.radii}
+          className="absolute inset-0 h-full w-full"
+        />
+        {/* Voile gauche→droite : garde le titre lisible par-dessus les courbes. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.05]"
+          className="pointer-events-none absolute inset-0"
           style={{
-            backgroundImage:
-              'linear-gradient(to right,#fff 1px,transparent 1px),linear-gradient(to bottom,#fff 1px,transparent 1px)',
-            backgroundSize: '22px 22px',
+            background:
+              'linear-gradient(105deg, #1a1a1a 18%, rgba(26,26,26,0.78) 46%, rgba(26,26,26,0.18) 72%, transparent 100%)',
           }}
         />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-24 -right-16 h-56 w-56 rounded-full bg-[#ffeb04]/20 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-24 -left-12 h-52 w-52 rounded-full bg-[#00b5e1]/15 blur-3xl"
-        />
 
-        <div className="relative flex flex-col gap-5">
-          <div
-            className="flex items-center justify-between fill-mode-both duration-700 animate-in fade-in slide-in-from-bottom-2"
+        <CalibrationCorners />
+
+        <div className="relative flex flex-col gap-6 p-7 sm:p-9">
+          {/* Cartouche : émetteur à gauche, relevé à droite (mono = lecture d'instrument). */}
+          <header
+            className="gp-rise flex items-start justify-between gap-4"
             style={{ animationDelay: '60ms' }}
           >
-            <img src={dvcWordmark} alt="DaVikingCode" className="h-6 w-auto" />
-            <span className="rounded-full border border-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/60 tabular-nums">
-              {STEPS.length} étapes
-            </span>
-          </div>
+            <img src={dvcWordmark} alt="DaVikingCode" className="h-[22px] w-auto" />
+            <div className="text-right font-mono text-[10.5px] leading-relaxed tracking-wide">
+              <CoordLabel lat={ORIGIN.lat} lon={ORIGIN.lon} className="text-[#00b5e1]/85" />
+              <div className="text-white/35">{STEPS.length} ÉTAPES · SIG</div>
+            </div>
+          </header>
 
-          <div
-            className="flex flex-col gap-3 fill-mode-both duration-700 animate-in fade-in slide-in-from-bottom-2"
-            style={{ animationDelay: '140ms' }}
-          >
-            <span className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.18em] text-white/45 uppercase">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#00b5e1]" />
-              Démo interactive
+          {/* Hero : le titre se pose au pied du relief. */}
+          <div className="gp-rise flex flex-col gap-3" style={{ animationDelay: '150ms' }}>
+            <span className="flex items-center gap-2.5 font-mono text-[10.5px] font-medium tracking-[0.22em] text-white/45 uppercase">
+              <span className="h-px w-5 bg-[#00b5e1]" />
+              Démonstration interactive
             </span>
-            <h1 className="font-heading text-[2rem] leading-[1.05] font-black tracking-[-0.02em] text-white sm:text-[2.5rem]">
+            <h1 className="font-heading text-[2.1rem] leading-[1.04] font-black tracking-[-0.025em] text-white sm:text-[2.55rem]">
               Cartographie augmentée<span className="text-[#ffeb04]">.</span>
             </h1>
-            <p className="text-sm text-white/55">
-              Une visite guidée de nos savoir-faire SIG, étape par étape.
+            <p className="max-w-[34ch] text-sm leading-relaxed text-white/55">
+              Une visite guidée de nos savoir-faire SIG, étape par étape, sur des rendus réels.
             </p>
           </div>
 
-          <div
-            className="flex flex-wrap gap-2 fill-mode-both duration-700 animate-in fade-in slide-in-from-bottom-2"
-            style={{ animationDelay: '220ms' }}
-          >
-            {CAPS.map(({ icon: Icon, label }) => (
-              <span
-                key={label}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white/70"
-              >
-                <Icon className="size-3.5 text-[#ffeb04]" />
-                {label}
-              </span>
-            ))}
-            <span className="inline-flex items-center rounded-full px-2 py-1 text-xs text-white/35">
-              + raster, vecteurs, swipe…
+          {/* Légende calée sur les primitives de données SIG. */}
+          <div className="gp-rise flex flex-col gap-3" style={{ animationDelay: '240ms' }}>
+            <span className="font-mono text-[10px] tracking-[0.22em] text-white/35 uppercase">
+              Légende
             </span>
+            <PrimitivesLegend />
           </div>
 
-          <Button
-            size="lg"
-            onClick={start}
-            className="mt-1 h-11 w-full gap-2 rounded-xl text-[15px] font-semibold fill-mode-both transition-transform duration-700 animate-in fade-in slide-in-from-bottom-2 hover:-translate-y-0.5"
-            style={{ animationDelay: '300ms' }}
-          >
-            <Play className="size-4 fill-current" /> Démarrer la visite
-          </Button>
+          <div className="gp-rise flex flex-col gap-2.5" style={{ animationDelay: '330ms' }}>
+            <Button
+              size="lg"
+              onClick={start}
+              className="h-11 w-full gap-2 rounded-lg text-[15px] font-semibold transition-transform hover:-translate-y-0.5"
+            >
+              <Play className="size-4 fill-current" /> Démarrer la visite
+            </Button>
 
-          {/* Lecture automatique : enchaîne les étapes seule, sans piloter. */}
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={startAuto}
-            className="h-11 w-full gap-2 rounded-xl text-[15px] font-semibold fill-mode-both transition-transform duration-700 animate-in fade-in slide-in-from-bottom-2 hover:-translate-y-0.5"
-            style={{ animationDelay: '360ms' }}
-          >
-            <MonitorPlay className="size-4" /> Lecture automatique
-          </Button>
+            {/* Lecture automatique : enchaîne les étapes seule, sans piloter. */}
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={startAuto}
+              className="h-10 w-full gap-2 rounded-lg text-sm font-medium text-white/55 hover:bg-white/5 hover:text-white/85"
+            >
+              <MonitorPlay className="size-4" /> Lecture automatique
+            </Button>
+          </div>
         </div>
       </div>
     </div>

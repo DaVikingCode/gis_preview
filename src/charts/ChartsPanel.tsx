@@ -1,6 +1,6 @@
 import { lazy, Suspense, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { SurveyCard } from './SurveyCard'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useTourStore } from '@/store/tour-store'
 import { STEPS } from '@/tour/steps'
@@ -48,6 +48,7 @@ const EcosystemBridge = lazy(() =>
 const TechStackDiagram = lazy(() =>
   import('./TechStackDiagram').then((m) => ({ default: m.TechStackDiagram })),
 )
+const OutroScreen = lazy(() => import('./OutroScreen').then((m) => ({ default: m.OutroScreen })))
 
 const META: Record<string, { title: string; description: string }> = {
   buildings: { title: 'Hauteurs visibles', description: 'Répartition des hauteurs de bâtiments' },
@@ -113,38 +114,37 @@ export function ChartsPanel() {
     else if (chart === 'kanban') content = <KanbanPanel />
     else if (chart === 'ecosystem') content = <EcosystemBridge key={step.id} />
     else if (chart === 'techstack') content = <TechStackDiagram key={step.id} />
+    else if (chart === 'outro') content = <OutroScreen key={step.id} />
     else {
       const meta = META[chart]
+      const [lon, lat] = step.camera.center
       content = (
-        <div
-          className="absolute top-3 right-3 left-16 w-auto pointer-events-auto sm:top-4 sm:left-auto sm:w-80"
-          style={{ zIndex: 100100 }}
+        <SurveyCard
+          title={meta.title}
+          description={meta.description}
+          lat={lat}
+          lon={lon}
+          stepIndex={currentStep + 1}
+          total={STEPS.length}
+          compact={isMobile}
         >
-          <Card size={isMobile ? 'sm' : 'default'} className="bg-card/95 backdrop-blur-md">
-            <CardHeader>
-              <CardTitle>{meta.title}</CardTitle>
-              <CardDescription className="hidden sm:block">{meta.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Boundary serrée : seule la zone de chart suspend pendant le chargement
-                  du chunk — l'enveloppe Card (titre/description) reste stable, pas de CLS. */}
-              <Suspense fallback={null}>
-                {chart === 'buildings' && (
-                  <BuildingsHeightChart byHeight={step.id === 'layers-apply-buildings'} />
-                )}
-                {chart === 'measure' && <MeasureChart />}
-                {chart === 'heatmap' && <HeatmapChart />}
-                {chart === 'basemap' && <BasemapChart />}
-                {chart === 'isochrone' && <IsochroneChart />}
-                {chart === 'swipe' && <SwipeChart />}
-                {chart === 'realtime' && <RealtimeChart />}
-                {chart === 'hiking' && <HikingChart />}
-                {chart === 'airplane' && <AirplaneCard />}
-                {chart === 'pointcloud' && <PointCloudCard />}
-              </Suspense>
-            </CardContent>
-          </Card>
-        </div>
+          {/* Boundary serrée : seule la zone de chart suspend pendant le chargement
+              du chunk — l'enveloppe Card (titre/description) reste stable, pas de CLS. */}
+          <Suspense fallback={null}>
+            {chart === 'buildings' && (
+              <BuildingsHeightChart byHeight={step.id === 'layers-apply-buildings'} />
+            )}
+            {chart === 'measure' && <MeasureChart />}
+            {chart === 'heatmap' && <HeatmapChart />}
+            {chart === 'basemap' && <BasemapChart />}
+            {chart === 'isochrone' && <IsochroneChart />}
+            {chart === 'swipe' && <SwipeChart />}
+            {chart === 'realtime' && <RealtimeChart />}
+            {chart === 'hiking' && <HikingChart />}
+            {chart === 'airplane' && <AirplaneCard />}
+            {chart === 'pointcloud' && <PointCloudCard />}
+          </Suspense>
+        </SurveyCard>
       )
     }
   }

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { useContactReveal } from '@/hooks/animations/useContactReveal'
 import { useContactExit } from '@/hooks/animations/useContactExit'
+import { CalibrationCorners, ContourField } from '@/components/survey/Survey'
 
 const ENDPOINT = import.meta.env.VITE_CONTACT_ENDPOINT ?? '/api/contact'
 
@@ -20,6 +21,16 @@ type Status = 'idle' | 'sending' | 'sent'
 export function ContactFab() {
   const [open, setOpen] = useState(false)
   const [exiting, setExiting] = useState(false)
+
+  // L'écran de fin (OutroScreen) ouvre le contact à distance, sans store partagé.
+  useEffect(() => {
+    const openPanel = () => {
+      setExiting(false)
+      setOpen(true)
+    }
+    window.addEventListener('gp:open-contact', openPanel)
+    return () => window.removeEventListener('gp:open-contact', openPanel)
+  }, [])
 
   function requestClose() {
     if (exiting) return
@@ -150,6 +161,21 @@ function ContactPanel({
       >
         {/* Bandeau d'accent marque */}
         <div className="h-1 w-full bg-primary" />
+
+        {/* Écho cartographique : relief discret derrière l'en-tête + repères de calage,
+            en cohérence avec le splash et l'écran de fin. `gp-deco` : décoration jamais
+            cliquable, même sous `.gp-contact *` qui force pointer-events:auto (cf. index.css). */}
+        <div className="gp-deco">
+          <ContourField
+            cx={320}
+            cy={18}
+            radii={[18, 34, 54, 80, 112, 150]}
+            viewBox={{ w: 380, h: 130 }}
+            animate={false}
+            className="absolute inset-x-0 top-0 h-32 w-full opacity-70"
+          />
+          <CalibrationCorners offset={2} tone="bg-foreground/15" />
+        </div>
 
         {status === 'sent' ? (
           <div className="flex flex-col items-center gap-3 px-6 pt-8 pb-9 text-center">

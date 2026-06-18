@@ -43,6 +43,7 @@ import {
 import { CURRENT_USER, DATASETS, LAYERS, WORKSPACE } from '@/data/sample-workspace'
 import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler'
 import { useSidebarReveal } from '@/hooks/animations/useSidebarReveal'
+import { CoordLabel } from '@/components/survey/Survey'
 import dvcMark from '@/assets/dvc-mark.svg?inline'
 
 type NavItem = {
@@ -112,12 +113,21 @@ export function AppSidebar() {
           </DropdownMenuContent>
         </DropdownMenu>
         <SidebarInput placeholder="Rechercher…" />
+        {/* Lecture d'instrument : système de projection + centre de la vue. */}
+        <div className="flex items-center gap-1.5 px-1 font-mono text-[10px] tracking-wide text-muted-foreground/70">
+          <span className="text-[#00b5e1]/80">EPSG:3857</span>
+          <span className="text-muted-foreground/40">·</span>
+          <CoordLabel lat={46.5} lon={2.5} />
+        </div>
       </SidebarHeader>
 
       <SidebarContent ref={contentRef}>
         {NAV.map((group) => (
           <SidebarGroup key={group.label} data-reveal>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupLabel>
+              <span aria-hidden className="mr-1.5 h-px w-3 shrink-0 bg-[#00b5e1]/70" />
+              {group.label}
+            </SidebarGroupLabel>
             <SidebarMenu>
               {group.items.map((item) => (
                 <SidebarMenuItem key={item.id}>

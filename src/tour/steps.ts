@@ -58,6 +58,7 @@ export type ChartKind =
   | 'airplane'
   | 'ecosystem'
   | 'techstack'
+  | 'outro'
 
 // Real, map-rendering layers demonstrated in the "Suivant applies a layer"
 // sub-steps. Display metadata lives in LayersAppliedCard; the add/remove is
@@ -789,9 +790,10 @@ export const STEPS: TourStep[] = [
     title: 'Et bien plus encore',
     description:
       'Nuages de points, mesures de surfaces, sources multiples, intégrations sur mesure… et bien plus. On en discute ?',
+    element: '#outro-screen',
     basemap: 'positron',
     camera: { center: [2.5, 46.5], zoom: 5, pitch: 0, bearing: 0 },
-    chart: 'none',
+    chart: 'outro',
   },
 ]
 

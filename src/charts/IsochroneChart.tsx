@@ -23,10 +23,17 @@ export function IsochroneChart() {
       <div className="space-y-2">
         {stats.map((b) => (
           <div key={b.minutes} className="flex items-center gap-2 text-xs">
-            <span
-              className="inline-block h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: BAND_COLOR[b.minutes] }}
-            />
+            {/* Anneau (vide, taille croissante) = écho des zones isochrones concentriques. */}
+            <span className="grid size-4 shrink-0 place-items-center">
+              <span
+                className="rounded-full border-2"
+                style={{
+                  width: b.minutes === 5 ? 8 : b.minutes === 10 ? 12 : 16,
+                  height: b.minutes === 5 ? 8 : b.minutes === 10 ? 12 : 16,
+                  borderColor: BAND_COLOR[b.minutes],
+                }}
+              />
+            </span>
             <span className="w-12 text-muted-foreground">{b.minutes} min</span>
             <span className="flex-1 tabular-nums text-muted-foreground">
               {b.areaKm2.toFixed(0)} km²

@@ -14,7 +14,7 @@ type DriverInstance = ReturnType<typeof driver>
 
 // Lecture automatique : temps de pause sur une étape une fois qu'elle est posée
 // (caméra arrivée + gate levée) avant d'enchaîner sur la suivante. Réglable.
-const AUTOPLAY_DWELL_MS = 3000
+const AUTOPLAY_DWELL_MS = 2000
 
 // Gates that block the Next button until a step's interaction completes.
 function isStepLocked(
