@@ -152,4 +152,8 @@ export const airplaneTuning = {
   // Exagérées pour que l'avion « flotte » visiblement au-dessus du globe.
   cruiseAltKm: 330, // pic (mi-trajet)
   takeoffAltKm: 12, // décollage / atterrissage (extrémités)
+  // Altitude AFFICHÉE dans la télémétrie (m) — réaliste, DÉCOUPLÉE de la cloche-monde
+  // ci-dessus (exagérée pour que l'avion flotte au-dessus du globe). Croisière ≈ FL360.
+  displayCruiseAltM: 11000, // croisière (mi-trajet)
+  displayTakeoffAltM: 800, // proche des aéroports (montée / descente)
 }

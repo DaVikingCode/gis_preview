@@ -494,8 +494,9 @@ export function addAirplane3D(map: MLMap): AirplaneHandle {
   }
 
   map.addLayer(new AirplaneLayer(state))
+  // Télémétrie affichée : altitude réaliste (≠ cloche-monde state.alt), avion au départ.
   useMapDataStore.getState().setFlightStats({
-    altitudeM: state.alt,
+    altitudeM: airplaneTuning.displayTakeoffAltM,
     speedKmh: CRUISE_SPEED_KMH,
     headingDeg: 0,
   })
@@ -510,6 +511,12 @@ export function addAirplane3D(map: MLMap): AirplaneHandle {
       zoom: ZOOM_FAR,
       pitch: (PITCH_NEAR + PITCH_FAR) / 2,
       bearing: GLOBE_BEARING,
+    })
+    // Vue statique « orbitale moyenne » = croisière : on affiche l'altitude de croisière.
+    useMapDataStore.getState().setFlightStats({
+      altitudeM: airplaneTuning.displayCruiseAltM,
+      speedKmh: CRUISE_SPEED_KMH,
+      headingDeg: 0,
     })
     map.triggerRepaint()
     return { detach: () => removeAirplane3D(map) }
@@ -607,7 +614,10 @@ export function addAirplane3D(map: MLMap): AirplaneHandle {
 
         const headingDeg = (90 - (s.bearingRad * 180) / Math.PI + 360) % 360
         useMapDataStore.getState().setFlightStats({
-          altitudeM: Math.round(state.alt),
+          // Altitude réaliste suivant la même cloche (apex `a`), pas la cloche-monde.
+          altitudeM: Math.round(
+            lerp(airplaneTuning.displayTakeoffAltM, airplaneTuning.displayCruiseAltM, a),
+          ),
           speedKmh: CRUISE_SPEED_KMH,
           headingDeg: Math.round(headingDeg),
         })
