@@ -26,6 +26,19 @@ export function PointCloudDangerPois() {
 
   useEffect(() => {
     const visibleMode = colorMode === 'classification'
+    // Hors mode classification, les segments danger ne s'affichent pas : on masque une
+    // fois et on NE s'abonne PAS à `render`/`move`. Sinon `place()` tournerait à ~60 fps
+    // (la couche nuage appelle `triggerRepaint()` chaque frame) en projetant tous les POI
+    // pour rien. L'effet est ré-exécuté au changement de `colorMode` → (dé)branchement net.
+    if (!visibleMode || !handle) {
+      for (let i = 0; i < pois.length; i++) {
+        for (const r of [lineRefs, vegRefs, condRefs, labelRefs]) {
+          const el = r.current[i]
+          if (el) el.style.opacity = '0'
+        }
+      }
+      return
+    }
     const place = () => {
       for (let i = 0; i < pois.length; i++) {
         const line = lineRefs.current[i]

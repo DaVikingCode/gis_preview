@@ -334,16 +334,19 @@ export function SmoothCursor({
   const shown = isVisible && !hidden
 
   return (
+    // Position pilotée par `transform: translate` (x/y) plutôt que left/top : les springs
+    // bougent en continu pendant la visite scriptée, et left/top forceraient un layout +
+    // paint à chaque frame. translate reste sur le compositeur (GPU). Élément externe =
+    // translate de position (animé) ; élément interne = centrage -50% (statique) +
+    // rotate/scale (springs, pivot au centre).
     <motion.div
       data-fake-cursor=""
       style={{
         position: 'fixed',
-        left: cursorX,
-        top: cursorY,
-        translateX: '-50%',
-        translateY: '-50%',
-        rotate: rotation,
-        scale: scale,
+        top: 0,
+        left: 0,
+        x: cursorX,
+        y: cursorY,
         zIndex,
         pointerEvents: 'none',
         willChange: 'transform',
@@ -355,7 +358,16 @@ export function SmoothCursor({
         duration: 0.15,
       }}
     >
-      {cursor}
+      <motion.div
+        style={{
+          translateX: '-50%',
+          translateY: '-50%',
+          rotate: rotation,
+          scale: scale,
+        }}
+      >
+        {cursor}
+      </motion.div>
     </motion.div>
   )
 }
